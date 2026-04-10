@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-subscription.png" alt="UsageBar Screenshot" width="40%">
-  <img src="docs/screenshot3.png" alt="UsageBar Screenshot" width="40%">
+  <img src="docs/intro-menu.jpg" alt="UsageBar menu screenshot" width="40%">
+  <img src="docs/intro-settings.jpg" alt="UsageBar settings screenshot" width="40%">
 </p>
 
 <!-- TODO: Refresh screenshots after README text is finalized and UI is stable. -->

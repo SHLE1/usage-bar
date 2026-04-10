@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-subscription.png" alt="UsageBar 截图" width="40%">
-  <img src="docs/screenshot3.png" alt="UsageBar 截图" width="40%">
+  <img src="docs/intro-menu.jpg" alt="UsageBar 菜单截图" width="40%">
+  <img src="docs/intro-settings.jpg" alt="UsageBar 设置截图" width="40%">
 </p>
 
 <!-- TODO: 待 README 文字定稿且 UI 样式稳定后，更新截图。 -->
