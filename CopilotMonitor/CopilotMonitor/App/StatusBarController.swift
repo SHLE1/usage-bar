@@ -475,7 +475,7 @@ final class StatusBarController: NSObject {
         updateLaunchAtLoginState()
         menu.addItem(launchAtLoginItem)
 
-        installCLIItem = NSMenuItem(title: "Install CLI (opencodebar)", action: #selector(installCLIClicked), keyEquivalent: "")
+        installCLIItem = NSMenuItem(title: "Install CLI (usagebar)", action: #selector(installCLIClicked), keyEquivalent: "")
         installCLIItem.isHidden = true
         installCLIItem.target = self
         menu.addItem(installCLIItem)
@@ -495,7 +495,7 @@ final class StatusBarController: NSObject {
         menu.addItem(NSMenuItem.separator())
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let versionItem = NSMenuItem(title: "OpenCode Bar v\(version)", action: #selector(openGitHub), keyEquivalent: "")
+        let versionItem = NSMenuItem(title: "UsageBar v\(version)", action: #selector(openGitHub), keyEquivalent: "")
         versionItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Version")
         versionItem.target = self
         menu.addItem(versionItem)
@@ -2929,7 +2929,7 @@ final class StatusBarController: NSObject {
 
     @objc private func openGitHub() {
         logger.info("Opening GitHub repository")
-        if let url = URL(string: "https://github.com/opgginc/opencode-bar") {
+        if let url = URL(string: "https://github.com/SHLE1/usage-bar") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -3129,7 +3129,7 @@ final class StatusBarController: NSObject {
         let subscriptionTotal = SubscriptionSettingsManager.shared.getTotalMonthlySubscriptionCost()
 
         var lines = [
-            "My OpenCode Bar usage snapshot",
+            "My UsageBar usage snapshot",
             String(format: "- Total tracked this month: $%.2f", totalTracked),
             String(format: "- Pay-as-you-go spend: $%.2f", payAsYouGoTotal),
             String(format: "- Quota subscriptions: $%.2f/m", subscriptionTotal)
@@ -3145,7 +3145,7 @@ final class StatusBarController: NSObject {
 
         lines.append("")
         lines.append("Track your AI provider usage in one menu bar app:")
-        lines.append("https://github.com/opgginc/opencode-bar")
+        lines.append("https://github.com/SHLE1/usage-bar")
 
         return lines.joined(separator: "\n")
     }
@@ -3240,7 +3240,7 @@ final class StatusBarController: NSObject {
         let encodedTitle = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         
-        if let url = URL(string: "https://github.com/opgginc/opencode-bar/issues/new?title=\(encodedTitle)&body=\(encodedBody)") {
+        if let url = URL(string: "https://github.com/SHLE1/usage-bar/issues/new?title=\(encodedTitle)&body=\(encodedBody)") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -3257,8 +3257,8 @@ final class StatusBarController: NSObject {
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = "Support OpenCode Bar?"
-        alert.informativeText = "If you find this app useful, would you like to star it on GitHub? It helps others discover this project."
+        alert.messageText = "Support UsageBar?"
+        alert.informativeText = "If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project."
         alert.addButton(withTitle: "Open GitHub")
         alert.addButton(withTitle: "No Thanks")
         alert.alertStyle = .informational
@@ -3268,7 +3268,7 @@ final class StatusBarController: NSObject {
 
         if response == .alertFirstButtonReturn {
             debugLog("GitHub star prompt: opening GitHub page")
-            if let url = URL(string: "https://github.com/opgginc/opencode-bar") {
+            if let url = URL(string: "https://github.com/SHLE1/usage-bar") {
                 NSWorkspace.shared.open(url)
             }
         } else {
@@ -3352,8 +3352,8 @@ final class StatusBarController: NSObject {
         logger.info("⌨️ [Keyboard] Install CLI triggered")
         debugLog("⌨️ installCLIClicked: Install CLI menu item activated")
         
-        // Resolve CLI binary path via bundle URL (Contents/MacOS/opencodebar-cli)
-        let cliURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/opencodebar-cli")
+        // Resolve CLI binary path via bundle URL (Contents/MacOS/usagebar-cli)
+        let cliURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/usagebar-cli")
         let cliPath = cliURL.path
         
         guard FileManager.default.fileExists(atPath: cliPath) else {
@@ -3371,7 +3371,7 @@ final class StatusBarController: NSObject {
         // Use AppleScript's 'quoted form of' to safely escape the path for the shell command and prevent command injection
         let script = """
         set cliPath to "\(escapedCliPath)"
-        do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/opencodebar && chmod +x /usr/local/bin/opencodebar" with administrator privileges
+        do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/usagebar && chmod +x /usr/local/bin/usagebar" with administrator privileges
         """
         
         debugLog("🔐 Executing AppleScript for privileged installation")
@@ -3384,9 +3384,9 @@ final class StatusBarController: NSObject {
                 debugLog("❌ Installation failed: \(error.description)")
                 showAlert(title: "Installation Failed", message: "Failed to install CLI: \(error.description)")
             } else {
-                logger.info("CLI installed successfully to /usr/local/bin/opencodebar")
+                logger.info("CLI installed successfully to /usr/local/bin/usagebar")
                 debugLog("✅ CLI installed successfully")
-                showAlert(title: "Success", message: "CLI installed to /usr/local/bin/opencodebar\n\nYou can now use 'opencodebar' command in Terminal.")
+                showAlert(title: "Success", message: "CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal.")
                 updateCLIInstallState()
             }
         } else {
@@ -3397,15 +3397,15 @@ final class StatusBarController: NSObject {
     }
 
     private func updateCLIInstallState() {
-        let installed = FileManager.default.fileExists(atPath: "/usr/local/bin/opencodebar")
+        let installed = FileManager.default.fileExists(atPath: "/usr/local/bin/usagebar")
         
         if installed {
-            installCLIItem.title = "CLI Installed (opencodebar)"
+            installCLIItem.title = "CLI Installed (usagebar)"
             installCLIItem.state = .on
             installCLIItem.isEnabled = false
-            debugLog("✅ CLI is installed at /usr/local/bin/opencodebar")
+            debugLog("✅ CLI is installed at /usr/local/bin/usagebar")
         } else {
-            installCLIItem.title = "Install CLI (opencodebar)"
+            installCLIItem.title = "Install CLI (usagebar)"
             installCLIItem.state = .off
             installCLIItem.isEnabled = true
             debugLog("ℹ️ CLI is not installed")

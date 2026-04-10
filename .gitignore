@@ -42,7 +42,7 @@ package-lock.json
 
 # Local runtime artifacts
 data/
-plans/
+#plans/
 .firecrawl/
 *.profraw
 *.profdata

@@ -1,7 +1,7 @@
 {
-  "name": "copilot-monitor-ci",
+  "name": "usage-bar-ci",
   "version": "1.0.0",
-  "description": "CI/CD tools for Copilot Monitor",
+  "description": "CI/CD tools for UsageBar",
   "private": true,
   "scripts": {
     "lint:actions": "for f in .github/workflows/*.yml; do echo \"Validating $f...\"; action-validator \"$f\"; done"

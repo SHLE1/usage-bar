@@ -32,7 +32,7 @@ curl -s "https://api.anthropic.com/api/oauth/usage" \
   -H "anthropic-beta: oauth-2025-04-20"
 ```
 
-The bundled [`scripts/query-claude.sh`](/Users/kargnas/projects/opencode-bar/scripts/query-claude.sh) now resolves Claude auth in this order:
+The bundled [`scripts/query-claude.sh`](/Users/kargnas/projects/usage-bar/scripts/query-claude.sh) now resolves Claude auth in this order:
 
 1. `opencode-anthropic-auth/accounts.json`
 2. OpenCode `auth.json`
@@ -70,7 +70,7 @@ The bundled [`scripts/query-claude.sh`](/Users/kargnas/projects/opencode-bar/scr
 
 **Endpoint:** `GET https://chatgpt.com/backend-api/wham/usage`
 
-OpenCode Bar uses the direct ChatGPT usage endpoint by default. If `oc-chatgpt-multi-auth` sets OpenCode's `provider.openai.options.baseURL` to a localhost proxy, that proxy is ignored for usage requests unless `opencode-bar.codex.usageURL` is explicitly configured.
+UsageBar uses the direct ChatGPT usage endpoint by default. If `oc-chatgpt-multi-auth` sets OpenCode's `provider.openai.options.baseURL` to a localhost proxy, that proxy is ignored for usage requests unless `usage-bar.codex.usageURL` is explicitly configured.
 
 ```bash
 ACCESS=$(jq -r '.openai.access' ~/.local/share/opencode/auth.json)
@@ -230,7 +230,7 @@ curl -s "https://api.minimax.io/v1/api/openplatform/coding_plan/remains" \
   -H "Accept: application/json"
 ```
 
-The bundled [`scripts/query-minimax.sh`](/Users/kargnas/projects/opencode-bar/scripts/query-minimax.sh) reads the same auth entry and prints both used and left values for the 5-hour and weekly windows.
+The bundled [`scripts/query-minimax.sh`](/Users/kargnas/projects/usage-bar/scripts/query-minimax.sh) reads the same auth entry and prints both used and left values for the 5-hour and weekly windows.
 
 **Response:**
 ```json
@@ -267,7 +267,7 @@ The bundled [`scripts/query-minimax.sh`](/Users/kargnas/projects/opencode-bar/sc
 | `weekly_end_time` | Weekly reset time in epoch milliseconds |
 | `weekly_remains_time` | Milliseconds left until the weekly reset |
 
-**Important:** MiniMax field names are misleading. OpenCode Bar and the CLI calculate used percent as `(total - remaining) / total * 100`, not `remaining / total`.
+**Important:** MiniMax field names are misleading. UsageBar and the CLI calculate used percent as `(total - remaining) / total * 100`, not `remaining / total`.
 
 ---
 
@@ -428,7 +428,7 @@ Client Secret: Set GEMINI_CLIENT_SECRET environment variable
 }
 ```
 
-`oc-chatgpt-multi-auth` may leave `accountId` unset in `auth.json` and instead store the selected workspace in `accountIdOverride` / `organizationIdOverride`. OpenCode Bar derives the canonical ChatGPT account ID from the OpenAI JWT claims and keeps the override value as additional metadata when needed.
+`oc-chatgpt-multi-auth` may leave `accountId` unset in `auth.json` and instead store the selected workspace in `accountIdOverride` / `organizationIdOverride`. UsageBar derives the canonical ChatGPT account ID from the OpenAI JWT claims and keeps the override value as additional metadata when needed.
 
 ### OpenCode ChatGPT Multi-Auth (`~/.opencode/projects/*/openai-codex-accounts.json`)
 
@@ -464,7 +464,7 @@ Client Secret: Set GEMINI_CLIENT_SECRET environment variable
 }
 ```
 
-OpenCode Bar reads every entry in these files, canonicalizes account IDs from the JWT claims, and merges duplicates with the OpenCode auth, Codex native auth, and `codex-lb` sources.
+UsageBar reads every entry in these files, canonicalizes account IDs from the JWT claims, and merges duplicates with the OpenCode auth, Codex native auth, and `codex-lb` sources.
 
 ### Antigravity Accounts (`~/.config/opencode/antigravity-accounts.json`)
 

@@ -50,7 +50,7 @@
 		CLICODEX111111111111111 /* CodexProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76783C44AA2329AE3FA7E981 /* CodexProvider.swift */; };
 		CLICOPILOT11111111111111 /* CopilotCLIProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CLICOPILOT22222222222222 /* CopilotCLIProvider.swift */; };
 		CLICOPILOTUSAGE111111111 /* CopilotUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E22222222222222222222222 /* CopilotUsage.swift */; };
-		CLICOPY111111111111111111 /* opencodebar-cli in Embed CLI */ = {isa = PBXBuildFile; fileRef = CLI5555555555555555555555 /* opencodebar-cli */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		CLICOPY111111111111111111 /* usagebar-cli in Embed CLI */ = {isa = PBXBuildFile; fileRef = CLI5555555555555555555555 /* usagebar-cli */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		CLIHISTORY11111111111111 /* CopilotHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1085A77EF4A58E5B5EC71B /* CopilotHistoryService.swift */; };
 		CLIKIMI1111111111111111 /* KimiProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = KI2222222222222222222222 /* KimiProvider.swift */; };
 		CLIMINIMAX11111111111111 /* MiniMaxProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = MINIMAXFILE2222222222222 /* MiniMaxProvider.swift */; };
@@ -98,7 +98,7 @@
 		CLIPROVMGR11111111111111 /* CLIProviderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CLIPROVMGR22222222222222 /* CLIProviderManager.swift */; };
 		CLICOPILOT11111111111111 /* CopilotCLIProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CLICOPILOT22222222222222 /* CopilotCLIProvider.swift */; };
 		CLIHISTORY11111111111111 /* CopilotHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1085A77EF4A58E5B5EC71B /* CopilotHistoryService.swift */; };
-		CLICOPY111111111111111111 /* opencodebar-cli in Embed CLI */ = {isa = PBXBuildFile; fileRef = CLI5555555555555555555555 /* opencodebar-cli */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		CLICOPY111111111111111111 /* usagebar-cli in Embed CLI */ = {isa = PBXBuildFile; fileRef = CLI5555555555555555555555 /* usagebar-cli */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		SETAPP11111111111111111111 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR111111111111111111111 /* AppPreferences.swift */; };
 		SETCLI11111111111111111111 /* CLIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR222222222222222222222 /* CLIService.swift */; };
 		SETMAIN1111111111111111111 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR333333333333333333333 /* SettingsView.swift */; };
@@ -113,7 +113,7 @@
 			containerPortal = B44444444444444444444444 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = CLI8888888888888888888888;
-			remoteInfo = "opencodebar-cli";
+			remoteInfo = "usagebar-cli";
 		};
 		TNNNNNNNNNNNNNNNNNNNNNNN /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -131,7 +131,7 @@
 			dstPath = Contents/MacOS;
 			dstSubfolderSpec = 1;
 			files = (
-				CLICOPY111111111111111111 /* opencodebar-cli in Embed CLI */,
+				CLICOPY111111111111111111 /* usagebar-cli in Embed CLI */,
 			);
 			name = "Embed CLI";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -160,7 +160,7 @@
 		MINIMAXFILE2222222222222 /* MiniMaxProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniMaxProvider.swift; sourceTree = "<group>"; };
 		NANOGPTFILE222222222222 /* NanoGptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NanoGptProvider.swift; sourceTree = "<group>"; };
 		A66666666666666666666666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A77777777777777777777777 /* OpenCode Bar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OpenCode Bar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A77777777777777777777777 /* UsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "UsageBar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A88888888888888888888888 /* CopilotMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CopilotMonitor.entitlements; sourceTree = "<group>"; };
 		A99999999999999999999999 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD0CA52627AF05BD67B56E /* StatusBarIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarIconView.swift; sourceTree = "<group>"; };
@@ -170,7 +170,7 @@
 		C1C7C9FDB4600114F02B2915 /* MenuDesignToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignToken.swift; sourceTree = "<group>"; };
 		C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignTokenTests.swift; sourceTree = "<group>"; };
 		CLI2222222222222222222222 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		CLI5555555555555555555555 /* opencodebar-cli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "opencodebar-cli"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CLI5555555555555555555555 /* usagebar-cli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "usagebar-cli"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CLICOPILOT22222222222222 /* CopilotCLIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotCLIProvider.swift; sourceTree = "<group>"; };
 		CLIPROVMGR22222222222222 /* CLIProviderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIProviderManager.swift; sourceTree = "<group>"; };
 		D22222222222222222222222 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
@@ -306,8 +306,8 @@
 		ADDDDDDDDDDDDDDDDDDDDDDD /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A77777777777777777777777 /* OpenCode Bar.app */,
-				CLI5555555555555555555555 /* opencodebar-cli */,
+				A77777777777777777777777 /* UsageBar.app */,
+				CLI5555555555555555555555 /* usagebar-cli */,
 				TDDDDDDDDDDDDDDDDDDDDDD /* CopilotMonitorTests.xctest */,
 			);
 			name = Products;
@@ -474,12 +474,12 @@
 				SP2222222222222222222222 /* Sparkle */,
 			);
 			productName = CopilotMonitor;
-			productReference = A77777777777777777777777 /* OpenCode Bar.app */;
+			productReference = A77777777777777777777777 /* UsageBar.app */;
 			productType = "com.apple.product-type.application";
 		};
-		CLI8888888888888888888888 /* opencodebar-cli */ = {
+		CLI8888888888888888888888 /* usagebar-cli */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CLI9999999999999999999999 /* Build configuration list for PBXNativeTarget "opencodebar-cli" */;
+			buildConfigurationList = CLI9999999999999999999999 /* Build configuration list for PBXNativeTarget "usagebar-cli" */;
 			buildPhases = (
 				CLIAAAAAAAAAAAAAAAAAAAAA /* Sources */,
 				CLI6666666666666666666666 /* Frameworks */,
@@ -488,12 +488,12 @@
 			);
 			dependencies = (
 			);
-			name = "opencodebar-cli";
+			name = "usagebar-cli";
 			packageProductDependencies = (
 				CLI4444444444444444444444 /* ArgumentParser */,
 			);
-			productName = "opencodebar-cli";
-			productReference = CLI5555555555555555555555 /* opencodebar-cli */;
+			productName = "usagebar-cli";
+			productReference = CLI5555555555555555555555 /* usagebar-cli */;
 			productType = "com.apple.product-type.tool";
 		};
 		TGGGGGGGGGGGGGGGGGGGGGGG /* CopilotMonitorTests */ = {
@@ -548,7 +548,7 @@
 			projectRoot = "";
 			targets = (
 				AFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitor */,
-				CLI8888888888888888888888 /* opencodebar-cli */,
+				CLI8888888888888888888888 /* usagebar-cli */,
 				TGGGGGGGGGGGGGGGGGGGGGGG /* CopilotMonitorTests */,
 			);
 		};
@@ -683,7 +683,7 @@
 /* Begin PBXTargetDependency section */
 		CLIDEP1111111111111111111 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = CLI8888888888888888888888 /* opencodebar-cli */;
+			target = CLI8888888888888888888888 /* usagebar-cli */;
 			targetProxy = CLIPROXY11111111111111111 /* PBXContainerItemProxy */;
 		};
 		TKKKKKKKKKKKKKKKKKKKKKKK /* PBXTargetDependency */ = {
@@ -835,8 +835,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.copilotmonitor.CopilotMonitor;
-				PRODUCT_NAME = "OpenCode Bar";
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.SHLE1.UsageBar;
+				PRODUCT_NAME = "UsageBar";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -863,8 +863,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.copilotmonitor.CopilotMonitor;
-				PRODUCT_NAME = "OpenCode Bar";
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.SHLE1.UsageBar;
+				PRODUCT_NAME = "UsageBar";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -910,11 +910,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.copilotmonitor.CopilotMonitorTests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.SHLE1.UsageBarTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenCode Bar.app/Contents/MacOS/OpenCode Bar";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UsageBar.app/Contents/MacOS/UsageBar";
 			};
 			name = Debug;
 		};
@@ -929,11 +929,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.copilotmonitor.CopilotMonitorTests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.SHLE1.UsageBarTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenCode Bar.app/Contents/MacOS/OpenCode Bar";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UsageBar.app/Contents/MacOS/UsageBar";
 			};
 			name = Release;
 		};
@@ -958,7 +958,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CLI9999999999999999999999 /* Build configuration list for PBXNativeTarget "opencodebar-cli" */ = {
+		CLI9999999999999999999999 /* Build configuration list for PBXNativeTarget "usagebar-cli" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CLICCCCCCCCCCCCCCCCCCCCC /* Debug */,

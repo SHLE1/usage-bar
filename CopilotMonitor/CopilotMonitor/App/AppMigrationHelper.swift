@@ -3,7 +3,7 @@ import os.log
 
 private let logger = Logger(subsystem: "com.opencodeproviders", category: "Migration")
 
-/// Handles app bundle name migration from old names to "OpenCode Bar.app"
+/// Handles app bundle name migration from old names to "UsageBar.app"
 /// This is needed because Sparkle updates replace bundle contents but keep the folder name,
 /// causing "damaged or incomplete" errors when bundle name doesn't match executable name.
 @MainActor
@@ -12,14 +12,15 @@ final class AppMigrationHelper {
     static let shared = AppMigrationHelper()
     
     /// The correct app bundle name that should be used
-    private let targetBundleName = "OpenCode Bar.app"
-    private let expectedBundleID = "com.copilotmonitor.CopilotMonitor"
+    private let targetBundleName = "UsageBar.app"
+    private let expectedBundleID = "io.github.SHLE1.UsageBar"
     
     /// List of old bundle names that need migration
     private let legacyBundleNames = [
         "CopilotMonitor.app",
         "OpenCodeUsageMonitor.app",
-        "ClaudeProvidersMonitor.app"
+        "ClaudeProvidersMonitor.app",
+        "OpenCode Bar.app"
     ]
     
     private init() {}

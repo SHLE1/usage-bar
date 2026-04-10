@@ -11,14 +11,14 @@
 ## Coding Rules
 
 ### Branding Guides
-- Official Brand: `OpenCode Bar`
-  - Don't use mis-capitalized or malformed forms like `Opencode Bar` or versions without the space (e.g. `OpenCodeBar`).
+- Official Brand: `UsageBar`
+  - Don't use mis-capitalized or malformed forms like `Usagebar` or versions with a space (e.g. `Usage Bar`).
 - File Name:
-  - `OpenCode Bar` if it allows whitespace.
-  - `OpenCode-Bar` if it allows dash.
-  - `opencode-bar` (all lowercase) if the environment prefers lowercase file names.
-  - `opencodebar` (all lowercase, no separators) if it doesn't allow whitespace or dashes.
-- Bundle ID: `com.copilotmonitor.CopilotMonitor`
+  - `UsageBar` if it allows whitespace.
+  - `UsageBar` if it allows dash.
+  - `usagebar` (all lowercase) if the environment prefers lowercase file names.
+  - `usagebar` (all lowercase, no separators) if it doesn't allow whitespace or dashes.
+- Bundle ID: `io.github.SHLE1.UsageBar`
 
 ### UI Styling Rules
 - **No colors for text emphasis**: Do NOT use `NSColor` attributes like `.foregroundColor` for menu items or labels.
@@ -330,7 +330,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Vertical Alignment: Adjust offset from `y:3` to `y:4/5` for better visual alignment with other menu bar items
   - Pattern: Always check appearance at the view level, not the app level
 - **Status Bar Provider Icon Layering & Gemini Scale**:
-  - Keep Original Icon: The primary OpenCode Bar status icon must remain visible at all times
+  - Keep Original Icon: The primary UsageBar status icon must remain visible at all times
   - Additive Provider Icon: Provider identity icon is appended next to the primary icon, not substituted
   - Setting Label: Use `Show Provider Icon` naming for status bar option labels
   - Gemini Scale Rule: Gemini provider icon should render slightly larger than default provider icons
@@ -445,7 +445,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Implementation Pattern:
     ```applescript
     set cliPath to "\(cliPath)"
-    do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/opencodebar && chmod +x /usr/local/bin/opencodebar"
+    do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/usagebar && chmod +x /usr/local/bin/usagebar"
     ```
   - Example Fix: CLI installation AppleScript now safely handles paths containing spaces or special characters
 - **CLI Exit Code Consistency**:
@@ -648,7 +648,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Example: ClaudeProvider now reads OAuth tokens from macOS Keychain before checking auth.json
 - **Claude OAuth Refresh Token Must Not Be Consumed**:
   - Problem: Claude's refresh tokens are single-use. Calling the token refresh endpoint invalidates the refresh token stored by OpenCode, causing OpenCode to lose authentication permanently.
-  - Decision: OpenCode Bar MUST NOT call the Claude OAuth token refresh endpoint (`https://platform.claude.com/v1/oauth/token`).
+  - Decision: UsageBar MUST NOT call the Claude OAuth token refresh endpoint (`https://platform.claude.com/v1/oauth/token`).
   - Behavior: Use the access token from auth.json as-is. If it is expired (401), surface the error to the user without attempting a refresh.
   - Removed: `ClaudeOAuthRefreshResponse`, `claudeOAuthRefreshEndpoint`, `claudeOAuthClientID`, `isAccessTokenExpired()`, `isTokenExpiredError()`, `refreshClaudeAccessToken()` were all removed from `ClaudeProvider.swift`.
   - Anti-Pattern: NEVER add back token refresh logic for Claude OAuth — it breaks OpenCode authentication for the user.

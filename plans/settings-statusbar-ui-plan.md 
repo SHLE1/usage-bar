@@ -1,0 +1,350 @@
+# Settings UI And Status Bar Refactor Plan
+
+## Goal
+
+Improve the Settings UI and simplify the Status Bar configuration so that:
+
+- the page structure is cleaner and less nested
+- provider visibility rules are consistent
+- enabled items are always sorted above disabled items
+- the pay-as-you-go and subscription concepts for OpenCode / OpenCode Go / Zen are clearly separated
+- Status Bar settings reflect the actual product behavior instead of exposing legacy or unused modes
+
+## User Decisions
+
+The following decisions are already approved and must be preserved:
+
+- The Status Bar settings page should focus on a single effective mode, because the app is effectively using only `Multi-Provider`.
+- `Enabled Providers` should be visually split into:
+  - `Pay-as-you-go`
+  - `Subscriptions`
+- `Critical Badge` should move to `General`.
+- `OpenCode`, `OpenCode Go`, and `Zen` must remain distinct concepts:
+  - `OpenCode`: pay-as-you-go usage
+  - `OpenCode Go`: Go subscription
+  - `Zen`: Zen subscription
+
+## Current Findings
+
+### 1. Status Bar mode is effectively hardcoded to Multi-Provider
+
+The current implementation always returns `.multiProvider` from `StatusBarController.menuBarDisplayMode`.
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:179-187`
+
+Impact:
+- The current Settings UI still exposes concepts such as `Only Show`, `Total Cost`, and `Icon Only`, but the active controller path is effectively pinned to Multi-Provider behavior.
+- The Settings page should therefore be simplified around the one real mode the app uses.
+
+### 2. Status Bar settings are currently split into multiple overlapping sections
+
+Current `StatusBarSettingsView` sections:
+- `Enabled Providers`
+- `Additional Cost Items`
+- `Multi-Provider Bar Providers`
+- `Options`
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/Settings/StatusBarSettingsView.swift:7-35`
+
+Impact:
+- Provider visibility is controlled in two places:
+  - enabled state
+  - multi-provider selection
+- This creates inconsistent UX because a provider can be disabled in one list while still appearing selected in another list.
+
+### 3. The current code already filters disabled providers in several menu paths, but the settings model is still inconsistent
+
+Examples:
+- Pay-as-you-go rows skip disabled providers
+- Quota rows skip disabled providers
+- Multi-provider status bar rendering also skips disabled providers
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:1343-1348`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:1561`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:1709`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:1861`
+
+Impact:
+- Runtime rendering partially respects enabled state.
+- Settings UX still allows stale selections to remain inside `multiProviderProviders`, which makes the page feel broken.
+
+### 4. Toggle ordering is currently static, not state-aware
+
+Current provider lists iterate directly over `ProviderIdentifier.allCases`.
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/Settings/StatusBarSettingsView.swift:11-13`
+- `CopilotMonitor/CopilotMonitor/App/Settings/StatusBarSettingsView.swift:25-27`
+
+Impact:
+- After toggling a provider, enabled items do not float to the top.
+- The same problem exists conceptually in subscription settings, where rows are assembled by provider enumeration and saved key order rather than by user relevance.
+
+### 5. OpenCode / OpenCode Go / Zen are not modeled clearly enough for the desired UX
+
+Important current facts:
+
+- `ProviderIdentifier` contains both `.openCode` and `.openCodeZen`
+- only `OpenCodeZenProvider()` is currently registered in `ProviderManager`
+- pay-as-you-go menu order is hardcoded to `[.openRouter, .openCodeZen]`
+- subscription presets for both `openCode` and `openCodeZen` are empty
+
+References:
+- `CopilotMonitor/CopilotMonitor/Models/ProviderProtocol.swift:12-59`
+- `CopilotMonitor/CopilotMonitor/Services/ProviderManager.swift:28-43`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift:1559`
+- `CopilotMonitor/CopilotMonitor/Models/SubscriptionSettings.swift:167-169`
+
+Impact:
+- The app currently exposes `OpenCode Zen` as the pay-as-you-go item because that is the only registered provider supplying this data.
+- The current subscription settings model does not yet express the separate subscription products implied by `OpenCode Go` and `Zen`.
+
+## Refactor Targets
+
+## A. Status Bar Settings Page
+
+### Target structure
+
+Replace the current four-section layout with a single coherent page made of:
+
+- `Pay-as-you-go`
+- `Subscriptions`
+
+Move the following out of this page:
+
+- `Critical Badge` -> `General`
+
+Remove or hide from this page:
+
+- the separate `Multi-Provider Bar Providers` section
+- the separate `Additional Cost Items` section as a standalone concept
+- legacy mode-oriented UI that implies multiple active status bar display modes
+
+### Behavior rules
+
+For each provider row on the Status Bar page:
+
+- one toggle controls whether the provider is eligible to appear in the status bar
+- turning a provider off must also remove it from `multiProviderProviders`
+- turning a provider on should add it back to `multiProviderProviders` by default
+- enabled items sort above disabled items
+- stable provider order is preserved inside each enabled/disabled group
+
+### Grouping rules
+
+`Pay-as-you-go`
+- OpenRouter
+- OpenCode
+- GitHub Copilot Add-on if it remains user-toggleable
+
+`Subscriptions`
+- GitHub Copilot
+- Claude
+- Kimi for Coding
+- MiniMax Coding Plan
+- ChatGPT
+- Z.AI Coding Plan
+- Nano-GPT
+- Antigravity
+- Chutes AI
+- Synthetic
+- Gemini CLI
+- future OpenCode Go / Zen subscription rows if and when they are modeled as subscribable products
+
+## B. General Settings Page
+
+Move `Critical Badge` into `GeneralSettingsView`.
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/Settings/GeneralSettingsView.swift:10-68`
+- `CopilotMonitor/CopilotMonitor/App/Settings/AppPreferences.swift:80-85`
+
+Expected result:
+- Status Bar page becomes focused on provider visibility only.
+- General page contains global display behavior toggles.
+
+## C. Subscription Settings Page
+
+### UI goal
+
+Reduce the current button-heavy layout and make it cleaner and less nested.
+
+Current issues:
+- each row uses many plain bordered buttons
+- rows feel visually noisy
+- the selection model looks cheap and crowded
+
+References:
+- `CopilotMonitor/CopilotMonitor/App/Settings/SubscriptionSettingsView.swift:168-273`
+
+### Target interaction
+
+Each row should become simpler:
+
+- provider name on the left
+- current monthly cost summary on the right
+- a compact preset selector instead of many equal-weight bordered buttons
+- custom amount input only appears when needed
+
+### Sorting rules
+
+Rows should sort by relevance:
+
+- enabled providers first
+- disabled providers after that
+- orphaned saved subscription keys at the bottom
+
+Within each block:
+- use a stable business order, not random key order
+
+## D. OpenCode / OpenCode Go / Zen Modeling Cleanup
+
+This is the most important logic clarification area.
+
+### Desired product distinction
+
+- `OpenCode`: pay-as-you-go usage item
+- `OpenCode Go`: subscription product
+- `Zen`: subscription product
+
+### Current mismatch
+
+The codebase currently uses `OpenCodeZenProvider` as the pay-as-you-go data source and surfaces `OpenCode Zen` in the pay-as-you-go UI.
+
+This is likely wrong for the desired product model.
+
+### Planned resolution
+
+Phase 1:
+- do not rename blindly at the UI layer
+- first map which provider/result object actually represents:
+  - OpenCode pay-as-you-go
+  - OpenCode Go subscription
+  - Zen subscription
+
+Phase 2:
+- update user-facing labels only after the provider-to-product mapping is correct
+- ensure pay-as-you-go shows `OpenCode` only if the underlying data truly represents OpenCode pay-as-you-go
+- ensure subscription settings gain explicit modeling for `OpenCode Go` and `Zen` if they are real subscribable products
+
+### Required code areas to inspect during implementation
+
+- `CopilotMonitor/CopilotMonitor/Providers/OpenCodeZenProvider.swift`
+- `CopilotMonitor/CopilotMonitor/Services/ProviderManager.swift`
+- `CopilotMonitor/CopilotMonitor/Models/ProviderProtocol.swift`
+- `CopilotMonitor/CopilotMonitor/Models/SubscriptionSettings.swift`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift`
+
+## Implementation Plan
+
+### Phase 1. Simplify Status Bar settings data flow
+
+- add a single source-of-truth helper for provider rows used by the Status Bar settings page
+- define explicit pay-as-you-go and subscription provider groups
+- define a shared sorting function:
+  - enabled first
+  - disabled second
+  - stable order inside each block
+- make provider toggles update both:
+  - enabled state
+  - multi-provider membership
+
+Primary files:
+- `CopilotMonitor/CopilotMonitor/App/Settings/StatusBarSettingsView.swift`
+- `CopilotMonitor/CopilotMonitor/App/Settings/AppPreferences.swift`
+
+### Phase 2. Move Critical Badge to General
+
+- remove it from `StatusBarSettingsView`
+- add it to `GeneralSettingsView`
+- keep existing persistence key and notification behavior
+
+Primary files:
+- `CopilotMonitor/CopilotMonitor/App/Settings/StatusBarSettingsView.swift`
+- `CopilotMonitor/CopilotMonitor/App/Settings/GeneralSettingsView.swift`
+
+### Phase 3. Redesign Subscriptions UI
+
+- replace the current multi-button chip row with a simpler row layout
+- preserve current plan persistence behavior
+- reorder rows by:
+  - enabled provider visibility
+  - then stable provider order
+  - then orphaned rows
+
+Primary files:
+- `CopilotMonitor/CopilotMonitor/App/Settings/SubscriptionSettingsView.swift`
+- `CopilotMonitor/CopilotMonitor/Models/SubscriptionSettings.swift` if new row metadata is needed
+
+### Phase 4. Correct OpenCode family modeling
+
+- verify what data `OpenCodeZenProvider` actually represents
+- decide whether a new dedicated `OpenCode` pay-as-you-go provider is needed
+- decide whether `OpenCode Go` and `Zen` need explicit subscription presets and keys
+- update pay-as-you-go and subscriptions grouping only after the data model is correct
+
+Primary files:
+- `CopilotMonitor/CopilotMonitor/Providers/OpenCodeZenProvider.swift`
+- `CopilotMonitor/CopilotMonitor/Services/ProviderManager.swift`
+- `CopilotMonitor/CopilotMonitor/Models/SubscriptionSettings.swift`
+- `CopilotMonitor/CopilotMonitor/App/StatusBarController.swift`
+
+## Verification Checklist
+
+### Settings behavior
+
+- toggling a provider immediately reorders the Status Bar page
+- disabled providers move below enabled providers
+- disabling a provider removes it from multi-provider selection automatically
+- re-enabling a provider restores it as a visible status bar candidate
+
+### Status bar rendering
+
+- disabled providers do not appear in the status bar output
+- disabled providers do not appear in menu sections that should respect enabled state
+- no stale provider remains selected after being disabled
+
+### Subscription page
+
+- enabled providers sort above disabled providers
+- orphaned rows remain visible but clearly de-prioritized
+- custom plan editing still persists correctly
+- preset selection still persists correctly
+
+### OpenCode family
+
+- pay-as-you-go label matches the actual billed product
+- OpenCode Go and Zen do not get merged into the wrong category
+- no misleading `OpenCode Zen` label remains in pay-as-you-go if the data is actually for OpenCode pay-as-you-go
+
+## Risks
+
+- The current codebase appears to contain partially overlapping historical concepts for status bar modes.
+- The OpenCode product family is not yet modeled clearly enough in the current provider/subscription architecture.
+- A careless UI-only rename would hide the underlying modeling problem instead of fixing it.
+
+## Open Questions For Implementation
+
+These must be answered before the implementation phase finalizes the OpenCode-related changes:
+
+- Does `OpenCodeZenProvider` fetch only Zen subscription data, or does it currently fetch OpenCode pay-as-you-go usage under a misleading identifier?
+- Should `OpenCode Go` be represented as:
+  - a new `ProviderIdentifier`
+  - a subscription preset under an existing provider
+  - or an account-level subscription variant under one provider family?
+- Should `Zen` be represented as:
+  - its own subscribable provider
+  - or a plan/account subtype of the OpenCode family?
+
+## Done Definition
+
+This work is complete only when:
+
+- the Status Bar settings page is simplified to the real product behavior
+- provider visibility rules are consistent across settings and runtime rendering
+- enabled-first sorting works on both Status Bar and Subscription pages
+- Critical Badge is moved to General
+- OpenCode / OpenCode Go / Zen are no longer conflated in the UI or data model

@@ -1,5 +1,5 @@
 # =============================================================================
-# OpenCode Bar - Development Makefile
+# UsageBar - Development Makefile
 # =============================================================================
 
 .PHONY: setup lint lint-swift lint-actions help

@@ -13,9 +13,9 @@ enum CLIExitCode: Int32 {
 
 // MARK: - Commands
 
-struct OpenCodeBar: ParsableCommand {
+struct UsageBar: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "opencodebar",
+        commandName: "usagebar",
         abstract: "AI provider usage monitor",
         version: "1.0.0",
         subcommands: [
@@ -291,4 +291,4 @@ struct ProviderCommand: ParsableCommand {
     }
 }
 
-OpenCodeBar.main()
+UsageBar.main()

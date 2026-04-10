@@ -28,7 +28,7 @@ Refresh (⌘R)
 Auto Refresh Period       ▸
 Settings                  ▸
 ─────────────────────────────
-OpenCode Bar v2.1.0
+UsageBar v2.1.0
 View Error Details...
 Check for Updates...
 Quit (⌘Q)
@@ -130,7 +130,7 @@ Quit (⌘Q)
   - Each percentage is individually colored based on thresholds  
 
 ### Status Bar Icon Rules
-- **Primary Icon Must Stay Visible** (default modes): In `Icon Only`, `Total Cost`, and `Only Show` modes, the original OpenCode Bar status icon is always rendered in the macOS status bar.
+- **Primary Icon Must Stay Visible** (default modes): In `Icon Only`, `Total Cost`, and `Only Show` modes, the original UsageBar status icon is always rendered in the macOS status bar.
 - **Provider Icon Is Additive** (default modes): In the above modes, provider identity is shown as an extra icon beside the primary icon, never as a replacement.
 - **Multi-Provider Bar mode (EXCEPTION)**: When `menuBarDisplayMode == .multiProvider`, the primary icon is hidden entirely. The status bar shows only a horizontal sequence of `[provider icon][remaining%]` pairs for user-selected providers. No primary icon is shown in this mode. This is a deliberate exception approved by the user.
 - **Settings Label**: The status bar settings label must use `Show Provider Icon` (not provider-name text wording).

@@ -6,7 +6,7 @@ private let logger = Logger(subsystem: "com.opencodeproviders", category: "CLISe
 
 /// Handles CLI binary install and uninstall using AppleScript with admin privileges.
 enum CLIService {
-    static let installPath = "/usr/local/bin/opencodebar"
+    static let installPath = "/usr/local/bin/usagebar"
 
     static var isInstalled: Bool {
         FileManager.default.fileExists(atPath: installPath)
@@ -18,7 +18,7 @@ enum CLIService {
     /// Returns nil on success, or an error message on failure.
     @MainActor
     static func install() -> String? {
-        let cliURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/opencodebar-cli")
+        let cliURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/usagebar-cli")
         let cliPath = cliURL.path
 
         guard FileManager.default.fileExists(atPath: cliPath) else {
@@ -29,7 +29,7 @@ enum CLIService {
         let escapedCliPath = cliPath.replacingOccurrences(of: "\"", with: "\\\"")
         let script = """
         set cliPath to "\(escapedCliPath)"
-        do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/opencodebar && chmod +x /usr/local/bin/opencodebar" with administrator privileges
+        do shell script "mkdir -p /usr/local/bin && cp " & quoted form of cliPath & " /usr/local/bin/usagebar && chmod +x /usr/local/bin/usagebar" with administrator privileges
         """
 
         var error: NSDictionary?
@@ -46,7 +46,7 @@ enum CLIService {
             return "Failed to install CLI: \(desc)"
         }
 
-        logger.info("CLI installed successfully to /usr/local/bin/opencodebar")
+        logger.info("CLI installed successfully to /usr/local/bin/usagebar")
         return nil
     }
 
@@ -57,7 +57,7 @@ enum CLIService {
     @MainActor
     static func uninstall() -> String? {
         let script = """
-        do shell script "rm -f /usr/local/bin/opencodebar" with administrator privileges
+        do shell script "rm -f /usr/local/bin/usagebar" with administrator privileges
         """
 
         var error: NSDictionary?
@@ -74,7 +74,7 @@ enum CLIService {
             return "Failed to uninstall CLI: \(desc)"
         }
 
-        logger.info("CLI uninstalled from /usr/local/bin/opencodebar")
+        logger.info("CLI uninstalled from /usr/local/bin/usagebar")
         return nil
     }
 }

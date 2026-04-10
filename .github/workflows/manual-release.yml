@@ -140,14 +140,14 @@ jobs:
           # Copy signed app bundle directly from archive instead of using exportArchive
           # exportArchive fails when CLI target creates additional products in /usr/local/bin
           mkdir -p "$RUNNER_TEMP/export"
-          cp -R "$RUNNER_TEMP/CopilotMonitor.xcarchive/Products/Applications/OpenCode Bar.app" "$RUNNER_TEMP/export/"
+          cp -R "$RUNNER_TEMP/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" "$RUNNER_TEMP/export/"
           echo "Copied app bundle from archive"
           ls -la "$RUNNER_TEMP/export/"
 
       - name: Verify Universal Binary
         run: |
-          APP_PATH="$RUNNER_TEMP/export/OpenCode Bar.app"
-          MAIN_BIN="$APP_PATH/Contents/MacOS/OpenCode Bar"
+          APP_PATH="$RUNNER_TEMP/export/UsageBar.app"
+          MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
           MAIN_ARCHS=$(lipo -archs "$MAIN_BIN")
           echo "Main binary architectures: $MAIN_ARCHS"
           if ! lipo -archs "$MAIN_BIN" | grep -q "x86_64"; then
@@ -158,7 +158,7 @@ jobs:
             echo "Missing arm64 slice in main binary"
             exit 1
           fi
-          CLI_BIN="$APP_PATH/Contents/MacOS/opencodebar-cli"
+          CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
           if [ -f "$CLI_BIN" ]; then
             CLI_ARCHS=$(lipo -archs "$CLI_BIN")
             echo "CLI binary architectures: $CLI_ARCHS"
@@ -177,7 +177,7 @@ jobs:
       
       - name: Re-sign App Bundle for Notarization
         run: |
-          APP_PATH="$RUNNER_TEMP/export/OpenCode Bar.app"
+          APP_PATH="$RUNNER_TEMP/export/UsageBar.app"
           
           # Function to sign with retry for timestamp service failures
           sign_with_retry() {
@@ -227,9 +227,9 @@ jobs:
           done
           
           # Sign CLI binary if present
-          if [ -f "$APP_PATH/Contents/MacOS/opencodebar-cli" ]; then
+          if [ -f "$APP_PATH/Contents/MacOS/usagebar-cli" ]; then
             echo "Signing CLI binary..."
-            sign_with_retry "$APP_PATH/Contents/MacOS/opencodebar-cli"
+            sign_with_retry "$APP_PATH/Contents/MacOS/usagebar-cli"
           fi
           
           # Finally re-sign the main app bundle
@@ -241,16 +241,16 @@ jobs:
       - name: Verify Code Signing
         run: |
           echo "Verifying code signature..."
-          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/OpenCode Bar.app"
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/UsageBar.app"
           
           echo ""
           echo "Certificate chain:"
-          codesign -dv --verbose=4 "$RUNNER_TEMP/export/OpenCode Bar.app" 2>&1 | grep "Authority"
+          codesign -dv --verbose=4 "$RUNNER_TEMP/export/UsageBar.app" 2>&1 | grep "Authority"
       
       - name: Create ZIP for Notarization
         run: |
           cd "$RUNNER_TEMP/export"
-          ditto -c -k --keepParent "OpenCode Bar.app" "OpenCode Bar.zip"
+          ditto -c -k --keepParent "UsageBar.app" "UsageBar.zip"
           echo "Created ZIP for notarization"
       
       - name: Notarize App
@@ -263,7 +263,7 @@ jobs:
           echo "Submitting app for notarization..."
           
           # Submit and capture output to get submission ID
-          NOTARIZE_OUTPUT=$(xcrun notarytool submit "$RUNNER_TEMP/export/OpenCode Bar.zip" \
+          NOTARIZE_OUTPUT=$(xcrun notarytool submit "$RUNNER_TEMP/export/UsageBar.zip" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
@@ -308,8 +308,8 @@ jobs:
       - name: Staple Notarization Ticket
         if: steps.notarize.outputs.notarization_status == 'success'
         run: |
-          xcrun stapler staple "$RUNNER_TEMP/export/OpenCode Bar.app"
-          xcrun stapler validate "$RUNNER_TEMP/export/OpenCode Bar.app"
+          xcrun stapler staple "$RUNNER_TEMP/export/UsageBar.app"
+          xcrun stapler validate "$RUNNER_TEMP/export/UsageBar.app"
           echo "Notarization ticket stapled successfully"
       
       - name: Install create-dmg
@@ -320,23 +320,23 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           VERSION="${{ steps.new_version.outputs.new_version }}"
-          DMG_NAME="OpenCodeUsageMonitor-${VERSION}.dmg"
+          DMG_NAME="UsageBar-${VERSION}.dmg"
           
           # Create clean staging directory with ONLY the app and Applications symlink
           # This prevents extra files (Packaging.log, DistributionSummary.plist, etc.) from being included
           DMG_STAGING="$RUNNER_TEMP/dmg_staging"
           mkdir -p "$DMG_STAGING"
-          cp -R "$RUNNER_TEMP/export/OpenCode Bar.app" "$DMG_STAGING/"
+          cp -R "$RUNNER_TEMP/export/UsageBar.app" "$DMG_STAGING/"
           ln -s /Applications "$DMG_STAGING/Applications"
           
            create-dmg \
-             --volname "OpenCode Bar" \
+             --volname "UsageBar" \
              --window-pos 200 120 \
             --window-size 600 400 \
             --icon-size 100 \
-            --icon "OpenCode Bar.app" 150 200 \
+            --icon "UsageBar.app" 150 200 \
             --app-drop-link 450 200 \
-            --hide-extension "OpenCode Bar.app" \
+            --hide-extension "UsageBar.app" \
             "$DMG_NAME" \
             "$DMG_STAGING" || true
           
@@ -345,7 +345,7 @@ jobs:
             echo "DMG created and signed: $DMG_NAME"
            else
              echo "create-dmg failed, falling back to hdiutil..."
-             hdiutil create -volname "OpenCode Bar ${VERSION}" \
+             hdiutil create -volname "UsageBar ${VERSION}" \
                -srcfolder "$DMG_STAGING" \
               -ov -format UDZO \
               "$DMG_NAME"
@@ -362,7 +362,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           VERSION="${{ steps.new_version.outputs.new_version }}"
-          DMG_NAME="OpenCodeUsageMonitor-${VERSION}.dmg"
+          DMG_NAME="UsageBar-${VERSION}.dmg"
           
           echo "Submitting DMG for notarization..."
           xcrun notarytool submit "$DMG_NAME" \
@@ -378,7 +378,7 @@ jobs:
       - name: Verify Final DMG
         run: |
           VERSION="${{ steps.new_version.outputs.new_version }}"
-          DMG_NAME="OpenCodeUsageMonitor-${VERSION}.dmg"
+          DMG_NAME="UsageBar-${VERSION}.dmg"
           
           echo "Verifying DMG with spctl..."
           spctl -a -vvv -t install "$DMG_NAME"
@@ -389,7 +389,7 @@ jobs:
       
       - name: Download Sparkle Tools
         run: |
-          curl -L -o sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/2.8.1/Sparkle-2.8.1.tar.xz
+          curl -L -o sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/2.9.1/Sparkle-2.9.1.tar.xz
           mkdir -p sparkle
           tar -xf sparkle.tar.xz -C sparkle
           chmod +x sparkle/bin/*
@@ -399,8 +399,8 @@ jobs:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           VERSION="${{ steps.new_version.outputs.new_version }}"
-          DMG_NAME="OpenCodeUsageMonitor-${VERSION}.dmg"
-          DOWNLOAD_URL="https://github.com/opgginc/opencode-bar/releases/download/${VERSION}/${DMG_NAME}"
+          DMG_NAME="UsageBar-${VERSION}.dmg"
+          DOWNLOAD_URL="https://github.com/SHLE1/usage-bar/releases/download/${VERSION}/${DMG_NAME}"
           
           echo "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
           
@@ -415,8 +415,8 @@ jobs:
           printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
             '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">' \
             '  <channel>' \
-            '    <title>OpenCode Bar Updates</title>' \
-            '    <link>https://github.com/opgginc/opencode-bar/releases/latest/download/appcast.xml</link>' \
+            '    <title>UsageBar Updates</title>' \
+            '    <link>https://github.com/SHLE1/usage-bar/releases/latest/download/appcast.xml</link>' \
             '    <description>Most recent changes with links to updates.</description>' \
             '    <language>en</language>' \
             '    <item>' \
@@ -447,7 +447,7 @@ jobs:
         with:
           name: release-build-${{ steps.new_version.outputs.new_version }}
           path: |
-            OpenCodeUsageMonitor-${{ steps.new_version.outputs.new_version }}.dmg
+            UsageBar-${{ steps.new_version.outputs.new_version }}.dmg
             appcast.xml
           retention-days: 30
       
@@ -464,11 +464,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.new_version.outputs.new_version }}
-          name: OpenCode Bar ${{ steps.new_version.outputs.new_version }}
+          name: UsageBar ${{ steps.new_version.outputs.new_version }}
           draft: false
           prerelease: ${{ inputs.prerelease }}
           files: |
-            OpenCodeUsageMonitor-${{ steps.new_version.outputs.new_version }}.dmg
+            UsageBar-${{ steps.new_version.outputs.new_version }}.dmg
             appcast.xml
           generate_release_notes: true
         env:

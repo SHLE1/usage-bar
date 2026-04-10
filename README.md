@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/screenshot-subscription.png" alt="OpenCode Bar Screenshot" width="40%">
-  <img src="docs/screenshot3.png" alt="OpenCode Bar Screenshot" width="40%">
+  <img src="docs/screenshot-subscription.png" alt="UsageBar Screenshot" width="40%">
+  <img src="docs/screenshot3.png" alt="UsageBar Screenshot" width="40%">
 </p>
 
 <p align="center">
@@ -8,11 +8,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/opgginc/opencode-bar/releases/latest">
-    <img src="https://img.shields.io/github/v/release/opgginc/opencode-bar?style=flat-square" alt="Release">
+  <a href="https://github.com/SHLE1/usage-bar/releases/latest">
+    <img src="https://img.shields.io/github/v/release/SHLE1/usage-bar?style=flat-square" alt="Release">
   </a>
-  <a href="https://github.com/opgginc/opencode-bar/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/opgginc/opencode-bar?style=flat-square" alt="License">
+  <a href="https://github.com/SHLE1/usage-bar/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/SHLE1/usage-bar?style=flat-square" alt="License">
   </a>
   <img src="https://img.shields.io/badge/platform-macOS%2013%2B-blue?style=flat-square" alt="Platform">
   <img src="https://img.shields.io/badge/swift-5.9-orange?style=flat-square" alt="Swift">
@@ -25,16 +25,16 @@
 ### Homebrew (Easy)
 
 ```bash
-brew install --cask opgginc/tap/opencode-bar
+brew install --cask SHLE1/tap/usage-bar
 ```
 
 ### Download
 
-Download the latest `.dmg` file from the [**Releases**](https://github.com/opgginc/opencode-bar/releases/latest) page.
+Download the latest `.dmg` file from the [**Releases**](https://github.com/SHLE1/usage-bar/releases/latest) page.
 
 ## Overview
 
-**OpenCode Bar** automatically detects and monitors all AI providers registered in your [OpenCode](https://opencode.ai) configuration. No manual setup required - just install and see your usage across all providers in one unified dashboard.
+**UsageBar** automatically detects and monitors all AI providers registered in your [OpenCode](https://opencode.ai) configuration. No manual setup required - just install and see your usage across all providers in one unified dashboard.
 
 ### Supported Providers (Auto-detected from OpenCode)
 
@@ -119,15 +119,15 @@ Download the latest `.dmg` file from the [**Releases**](https://github.com/opggi
 
 ```bash
 # Clone the repository
-git clone https://github.com/opgginc/opencode-bar.git
-cd opencode-bar
+git clone https://github.com/SHLE1/usage-bar.git
+cd usage-bar
 
 # Build
 xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj \
   -scheme CopilotMonitor -configuration Debug build
 
 # Open the app (auto-detect path)
-open "$(xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj -scheme CopilotMonitor -configuration Debug -showBuildSettings 2>/dev/null | sed -n 's/^[[:space:]]*BUILT_PRODUCTS_DIR = //p' | head -n 1)/OpenCode Bar.app"
+open "$(xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj -scheme CopilotMonitor -configuration Debug -showBuildSettings 2>/dev/null | sed -n 's/^[[:space:]]*BUILT_PRODUCTS_DIR = //p' | head -n 1)/UsageBar.app"
 ```
 
 **Requirements:**
@@ -140,13 +140,13 @@ open "$(xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj -scheme Copi
 ### Menu Bar App
 
 1. **Install OpenCode**: Make sure you have OpenCode installed and authenticated with your providers
-2. **Launch the app**: Run OpenCode Bar
+2. **Launch the app**: Run UsageBar
 3. **View usage**: Click the menu bar icon to see all your provider usage
 4. **GitHub Copilot** (optional): Automatically detected from multiple sources — OpenCode auth, Copilot CLI Keychain, VS Code/Cursor config files, and browser cookies (Chrome, Brave, Arc, Edge). Multiple accounts are deduplicated automatically.
 
 ### Command Line Interface (CLI)
 
-OpenCode Bar includes a powerful CLI for querying provider usage programmatically.
+UsageBar includes a powerful CLI for querying provider usage programmatically.
 
 #### Installation
 
@@ -158,34 +158,34 @@ OpenCode Bar includes a powerful CLI for querying provider usage programmaticall
 bash scripts/install-cli.sh
 
 # Verify installation
-opencodebar --help
+usagebar --help
 ```
 
 #### Commands
 
 ```bash
 # Show all providers and their usage (default command)
-opencodebar status
+usagebar status
 
 # List all available providers
-opencodebar list
+usagebar list
 
 # Get detailed info for a specific provider
-opencodebar provider claude
-opencodebar provider gemini_cli
-opencodebar provider minimax_coding_plan
+usagebar provider claude
+usagebar provider gemini_cli
+usagebar provider minimax_coding_plan
 
 # Output as JSON (for scripting)
-opencodebar status --json
-opencodebar provider claude --json
-opencodebar provider minimax_coding_plan --json
-opencodebar list --json
+usagebar status --json
+usagebar provider claude --json
+usagebar provider minimax_coding_plan --json
+usagebar list --json
 ```
 
 #### Table Output Example
 
 ```bash
-$ opencodebar status
+$ usagebar status
 Provider              Type             Usage       Key Metrics
 ─────────────────────────────────────────────────────────────────────────────────
 Claude                Quota-based      77%         23/100 remaining
@@ -203,13 +203,13 @@ OpenRouter            Pay-as-you-go    -           $37.42 spent
 #### MiniMax Notes
 
 - MiniMax Coding Plan is resolved from the OpenCode auth entry `minimax-coding-plan` in `auth.json`.
-- OpenCode Bar uses the Coding Plan remains endpoint and converts it into used percentages for the menu bar app and CLI.
-- MiniMax response fields `current_interval_usage_count` and `current_weekly_usage_count` behave as remaining counts despite their names, so OpenCode Bar calculates used percent as `total - remaining`.
+- UsageBar uses the Coding Plan remains endpoint and converts it into used percentages for the menu bar app and CLI.
+- MiniMax response fields `current_interval_usage_count` and `current_weekly_usage_count` behave as remaining counts despite their names, so UsageBar calculates used percent as `total - remaining`.
 
 #### JSON Output Example
 
 ```bash
-$ opencodebar status --json
+$ usagebar status --json
 {
   "claude": {
     "type": "quota-based",
@@ -338,7 +338,7 @@ Quit (⌘Q)
 - **Show Provider Icon**: Toggle on/off to append the selected provider icon in the status bar.
 
 > **Status Bar Icon Behavior**:
-> The primary OpenCode Bar status icon always stays visible. Provider icons are rendered as an additional icon next to the primary icon (not a replacement).
+> The primary UsageBar status icon always stays visible. Provider icons are rendered as an additional icon next to the primary icon (not a replacement).
 >
 > **Gemini Icon Sizing**:
 > Gemini uses a slightly larger icon size than other providers in both menu rows and the status bar to match the official visual balance.
@@ -386,7 +386,7 @@ For ChatGPT/Codex multi-account setups, the app also searches:
 2. `~/.opencode/openai-codex-accounts.json`
 3. `~/.opencode/projects/*/openai-codex-accounts.json`
 
-If `oc-chatgpt-multi-auth` is installed and OpenCode sets `provider.openai.options.baseURL` to a localhost proxy, OpenCode Bar still queries the direct ChatGPT usage endpoint by default. Only the explicit `opencode-bar.codex.usageURL` override changes the usage endpoint.
+If `oc-chatgpt-multi-auth` is installed and OpenCode sets `provider.openai.options.baseURL` to a localhost proxy, UsageBar still queries the direct ChatGPT usage endpoint by default. Only the explicit `usage-bar.codex.usageURL` override changes the usage endpoint.
 
 ### GitHub Copilot not showing
 GitHub Copilot accounts are discovered from multiple sources (in priority order):
@@ -396,7 +396,7 @@ GitHub Copilot accounts are discovered from multiple sources (in priority order)
 4. **Browser Cookies** — Chrome, Brave, Arc, Edge session cookies
 
 If Copilot still doesn't appear:
-- Verify at least one source has valid credentials (`opencodebar provider copilot` for details)
+- Verify at least one source has valid credentials (`usagebar provider copilot` for details)
 - For browser cookies: make sure you're signed into GitHub in a supported browser
 - Accounts from different sources with the same login are automatically merged
 
