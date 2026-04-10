@@ -41,7 +41,7 @@ Download the latest `.dmg` file from the [**Releases**](https://github.com/opggi
 | Provider | Type | Key Metrics |
 |----------|------|-------------|
 | **OpenRouter** | Pay-as-you-go | Credits balance, daily/weekly/monthly cost |
-| **OpenCode Zen** | Pay-as-you-go | Daily history (30 days), model breakdown |
+| **OpenCode** | Pay-as-you-go | Daily history (30 days), model breakdown |
 | **GitHub Copilot Add-on** | Pay-as-you-go | Usage-based billing after exceeding quota |
 | **Claude** | Quota-based | 5h/7d usage windows, Sonnet/Opus breakdown |
 | **Codex** | Quota-based | Primary/Secondary quotas, plan type |
@@ -196,7 +196,7 @@ Gemini CLI (user1@gmail.com) Quota-based      0%          100% remaining
 Gemini CLI (user2@company.com) Quota-based    15%         85% remaining
 Kimi for Coding       Quota-based      26%         74/100 remaining
 MiniMax Coding Plan   Quota-based      0%,0%      100/100 remaining
-OpenCode Zen          Pay-as-you-go    -           $12.50 spent
+OpenCode              Pay-as-you-go    -           $12.50 spent
 OpenRouter            Pay-as-you-go    -           $37.42 spent
 ```
 
@@ -304,7 +304,7 @@ $ opencodebar status --json
 ─────────────────────────────
 Pay-as-you-go: $37.61
   OpenRouter       $37.42    ▸
-  OpenCode Zen     $0.19     ▸
+  OpenCode           $0.19     ▸
 ─────────────────────────────
 Quota Status: $219/m
   Copilot          0%        ▸
@@ -328,7 +328,7 @@ Quit (⌘Q)
 
 | Group | Format | Description |
 |-------|--------|-------------|
-| **Pay-as-you-go** | `Pay-as-you-go: $XX.XX` | Sum of all pay-as-you-go provider costs (OpenRouter + OpenCode Zen) |
+| **Pay-as-you-go** | `Pay-as-you-go: $XX.XX` | Sum of all pay-as-you-go provider costs (OpenRouter + OpenCode) |
 | **Quota Status** | `Quota Status: $XXX/m` | Shows total monthly subscription cost if any quota-based providers have subscription settings configured. If no subscriptions are set, shows just "Quota Status". |
 
 ##### Status Bar Options

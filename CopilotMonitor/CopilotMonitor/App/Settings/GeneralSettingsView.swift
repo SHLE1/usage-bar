@@ -31,6 +31,12 @@ struct GeneralSettingsView: View {
                 Toggle("Launch at Login", isOn: $prefs.launchAtLogin)
             }
 
+            // MARK: - Display
+
+            Section {
+                Toggle("Critical Badge", isOn: $prefs.criticalBadge)
+            }
+
             // MARK: - CLI
 
             Section {

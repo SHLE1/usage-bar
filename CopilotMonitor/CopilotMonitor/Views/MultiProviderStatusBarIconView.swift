@@ -144,8 +144,6 @@ final class MultiProviderStatusBarIconView: NSView {
             iconName = "OpencodeIcon"
         case .antigravity:
             iconName = "AntigravityIcon"
-        case .openCodeZen:
-            iconName = "OpencodeIcon"
         case .kimi:
             iconName = "k.circle"
         case .minimaxCodingPlan:

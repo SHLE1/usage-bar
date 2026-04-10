@@ -972,7 +972,7 @@ final class StatusBarController: NSObject {
             add(dailyPercentFromDetails(details), priority: .daily)
         case .synthetic:
             add(details?.fiveHourUsage, priority: .hourly)
-        case .antigravity, .geminiCLI, .openRouter, .openCode, .openCodeZen:
+        case .antigravity, .geminiCLI, .openRouter, .openCode:
             break
         }
 
@@ -1556,7 +1556,7 @@ final class StatusBarController: NSObject {
 
          var hasPayAsYouGo = false
 
-            let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCodeZen]
+            let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCode]
             for identifier in payAsYouGoOrder {
                 guard isProviderEnabled(identifier) else { continue }
 
@@ -2692,8 +2692,6 @@ final class StatusBarController: NSObject {
             image = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: identifier.displayName)
         case .antigravity:
             image = NSImage(systemSymbolName: identifier.iconName, accessibilityDescription: identifier.displayName)
-        case .openCodeZen:
-            image = NSImage(named: "OpencodeIcon")
         case .kimi:
             image = NSImage(systemSymbolName: identifier.iconName, accessibilityDescription: identifier.displayName)
         case .minimaxCodingPlan:
@@ -3155,7 +3153,7 @@ final class StatusBarController: NSObject {
     private func topPayAsYouGoShareLine() -> String? {
         var candidates: [(name: String, cost: Double)] = []
 
-        let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCodeZen]
+        let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCode]
         for identifier in payAsYouGoOrder where isProviderEnabled(identifier) {
             guard let result = providerResults[identifier] else { continue }
             guard case .payAsYouGo(_, let cost, _) = result.usage else { continue }
@@ -3509,16 +3507,16 @@ final class StatusBarController: NSObject {
             }
         }
 
-        // 2. OpenCode Zen history
-        if let zenResult = providerResults[.openCodeZen],
-           let details = zenResult.details,
-           let zenHistory = details.dailyHistory {
-            for day in zenHistory {
+        // 2. OpenCode history
+        if let openCodeResult = providerResults[.openCode],
+           let details = openCodeResult.details,
+           let openCodeHistory = details.dailyHistory {
+            for day in openCodeHistory {
                 let dateKey = Calendar.current.startOfDay(for: day.date)
                 if aggregatedDailyCosts[dateKey] == nil {
                     aggregatedDailyCosts[dateKey] = [:]
                 }
-                aggregatedDailyCosts[dateKey]?[.openCodeZen] = day.billedAmount
+                aggregatedDailyCosts[dateKey]?[.openCode] = day.billedAmount
             }
         }
 
@@ -3630,7 +3628,7 @@ final class StatusBarController: NSObject {
                 let breakdownSubmenu = NSMenu()
 
                 // Sort by provider display order
-                let providerOrder: [ProviderIdentifier] = [.openCodeZen, .openRouter, .copilot]
+                let providerOrder: [ProviderIdentifier] = [.openCode, .openRouter, .copilot]
                 for provider in providerOrder {
                     if let cost = dayData.breakdown[provider] {
                         let providerLabel: String
@@ -3848,13 +3846,13 @@ extension StatusBarController {
                     authSource: "OpenCode"
                 )
             ),
-            .openCodeZen: ProviderResult(
+            .openCode: ProviderResult(
                 usage: .payAsYouGo(utilization: 0, cost: 12.50, resetsAt: nil),
                 details: DetailedUsage(
                     sessions: 47,
                     messages: 312,
                     avgCostPerDay: 0.42,
-                    authSource: "OpenCode"
+                    authSource: "opencode CLI"
                 )
             ),
             

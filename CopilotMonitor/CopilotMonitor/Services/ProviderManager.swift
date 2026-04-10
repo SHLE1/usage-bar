@@ -36,7 +36,7 @@ actor ProviderManager {
             NanoGptProvider(),
             OpenRouterProvider(),
             AntigravityProvider(),
-            OpenCodeZenProvider(),
+            OpenCodeProvider(),
             KimiProvider(),
             ChutesProvider(),
             SyntheticProvider()

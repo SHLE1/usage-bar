@@ -171,4 +171,64 @@ final class AppMigrationHelper {
             }
         }
     }
+
+    // MARK: - OpenCode Zen → OpenCode Provider Identity Migration
+
+    /// Migrates persisted UserDefaults settings from the removed `opencode_zen` provider
+    /// identity to the unified `open_code` identity. Also cleans up stale subscription keys.
+    /// This is idempotent and safe to call on every launch.
+    func migrateOpenCodeZenSettings() {
+        let defaults = UserDefaults.standard
+        let legacyRaw = "opencode_zen"
+        let canonicalRaw = "open_code"
+
+        // 1. Migrate provider enabled flag
+        let legacyEnabledKey = "provider.\(legacyRaw).enabled"
+        let canonicalEnabledKey = "provider.\(canonicalRaw).enabled"
+        if defaults.object(forKey: legacyEnabledKey) != nil {
+            if defaults.object(forKey: canonicalEnabledKey) == nil {
+                let value = defaults.bool(forKey: legacyEnabledKey)
+                defaults.set(value, forKey: canonicalEnabledKey)
+                logger.info("✅ [Migration] Migrated \(legacyEnabledKey) → \(canonicalEnabledKey) = \(value)")
+            }
+            defaults.removeObject(forKey: legacyEnabledKey)
+        }
+
+        // 2. Migrate pinned provider
+        let pinnedKey = "statusBarDisplay.provider"
+        if let pinnedValue = defaults.string(forKey: pinnedKey), pinnedValue == legacyRaw {
+            defaults.set(canonicalRaw, forKey: pinnedKey)
+            logger.info("✅ [Migration] Migrated pinned provider from \(legacyRaw) → \(canonicalRaw)")
+        }
+
+        // 3. Migrate multi-provider selection
+        let multiKey = "statusBarDisplay.multiProviderProviders"
+        if var providers = defaults.array(forKey: multiKey) as? [String] {
+            if let idx = providers.firstIndex(of: legacyRaw) {
+                if !providers.contains(canonicalRaw) {
+                    providers[idx] = canonicalRaw
+                } else {
+                    providers.remove(at: idx)
+                }
+                // Deduplicate
+                let deduped = Array(NSOrderedSet(array: providers)) as? [String] ?? providers
+                defaults.set(deduped, forKey: multiKey)
+                logger.info("✅ [Migration] Migrated multi-provider selection: replaced \(legacyRaw) with \(canonicalRaw)")
+            }
+        }
+
+        // 4. Clean up stale OpenCode subscription keys
+        let subscriptionPrefix = "subscription_v2."
+        let allKeys = defaults.dictionaryRepresentation().keys
+        let staleKeys = allKeys.filter { key in
+            guard key.hasPrefix(subscriptionPrefix) else { return false }
+            let suffix = String(key.dropFirst(subscriptionPrefix.count))
+            return suffix == legacyRaw || suffix.hasPrefix("\(legacyRaw).") ||
+                   suffix == canonicalRaw || suffix.hasPrefix("\(canonicalRaw).")
+        }
+        for key in staleKeys {
+            defaults.removeObject(forKey: key)
+            logger.info("🧹 [Migration] Removed stale subscription key: \(key)")
+        }
+    }
 }

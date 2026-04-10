@@ -180,7 +180,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
 - **Cache Fallback on External Command Failures**: When external CLI/API commands fail, use cached data
   - Graceful Degradation: Wrap external command calls in try-catch to prevent app crashes
   - Fallback Calculation: Calculate metrics from cached data when external command fails
-  - Example: OpenCode Zen `stats --days` command failure falls back to cache for totalCost display
+  - Example: OpenCode `stats --days` command failure falls back to cache for totalCost display
   - Pattern: Add `calculateTotalCostFromCache()` method, wrap stats load in try-catch
   - UI Feedback: Show `[stats: cached]` label to indicate fallback mode
   - Benefit: App remains functional even when external tools are temporarily unavailable
@@ -245,7 +245,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Synchronous Blocking: `Process.waitUntilExit()` is a blocking call even in async contexts
   - Multi-Provider Impact: Blocking providers prevent other providers from completing fetch operations
   - Async Solution: Use `withCheckedThrowingContinuation` with `terminationHandler` and `readabilityHandler` for non-blocking process execution
-  - Example: AntigravityProvider uses `runCommandAsync()` wrapper; OpenCodeZenProvider uses `withCheckedThrowingContinuation` pattern
+  - Example: AntigravityProvider uses `runCommandAsync()` wrapper; OpenCodeProvider uses `withCheckedThrowingContinuation` pattern
   - Pattern: Replace `waitUntilExit()` with async closure-based APIs using Process.terminationHandler and Pipe.readabilityHandler
   - Parallel Fetching Enables: Once processes are non-blocking, all providers can fetch in parallel efficiently
 - **Menu Rebuild Strategy**:
@@ -266,7 +266,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Menu Display Issue: Provider items appearing in different order on each refresh cycle
   - Root Cause: Looping over `[ProviderIdentifier: ProviderResult]` dictionary without explicit ordering
   - Solution: Create explicit display order array or use sorted keys when iterating
-  - Example: `let providerDisplayOrder = ["opencode_zen", "gemini_cli", "claude", "openrouter", "antigravity"]`
+  - Example: `let providerDisplayOrder = ["open_code", "gemini_cli", "claude", "openrouter", "antigravity"]`
   - Pattern: Define display order independently of data source to maintain consistent UI
 - **Z.AI API Date Format**:
   - Parameter Validation Error: Z.AI API returns 500 error when using milliseconds timestamp for `startTime`/`endTime`
@@ -351,7 +351,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Swift Concurrency Error: Modifying local variable in readabilityHandler triggers actor isolation error
   - Pattern: Use `nonisolated(unsafe)` for `outputData` in async Process handlers
   - Safety Guarantee: Handlers are serialized by Process lifecycle, making this safe
-  - Example Fix: OpenCodeZenProvider and AntigravityProvider both use this pattern
+  - Example Fix: OpenCodeProvider and AntigravityProvider both use this pattern
   - Implementation: `nonisolated(unsafe) var outputData = Data()`
 - **Error Status Display Instead of Loading**: Show meaningful status when auth is missing or errors occur
   - Authentication Errors: Use `isAuthenticationError()` function to detect missing credentials
@@ -407,7 +407,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
 - **Progressive Loading Performance Optimization**:
   - Problem: Each progressive loading step triggers full menu rebuild, causing UI flicker and performance degradation
   - Symptom: Logs show repeated "updateMultiProviderMenu: started" with "Loading day X/30..." messages
-  - Root Cause: OpenCode Zen fetches 30 days sequentially, calling full menu update after each day
+  - Root Cause: OpenCode fetches 30 days sequentially, calling full menu update after each day
   - Solution: Implement partial menu updates during progressive loading
     - Update only the specific submenu item (e.g., "Loading day X/30...")
     - Avoid rebuilding entire menu structure for incremental updates
@@ -464,7 +464,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Max Retries: Typically 3 attempts before giving up
   - Backoff Delay: 500ms between retries is common pattern in this codebase
   - Pattern: `for attempt in 1...maxRetries { try { return op } catch { await Task.sleep(backoff) } }`
-  - Example: OpenCodeZenProvider retries stats command up to 3 times with 500ms delays
+  - Example: OpenCodeProvider retries stats command up to 3 times with 500ms delays
 - **Graceful Degradation for Multi-Account Providers**:
   - Partial Success Handling: Continue processing when some accounts fail but others succeed
   - Multi-Provider Architecture: Gemini CLI supports multiple accounts, treat as partial success if any succeed
@@ -487,7 +487,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Reusable Helper: Each component has `debugLog()` function for centralized logging control
   - Append-Only: Always append to existing log file using `seekToEndOfFile()` to preserve history
   - Timestamp Prefix: Include `[\(Date())]` at start of each message for chronological tracking
-  - Component Identification: Prefix messages with component name (e.g., "ProviderManager:", "OpenCodeZen:")
+  - Component Identification: Prefix messages with component name (e.g., "ProviderManager:", "OpenCode:")
   - Guard with #if DEBUG: Completely removes debug code from Release builds automatically
   - Pattern: File-based logging to /tmp/provider_debug.log with graceful silent failure
   - Safety: Use `try?` for file operations to avoid crashing if log file is inaccessible
@@ -497,7 +497,7 @@ func buildProviderSubmenu() -> [NSMenuItem] {
   - Search Priority: 1) 'which opencode' in current PATH, 2) Login shell PATH (captures shell profile additions), 3) Common install locations (Homebrew, OpenCode default, pip/pipx)
   - Lazy Loading: Cache binary path on first successful discovery to avoid repeated searches
   - Debug Logging: Show which discovery method found the binary for troubleshooting
-  - Example Fix: OpenCodeZenProvider changed from hardcoded path to dynamic multi-strategy search
+  - Example Fix: OpenCodeProvider changed from hardcoded path to dynamic multi-strategy search
   - Pattern: Replace single path with search function that tries multiple locations in priority order
 - **Multi-Strategy Auth File Discovery**:
   - Single Path Problem: Hardcoded `~/.local/share/opencode/auth.json` fails when users have different OpenCode configurations

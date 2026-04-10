@@ -17,7 +17,6 @@ enum ProviderIdentifier: String, CaseIterable {
     case openRouter = "openrouter"
     case openCode = "open_code"
     case antigravity
-    case openCodeZen = "opencode_zen"
     case kimi
     case minimaxCodingPlan = "minimax_coding_plan"
     case zaiCodingPlan = "zai_coding_plan"
@@ -41,8 +40,6 @@ enum ProviderIdentifier: String, CaseIterable {
             return "OpenCode"
         case .antigravity:
             return "Antigravity"
-        case .openCodeZen:
-            return "OpenCode Zen"
         case .kimi:
             return "Kimi for Coding"
         case .minimaxCodingPlan:
@@ -74,8 +71,6 @@ enum ProviderIdentifier: String, CaseIterable {
             return "OpenCode"
         case .antigravity:
             return "Google"
-        case .openCodeZen:
-            return "Zen"
         case .kimi:
             return "Kimi"
         case .minimaxCodingPlan:
@@ -107,8 +102,6 @@ enum ProviderIdentifier: String, CaseIterable {
             return "terminal"
         case .antigravity:
             return "arrow.up.circle"
-        case .openCodeZen:
-            return "moon.stars"
         case .kimi:
             return "k.circle"
         case .minimaxCodingPlan:

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenCode_Bar
 
-final class OpenCodeZenProviderTests: XCTestCase {
+final class OpenCodeProviderTests: XCTestCase {
 
     func testAdjustStatsForDisplayExcludesOpenAIModelsWhenOpenAIBaseURLRoutesToCodex() {
         let configuration = CodexEndpointConfiguration(
@@ -10,7 +10,7 @@ final class OpenCodeZenProviderTests: XCTestCase {
             usesOpenAIProviderBaseURL: true
         )
 
-        let adjusted = OpenCodeZenProvider.adjustStatsForDisplay(
+        let adjusted = OpenCodeProvider.adjustStatsForDisplay(
             totalCost: 22.0,
             avgCostPerDay: 3.142857,
             modelCosts: [
@@ -38,7 +38,7 @@ final class OpenCodeZenProviderTests: XCTestCase {
             usesOpenAIProviderBaseURL: false
         )
 
-        let adjusted = OpenCodeZenProvider.adjustStatsForDisplay(
+        let adjusted = OpenCodeProvider.adjustStatsForDisplay(
             totalCost: 12.0,
             avgCostPerDay: 4.0,
             modelCosts: [

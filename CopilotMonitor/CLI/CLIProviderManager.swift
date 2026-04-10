@@ -14,7 +14,7 @@ actor CLIProviderManager {
     
     static let registeredProviders: [ProviderIdentifier] = [
         .claude, .codex, .geminiCLI, .openRouter,
-        .antigravity, .openCodeZen, .kimi, .minimaxCodingPlan, .zaiCodingPlan,
+        .antigravity, .openCode, .kimi, .minimaxCodingPlan, .zaiCodingPlan,
         .nanoGpt,
         .chutes, .copilot,
         .synthetic
@@ -30,7 +30,7 @@ actor CLIProviderManager {
         let geminiCLIProvider = GeminiCLIProvider()
         let openRouterProvider = OpenRouterProvider()
         let antigravityProvider = AntigravityProvider()
-        let openCodeZenProvider = OpenCodeZenProvider()
+        let openCodeProvider = OpenCodeProvider()
         let kimiProvider = KimiProvider()
         let minimaxProvider = MiniMaxProvider()
         let zaiCodingPlanProvider = ZaiCodingPlanProvider()
@@ -47,7 +47,7 @@ actor CLIProviderManager {
             geminiCLIProvider,
             openRouterProvider,
             antigravityProvider,
-            openCodeZenProvider,
+            openCodeProvider,
             kimiProvider,
             minimaxProvider,
             zaiCodingPlanProvider,

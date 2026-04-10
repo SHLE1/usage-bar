@@ -1,7 +1,10 @@
 import SwiftUI
+import os.log
+
+private let subscriptionSettingsLogger = Logger(subsystem: "com.opencodeproviders", category: "SubscriptionSettingsView")
 
 /// Manages subscription cost settings for all quota-based providers.
-/// Pay-as-you-go providers (OpenRouter, OpenCode Zen, etc.) are intentionally excluded.
+/// Pay-as-you-go providers (OpenRouter, OpenCode, etc.) are intentionally excluded.
 struct SubscriptionSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
     @State private var rows: [SubscriptionRow] = []
@@ -14,8 +17,6 @@ struct SubscriptionSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // MARK: - Header
-
             HStack {
                 Text("Monthly Total")
                     .font(.headline)
@@ -23,19 +24,23 @@ struct SubscriptionSettingsView: View {
                 Text(String(format: "$%.2f/m", totalCost))
                     .font(.system(.headline, design: .monospaced))
             }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
 
             Divider()
 
-            // MARK: - Subscription List
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach($rows) { $row in
+                        SubscriptionRowView(row: $row, onChanged: recalculate)
 
-            List {
-                ForEach($rows) { $row in
-                    SubscriptionRowView(row: $row, onChanged: recalculate)
+                        Divider()
+                            .padding(.leading, 20)
+                            .padding(.trailing, 20)
+                    }
                 }
+                .padding(.vertical, 8)
             }
-            .listStyle(.inset)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { reload() }
@@ -46,6 +51,8 @@ struct SubscriptionSettingsView: View {
     private func reload() {
         let manager = SubscriptionSettingsManager.shared
         let allSavedKeys = Set(manager.getAllSubscriptionKeys())
+
+        subscriptionSettingsLogger.debug("Reloading subscription settings for \(allSavedKeys.count) saved keys")
 
         var seen = Set<String>()
         var result: [SubscriptionRow] = []
@@ -94,11 +101,24 @@ struct SubscriptionSettingsView: View {
                 key: key,
                 provider: provider,
                 plan: plan,
-                presets: presets
+                presets: presets,
+                isOrphaned: true
             ))
         }
 
-        rows = result
+        // 3) Sort: enabled first, disabled second, orphaned last (stable within each group)
+        rows = result.sorted(by: { a, b in
+            let aOrphaned = a.isOrphaned
+            let bOrphaned = b.isOrphaned
+            if aOrphaned != bOrphaned { return !aOrphaned }
+
+            let aEnabled = a.provider.map { prefs.isProviderEnabled($0) } ?? false
+            let bEnabled = b.provider.map { prefs.isProviderEnabled($0) } ?? false
+            if aEnabled != bEnabled { return aEnabled }
+
+            return false // preserve business order within same group
+        })
+
         recalculate()
     }
 
@@ -111,6 +131,7 @@ struct SubscriptionSettingsView: View {
             sum += row.plan.cost
         }
         totalCost = sum
+        subscriptionSettingsLogger.debug("Updated monthly subscription total to \(String(format: "$%.2f", sum), privacy: .public)")
         NotificationCenter.default.post(name: AppPreferences.subscriptionDidChange, object: nil)
     }
 
@@ -134,13 +155,15 @@ struct SubscriptionRow: Identifiable {
     let provider: ProviderIdentifier?
     var plan: SubscriptionPlan
     let presets: [SubscriptionPreset]
+    let isOrphaned: Bool
 
-    init(key: String, provider: ProviderIdentifier?, plan: SubscriptionPlan, presets: [SubscriptionPreset]) {
+    init(key: String, provider: ProviderIdentifier?, plan: SubscriptionPlan, presets: [SubscriptionPreset], isOrphaned: Bool = false) {
         self.id = key
         self.key = key
         self.provider = provider
         self.plan = plan
         self.presets = presets
+        self.isOrphaned = isOrphaned
     }
 
     var displayName: String {
@@ -165,88 +188,136 @@ private struct SubscriptionRowView: View {
     @State private var customAmountText: String = ""
     @State private var showCustomField: Bool = false
 
+    private let menuWidth: CGFloat = 188
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(row.displayName)
-                    .font(.body)
-                    .lineLimit(1)
-                Spacer()
-                Text(row.plan.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: showCustomField ? 10 : 0) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(row.displayName)
+                        .font(.body)
+                        .lineLimit(1)
+
+                    if row.isOrphaned {
+                        Text("Saved setting without a detected account")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                subscriptionPlanMenu
             }
 
-            HStack(spacing: 6) {
-                // None button
-                planButton(label: "None", selected: isNone) {
-                    row.plan = .none
-                    showCustomField = false
-                    onChanged()
-                }
+            if showCustomField {
+                HStack(spacing: 8) {
+                    Spacer()
 
-                // Preset buttons — use cost for comparison (handles duplicate names)
+                    TextField("0.00", text: $customAmountText)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 88)
+                        .multilineTextAlignment(.trailing)
+                        .onSubmit { applyCustomAmount() }
+
+                    Text("/m")
+                        .foregroundStyle(.secondary)
+
+                    Button("Apply") {
+                        applyCustomAmount()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .onAppear { syncFromPlan() }
+    }
+
+    private var subscriptionPlanMenu: some View {
+        Menu {
+            Button("None") {
+                row.plan = .none
+                showCustomField = false
+                onChanged()
+            }
+
+            if !row.presets.isEmpty {
+                Divider()
+
                 ForEach(Array(row.presets.enumerated()), id: \.offset) { _, preset in
-                    let label = "\(preset.name) $\(Int(preset.cost))"
-                    let isSelected = isPresetSelected(preset)
-                    planButton(label: label, selected: isSelected) {
+                    Button("\(preset.name) \(currencyText(for: preset.cost))") {
                         row.plan = .preset(preset.name, preset.cost)
                         showCustomField = false
                         onChanged()
                     }
                 }
-
-                // Custom button
-                planButton(label: "Custom", selected: isCustom) {
-                    showCustomField = true
-                    if case .custom(let amount) = row.plan {
-                        customAmountText = String(format: "%.0f", amount)
-                    } else {
-                        customAmountText = ""
-                    }
-                }
-
-                if showCustomField {
-                    TextField("$/m", text: $customAmountText)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 60)
-                        .onSubmit {
-                            applyCustomAmount()
-                        }
-                }
             }
-        }
-        .padding(.vertical, 4)
-        .onAppear {
-            if case .custom = row.plan {
+
+            Divider()
+
+            Button("Custom") {
                 showCustomField = true
-                customAmountText = String(format: "%.0f", row.plan.cost)
+                if case .custom(let amount) = row.plan {
+                    customAmountText = String(format: "%.2f", amount)
+                } else {
+                    customAmountText = ""
+                }
             }
+        } label: {
+            HStack(spacing: 10) {
+                Text(selectionTitle)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(width: menuWidth, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var selectionTitle: String {
+        switch row.plan {
+        case .none:
+            return "None"
+        case .preset(let name, let cost):
+            return "\(name) \(currencyText(for: cost))"
+        case .custom(let amount):
+            return "Custom \(currencyText(for: amount))"
         }
     }
 
-    // MARK: - State Helpers
-
-    private var isNone: Bool {
-        if case .none = row.plan { return true }
-        return false
-    }
-
-    private var isCustom: Bool {
-        if case .custom = row.plan { return true }
-        return false
-    }
-
-    private func isPresetSelected(_ preset: SubscriptionPreset) -> Bool {
-        if case .preset(_, let cost) = row.plan {
-            return abs(cost - preset.cost) < 0.01
+    private func syncFromPlan() {
+        switch row.plan {
+        case .custom(let amount):
+            showCustomField = true
+            customAmountText = String(format: "%.2f", amount)
+        case .preset(_, let cost):
+            // If preset cost doesn't match any known option, treat as custom
+            if !row.presets.contains(where: { abs($0.cost - cost) < 0.01 }) {
+                showCustomField = true
+                customAmountText = String(format: "%.2f", cost)
+            }
+        default:
+            break
         }
-        return false
     }
 
     private func applyCustomAmount() {
         guard let amount = Double(customAmountText), amount > 0 else {
             row.plan = .none
+            showCustomField = false
             onChanged()
             return
         }
@@ -254,21 +325,7 @@ private struct SubscriptionRowView: View {
         onChanged()
     }
 
-    // MARK: - Button Helper
-
-    private func planButton(label: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(selected ? Color.accentColor.opacity(0.2) : Color.clear)
-                .cornerRadius(4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
+    private func currencyText(for amount: Double) -> String {
+        String(format: "$%.2f", amount)
     }
 }

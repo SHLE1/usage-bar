@@ -142,6 +142,117 @@ final class CopilotProviderTests: XCTestCase {
         XCTAssertEqual(CopilotAuthSource.vscodeApps.priority, 0)
     }
 
+    // MARK: - CopilotPlanInfo Premium Interactions Tests
+
+    func testCopilotPlanInfoWithPremiumInteractions() {
+        let info = CopilotPlanInfo(
+            plan: "individual_pro",
+            quotaResetDateUTC: Date(),
+            quotaLimit: 1500,
+            quotaRemaining: 800,
+            userId: "12345",
+            premiumEntitlement: 1500,
+            premiumRemaining: 800,
+            premiumUnlimited: false,
+            premiumOverageCount: 0,
+            premiumOveragePermitted: true
+        )
+
+        XCTAssertEqual(info.premiumEntitlement, 1500)
+        XCTAssertEqual(info.premiumRemaining, 800)
+        XCTAssertFalse(info.premiumUnlimited)
+        XCTAssertEqual(info.premiumOverageCount, 0)
+        XCTAssertEqual(info.premiumOveragePermitted, true)
+    }
+
+    func testCopilotPlanInfoUnlimited() {
+        let info = CopilotPlanInfo(
+            plan: "enterprise",
+            quotaResetDateUTC: nil,
+            quotaLimit: nil,
+            quotaRemaining: nil,
+            userId: "99999",
+            premiumEntitlement: nil,
+            premiumRemaining: nil,
+            premiumUnlimited: true,
+            premiumOverageCount: nil,
+            premiumOveragePermitted: nil
+        )
+
+        XCTAssertTrue(info.premiumUnlimited)
+        XCTAssertNil(info.premiumEntitlement)
+        XCTAssertNil(info.premiumRemaining)
+    }
+
+    func testCopilotPlanInfoNoPremiumInteractions() {
+        let info = CopilotPlanInfo(
+            plan: "individual_free",
+            quotaResetDateUTC: nil,
+            quotaLimit: 50,
+            quotaRemaining: 30,
+            userId: "11111",
+            premiumEntitlement: nil,
+            premiumRemaining: nil,
+            premiumUnlimited: false,
+            premiumOverageCount: nil,
+            premiumOveragePermitted: nil
+        )
+
+        XCTAssertNil(info.premiumEntitlement)
+        XCTAssertNil(info.premiumRemaining)
+        XCTAssertFalse(info.premiumUnlimited)
+        // Legacy fields should still be usable
+        XCTAssertEqual(info.quotaLimit, 50)
+        XCTAssertEqual(info.quotaRemaining, 30)
+    }
+
+    func testCopilotPlanInfoOverageScenario() {
+        // User has used more than entitlement (remaining is negative)
+        let info = CopilotPlanInfo(
+            plan: "individual_pro",
+            quotaResetDateUTC: Date(),
+            quotaLimit: 1500,
+            quotaRemaining: -3821,
+            userId: "12345",
+            premiumEntitlement: 1500,
+            premiumRemaining: -3821,
+            premiumUnlimited: false,
+            premiumOverageCount: 3821,
+            premiumOveragePermitted: true
+        )
+
+        XCTAssertEqual(info.premiumEntitlement, 1500)
+        XCTAssertEqual(info.premiumRemaining, -3821)
+        XCTAssertEqual(info.premiumOverageCount, 3821)
+        XCTAssertEqual(info.premiumOveragePermitted, true)
+    }
+
+    // MARK: - Internal API Fixture Parsing Tests
+
+    func testFixturePremiumInteractionsExtraction() throws {
+        let fixtureData = loadFixture(named: "copilot_response.json")
+        let response = try JSONSerialization.jsonObject(with: fixtureData) as? [String: Any]
+
+        XCTAssertNotNil(response)
+
+        let quotaSnapshots = response?["quota_snapshots"] as? [String: Any]
+        XCTAssertNotNil(quotaSnapshots)
+
+        let premium = quotaSnapshots?["premium_interactions"] as? [String: Any]
+        XCTAssertNotNil(premium)
+
+        // Verify premium_interactions fields match expected values
+        XCTAssertEqual(premium?["entitlement"] as? Int, 1500)
+        XCTAssertEqual(premium?["remaining"] as? Int, -3821)
+        XCTAssertEqual(premium?["overage_permitted"] as? Bool, true)
+
+        // Verify used = entitlement - remaining (clamped to 0)
+        let entitlement = premium?["entitlement"] as? Int ?? 0
+        let remaining = premium?["remaining"] as? Int ?? 0
+        let used = max(0, entitlement - remaining)
+        XCTAssertEqual(used, 5321)
+    }
+
     private func loadFixture(named: String) -> Data {
         let bundle = Bundle(for: type(of: self))
         guard let url = bundle.url(forResource: named, withExtension: nil) else {

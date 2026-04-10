@@ -13,7 +13,7 @@
 ─────────────────────────────
 Pay-as-you-go: $37.61
   OpenRouter       $37.42    ▸
-  OpenCode Zen     $0.19     ▸
+  OpenCode           $0.19     ▸
 ─────────────────────────────
 Quota Status: $219/m
   Copilot (0%)               ▸
@@ -47,12 +47,12 @@ Quit (⌘Q)
 #### Pay-as-you-go
 - **Providers**
   - **OpenRouter** - Credits-based billing
-  - **OpenCode Zen** - Usage-based billing
+  - **OpenCode** - Usage-based billing
   - **GitHub Copilot Add-on** - Usage-based billing
 - **Features**
   - Subscription Cost Setting: ❌ NO subscription settings
 - **Warnings**
-  - **NEVER** add subscription settings to Pay-as-you-go providers (OpenRouter, OpenCode Zen)
+  - **NEVER** add subscription settings to Pay-as-you-go providers (OpenRouter, OpenCode)
 
 #### Quota-based
 - **Providers**

@@ -43,4 +43,7 @@ package-lock.json
 # Local runtime artifacts
 data/
 plans/
+.firecrawl/
+*.profraw
+*.profdata
 nohup.out

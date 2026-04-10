@@ -44,6 +44,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         }
         
         AppMigrationHelper.shared.cleanupLegacyBundlesIfNeeded()
+        AppMigrationHelper.shared.migrateOpenCodeZenSettings()
         
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,

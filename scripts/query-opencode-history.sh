@@ -100,7 +100,7 @@ extract_stats() {
 calculate_daily_history() {
     local max_days="$1"
 
-    echo "=== OpenCode Zen Daily Usage History ===" >&2
+    echo "=== OpenCode Daily Usage History ===" >&2
     echo "Calculating cumulative costs for days 1-$max_days..." >&2
 
     for day in {1..$max_days}; do
@@ -167,7 +167,7 @@ output_json() {
     echo "}"
 }
 
-echo "OpenCode Zen Usage History Calculator"
+echo "OpenCode Usage History Calculator"
 echo "======================================"
 echo ""
 

@@ -7,7 +7,7 @@ final class CLIFormatterTests: XCTestCase {
     
     func testProviderIdentifierRawValues() {
         XCTAssertEqual(ProviderIdentifier.openRouter.rawValue, "openrouter")
-        XCTAssertEqual(ProviderIdentifier.openCodeZen.rawValue, "opencode_zen")
+        XCTAssertEqual(ProviderIdentifier.openCode.rawValue, "open_code")
         XCTAssertEqual(ProviderIdentifier.geminiCLI.rawValue, "gemini_cli")
         XCTAssertEqual(ProviderIdentifier.claude.rawValue, "claude")
         XCTAssertEqual(ProviderIdentifier.codex.rawValue, "codex")
@@ -20,7 +20,7 @@ final class CLIFormatterTests: XCTestCase {
     
     func testProviderIdentifierDisplayNames() {
         XCTAssertEqual(ProviderIdentifier.openRouter.displayName, "OpenRouter")
-        XCTAssertEqual(ProviderIdentifier.openCodeZen.displayName, "OpenCode Zen")
+        XCTAssertEqual(ProviderIdentifier.openCode.displayName, "OpenCode")
         XCTAssertEqual(ProviderIdentifier.geminiCLI.displayName, "Gemini CLI")
         XCTAssertEqual(ProviderIdentifier.claude.displayName, "Claude")
         XCTAssertEqual(ProviderIdentifier.kimi.displayName, "Kimi for Coding")

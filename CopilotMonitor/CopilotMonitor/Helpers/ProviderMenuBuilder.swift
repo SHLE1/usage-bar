@@ -73,7 +73,7 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-        case .openCodeZen:
+        case .openCode:
             if let avg = details.avgCostPerDay {
                 let item = NSMenuItem()
                 item.view = createDisabledLabelView(text: String(format: "Avg/Day: $%.2f", avg))

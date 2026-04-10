@@ -493,6 +493,13 @@ struct CopilotPlanInfo {
     let quotaLimit: Int?
     let quotaRemaining: Int?
     let userId: String?
+
+    // premium_interactions fields from quota_snapshots (Internal API primary source)
+    let premiumEntitlement: Int?
+    let premiumRemaining: Int?
+    let premiumUnlimited: Bool
+    let premiumOverageCount: Int?
+    let premiumOveragePermitted: Bool?
 }
 
 /// Antigravity Accounts structure for NoeFabris/opencode-antigravity-auth (~/.config/opencode/antigravity-accounts.json)
@@ -3522,7 +3529,26 @@ final class TokenManager: @unchecked Sendable {
             // New API format: quota_snapshots (contains entitlement/remaining for each quota type)
             var snapshotEntitlement: Int?
             var snapshotRemaining: Int?
+
+            // Parse premium_interactions specifically (primary quota source)
+            var premiumEntitlement: Int?
+            var premiumRemaining: Int?
+            var premiumUnlimited = false
+            var premiumOverageCount: Int?
+            var premiumOveragePermitted: Bool?
+
             if let snapshots = quotaSnapshots {
+                // Extract premium_interactions first (the key quota type for usage tracking)
+                if let premium = snapshots["premium_interactions"] as? [String: Any] {
+                    premiumEntitlement = quotaValue(premium, key: "entitlement")
+                    premiumRemaining = quotaValue(premium, key: "remaining")
+                    premiumUnlimited = (premium["unlimited"] as? Bool) ?? false
+                    premiumOverageCount = quotaValue(premium, key: "overage_count")
+                    premiumOveragePermitted = premium["overage_permitted"] as? Bool
+
+                    logger.info("Copilot premium_interactions parsed: entitlement=\(premiumEntitlement ?? -1), remaining=\(premiumRemaining ?? -1), unlimited=\(premiumUnlimited), overageCount=\(premiumOverageCount ?? 0)")
+                }
+
                 // Sum up entitlement and remaining from all quota types
                 var totalEntitlement = 0
                 var totalRemaining = 0
@@ -3573,7 +3599,12 @@ final class TokenManager: @unchecked Sendable {
                 quotaResetDateUTC: resetDate,
                 quotaLimit: quotaLimit,
                 quotaRemaining: quotaRemaining,
-                userId: userId
+                userId: userId,
+                premiumEntitlement: premiumEntitlement,
+                premiumRemaining: premiumRemaining,
+                premiumUnlimited: premiumUnlimited,
+                premiumOverageCount: premiumOverageCount,
+                premiumOveragePermitted: premiumOveragePermitted
             )
         } catch {
             logger.error("Failed to fetch Copilot plan info: \(error.localizedDescription)")

@@ -166,7 +166,6 @@ struct ProviderSubscriptionPresets {
 
     static let openRouter: [SubscriptionPreset] = []
     static let openCode: [SubscriptionPreset] = []
-    static let openCodeZen: [SubscriptionPreset] = []
 
     static func presets(for provider: ProviderIdentifier) -> [SubscriptionPreset] {
         switch provider {
@@ -188,8 +187,6 @@ struct ProviderSubscriptionPresets {
             return openRouter
         case .openCode:
             return openCode
-        case .openCodeZen:
-            return openCodeZen
         case .zaiCodingPlan:
             return zaiCodingPlan
         case .nanoGpt:

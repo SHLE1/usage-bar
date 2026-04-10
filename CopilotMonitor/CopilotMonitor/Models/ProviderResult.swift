@@ -152,7 +152,7 @@ struct DetailedUsage {
     let extraUsageUsedUSD: Double?
     let extraUsageUtilizationPercent: Double?
 
-    // OpenCode Zen stats
+    // OpenCode stats
     let sessions: Int?
     let messages: Int?
     let avgCostPerDay: Double?

@@ -106,7 +106,7 @@ struct SwiftUIProviderAlertView: View {
         case .geminiCLI: return "sparkles"
         case .copilot: return "airplane"
         case .openRouter: return "dollarsign.circle"
-        case .openCode, .openCodeZen: return "chevron.left.forwardslash.chevron.right"
+        case .openCode: return "chevron.left.forwardslash.chevron.right"
         case .antigravity: return "arrow.up.circle"
         case .kimi: return "k.circle"
         case .minimaxCodingPlan: return "m.circle"

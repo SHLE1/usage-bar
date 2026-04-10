@@ -3,53 +3,56 @@ import SwiftUI
 struct StatusBarSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
 
+    /// Pay-as-you-go providers in stable display order.
+    private static let payAsYouGoProviders: [ProviderIdentifier] = [
+        .openRouter, .openCode
+    ]
+
+    /// Subscription (quota-based) providers in stable display order.
+    private static let subscriptionProviders: [ProviderIdentifier] = [
+        .copilot, .claude, .kimi, .minimaxCodingPlan, .codex,
+        .zaiCodingPlan, .nanoGpt, .antigravity, .chutes, .synthetic, .geminiCLI
+    ]
+
     var body: some View {
         Form {
-            // MARK: - Enabled Providers
+            // MARK: - Pay-as-you-go
 
-            Section("Enabled Providers") {
-                ForEach(ProviderIdentifier.allCases, id: \.self) { identifier in
-                    Toggle(identifier.displayName, isOn: providerEnabledBinding(for: identifier))
+            Section("Pay-as-you-go") {
+                ForEach(sortedProviders(Self.payAsYouGoProviders), id: \.self) { identifier in
+                    Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
                 }
-            }
-
-            // MARK: - Additional Cost Items
-
-            Section("Additional Cost Items") {
                 Toggle("GitHub Copilot Add-on", isOn: $prefs.copilotAddOnEnabled)
             }
 
-            // MARK: - Multi-Provider Bar
+            // MARK: - Subscriptions
 
-            Section("Multi-Provider Bar Providers") {
-                ForEach(ProviderIdentifier.allCases, id: \.self) { identifier in
-                    Toggle(identifier.displayName, isOn: multiProviderBinding(for: identifier))
+            Section("Subscriptions") {
+                ForEach(sortedProviders(Self.subscriptionProviders), id: \.self) { identifier in
+                    Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
                 }
-            }
-
-            // MARK: - Options
-
-            Section("Options") {
-                Toggle("Critical Badge", isOn: $prefs.criticalBadge)
             }
         }
         .formStyle(.grouped)
     }
 
-    // MARK: - Bindings
+    // MARK: - Sorting (enabled first, then disabled; stable order within each group)
 
-    private func providerEnabledBinding(for identifier: ProviderIdentifier) -> Binding<Bool> {
-        Binding(
-            get: { prefs.isProviderEnabled(identifier) },
-            set: { newValue in prefs.setProviderEnabled(identifier, enabled: newValue) }
-        )
+    private func sortedProviders(_ providers: [ProviderIdentifier]) -> [ProviderIdentifier] {
+        let enabled = providers.filter { prefs.isProviderEnabled($0) }
+        let disabled = providers.filter { !prefs.isProviderEnabled($0) }
+        return enabled + disabled
     }
 
-    private func multiProviderBinding(for identifier: ProviderIdentifier) -> Binding<Bool> {
+    // MARK: - Unified toggle binding
+
+    /// A single toggle that controls both the enabled state and multi-provider membership.
+    private func statusBarBinding(for identifier: ProviderIdentifier) -> Binding<Bool> {
         Binding(
-            get: { prefs.multiProviderProviders.contains(identifier) },
-            set: { included in
-                if included {
+            get: { prefs.isProviderEnabled(identifier) },
+            set: { newValue in
+                prefs.setProviderEnabled(identifier, enabled: newValue)
+                if newValue {
                     prefs.multiProviderProviders.insert(identifier)
                 } else {
                     prefs.multiProviderProviders.remove(identifier)

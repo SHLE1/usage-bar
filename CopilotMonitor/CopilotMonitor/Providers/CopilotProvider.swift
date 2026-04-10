@@ -34,12 +34,33 @@ final class CopilotProvider: ProviderProtocol {
     // MARK: - ProviderProtocol Implementation
 
     func fetch() async throws -> ProviderResult {
+        // Phase 1: Internal API (primary) - fast, direct quota source
         let tokenAccounts = TokenManager.shared.getGitHubCopilotAccounts()
         var tokenInfos = await fetchTokenInfos(tokenAccounts)
 
         var candidates: [CopilotAccountCandidate] = []
-        var cookieCandidate: CopilotAccountCandidate?
+        var internalAPICandidateLogin: String?
 
+        // Build candidates from Internal API token results
+        for info in tokenInfos {
+            if let tokenCandidate = buildCandidateFromInternalAPI(info) {
+                logger.info("CopilotProvider: [Internal API] Primary source produced candidate - login: \(info.login ?? "unknown"), plan: \(info.plan ?? "unknown")")
+                candidates.append(tokenCandidate)
+                if internalAPICandidateLogin == nil {
+                    internalAPICandidateLogin = info.login
+                }
+            }
+        }
+
+        let hasInternalAPIData = !candidates.isEmpty
+        if hasInternalAPIData {
+            logger.info("CopilotProvider: [Internal API] \(candidates.count) candidate(s) from Internal API")
+        } else {
+            logger.warning("CopilotProvider: [Internal API] No usable data from Internal API, will try cookie fallback")
+        }
+
+        // Phase 2: Cookie + Billing path (fallback and enrichment)
+        var cookieCandidate: CopilotAccountCandidate?
         let cookies: GitHubCookies?
         do {
             cookies = try BrowserCookieService.shared.getGitHubCookies()
@@ -54,13 +75,14 @@ final class CopilotProvider: ProviderProtocol {
                 cachedUserEmail = login
             }
 
+            // Match cookie login with token info for enrichment
             let matchedToken = matchTokenInfo(login: cookieLogin, tokenInfos: &tokenInfos)
-            let planInfo = matchedToken?.planInfo
 
             if let customerId = await fetchCustomerId(cookies: cookies) {
-                logger.info("CopilotProvider: Customer ID obtained - \(customerId)")
+                logger.info("CopilotProvider: [Cookies] Customer ID obtained - \(customerId)")
 
                 if var usage = await fetchUsageData(customerId: customerId, cookies: cookies) {
+                    let planInfo = matchedToken?.planInfo
                     if let planInfo {
                         usage = CopilotUsage(
                             netBilledAmount: usage.netBilledAmount,
@@ -71,69 +93,68 @@ final class CopilotProvider: ProviderProtocol {
                             copilotPlan: planInfo.plan,
                             quotaResetDateUTC: planInfo.quotaResetDateUTC
                         )
-                        if let resetDate = planInfo.quotaResetDateUTC {
-                            logger.info("CopilotProvider: Plan info merged - \(planInfo.plan ?? "unknown"), reset: \(resetDate)")
-                        } else {
-                            logger.info("CopilotProvider: Plan info merged - \(planInfo.plan ?? "unknown"), reset: unknown")
-                        }
                     }
 
                     saveCache(usage: usage)
 
-        // Clamp to 0 to avoid negative display when in overage (usedRequests > limitRequests)
-        let remaining = max(0, usage.limitRequests - usage.usedRequests)
-                    logger.info("CopilotProvider: Fetch successful - used: \(usage.usedRequests), limit: \(usage.limitRequests), remaining: \(remaining)")
-
                     var dailyHistory: [DailyUsage]?
                     do {
                         dailyHistory = try await CopilotHistoryService.shared.fetchHistory()
-                        logger.info("CopilotProvider: History fetched successfully - \(dailyHistory?.count ?? 0) days")
+                        logger.info("CopilotProvider: [Cookies] History fetched - \(dailyHistory?.count ?? 0) days")
                     } catch {
-                        logger.warning("CopilotProvider: Failed to fetch history: \(error.localizedDescription)")
+                        logger.warning("CopilotProvider: [Cookies] Failed to fetch history: \(error.localizedDescription)")
                     }
 
-                    let priority = sourcePriority(matchedToken?.source)
-                    cookieCandidate = buildCandidateFromUsage(
-                        usage: usage,
-                        login: cookieLogin,
-                        authSource: "Browser Cookies (Chrome/Brave/Arc/Edge)",
-                        sourcePriority: priority,
-                        dailyHistory: dailyHistory
-                    )
-
-                    if let cookieCandidate {
-                        candidates.append(cookieCandidate)
+                    if hasInternalAPIData {
+                        // Enrich existing Internal API candidates with billing-only data
+                        logger.info("CopilotProvider: [Merge] Enriching Internal API result with billing overage and history data")
+                        candidates = enrichCandidatesWithBillingData(
+                            candidates: candidates,
+                            billingUsage: usage,
+                            dailyHistory: dailyHistory,
+                            cookieLogin: cookieLogin
+                        )
+                    } else {
+                        // Use cookie data as primary (Internal API failed)
+                        logger.info("CopilotProvider: [Cookies] Using as primary source (Internal API unavailable)")
+                        let priority = sourcePriority(matchedToken?.source)
+                        cookieCandidate = buildCandidateFromUsage(
+                            usage: usage,
+                            login: cookieLogin,
+                            authSource: "Browser Cookies (Chrome/Brave/Arc/Edge)",
+                            sourcePriority: priority,
+                            dailyHistory: dailyHistory
+                        )
+                        if let cookieCandidate {
+                            candidates.append(cookieCandidate)
+                        }
                     }
-                } else {
-                    logger.warning("CopilotProvider: Failed to fetch usage data, trying cache")
+                } else if !hasInternalAPIData {
+                    logger.warning("CopilotProvider: [Cookies] Failed to fetch usage data, trying cache")
                     cookieCandidate = try? buildCandidateFromCache()
-                    if let cookieCandidate {
-                        candidates.append(cookieCandidate)
-                    }
+                    if let cookieCandidate { candidates.append(cookieCandidate) }
                 }
-            } else {
-                logger.warning("CopilotProvider: Failed to get customer ID, trying cache")
+            } else if !hasInternalAPIData {
+                logger.warning("CopilotProvider: [Cookies] Failed to get customer ID, trying cache")
                 cookieCandidate = try? buildCandidateFromCache()
-                if let cookieCandidate {
-                    candidates.append(cookieCandidate)
-                }
+                if let cookieCandidate { candidates.append(cookieCandidate) }
             }
-        } else {
-            logger.warning("CopilotProvider: Invalid or missing cookies, trying cache")
+        } else if !hasInternalAPIData {
+            logger.warning("CopilotProvider: [Cookies] Invalid or missing cookies, trying cache")
             cookieCandidate = try? buildCandidateFromCache()
-            if let cookieCandidate {
-                candidates.append(cookieCandidate)
-            }
+            if let cookieCandidate { candidates.append(cookieCandidate) }
         }
 
-        for info in tokenInfos {
-            if let tokenCandidate = buildCandidateFromToken(info) {
-                candidates.append(tokenCandidate)
+        // Phase 3: Cache fallback (only when both live paths fail)
+        if candidates.isEmpty {
+            logger.warning("CopilotProvider: [Cache] Both Internal API and cookies failed, using cache fallback")
+            if let cachedCandidate = try? buildCandidateFromCache() {
+                candidates.append(cachedCandidate)
             }
         }
 
         if candidates.isEmpty {
-            logger.error("CopilotProvider: No usable Copilot data found")
+            logger.error("CopilotProvider: No usable Copilot data found from any source")
             throw ProviderError.authenticationFailed("No Copilot data available")
         }
 
@@ -322,6 +343,107 @@ final class CopilotProvider: ProviderProtocol {
             details: details,
             sourcePriority: sourcePriority(info.source)
         )
+    }
+
+    /// Build candidate from Internal API data using premium_interactions as the primary quota source.
+    /// This is the fast, direct path that doesn't require browser cookies or billing page scraping.
+    private func buildCandidateFromInternalAPI(_ info: CopilotTokenInfo) -> CopilotAccountCandidate? {
+        guard let planInfo = info.planInfo else { return nil }
+
+        // Handle unlimited plans
+        if planInfo.premiumUnlimited {
+            logger.info("CopilotProvider: [Internal API] Unlimited premium interactions for \(info.login ?? "unknown")")
+            let providerUsage = ProviderUsage.quotaBased(
+                remaining: Int.max,
+                entitlement: Int.max,
+                overagePermitted: true
+            )
+            let details = DetailedUsage(
+                resetPeriod: formatResetDate(planInfo.quotaResetDateUTC),
+                planType: planInfo.plan,
+                email: info.login,
+                authSource: info.authSource,
+                copilotQuotaResetDateUTC: planInfo.quotaResetDateUTC
+            )
+            return CopilotAccountCandidate(
+                accountId: info.accountId ?? info.login,
+                usage: providerUsage,
+                details: details,
+                sourcePriority: sourcePriority(info.source)
+            )
+        }
+
+        // Prefer premium_interactions fields; fall back to legacy quotaLimit/quotaRemaining
+        let entitlement = planInfo.premiumEntitlement ?? planInfo.quotaLimit
+        let remaining = planInfo.premiumRemaining ?? planInfo.quotaRemaining
+
+        guard let entitlement = entitlement, let remaining = remaining, entitlement > 0 else {
+            // No usable quota data from Internal API
+            return nil
+        }
+
+        let used = max(0, entitlement - remaining)
+        let clampedRemaining = max(0, remaining)
+        let overagePermitted = planInfo.premiumOveragePermitted ?? true
+
+        let providerUsage = ProviderUsage.quotaBased(
+            remaining: clampedRemaining,
+            entitlement: entitlement,
+            overagePermitted: overagePermitted
+        )
+
+        let details = DetailedUsage(
+            resetPeriod: formatResetDate(planInfo.quotaResetDateUTC),
+            planType: planInfo.plan,
+            email: info.login,
+            authSource: info.authSource,
+            copilotUsedRequests: used,
+            copilotLimitRequests: entitlement,
+            copilotQuotaResetDateUTC: planInfo.quotaResetDateUTC
+        )
+
+        logger.info("CopilotProvider: [Internal API] Built candidate - used: \(used)/\(entitlement), remaining: \(clampedRemaining)")
+
+        return CopilotAccountCandidate(
+            accountId: info.accountId ?? info.login,
+            usage: providerUsage,
+            details: details,
+            sourcePriority: sourcePriority(info.source)
+        )
+    }
+
+    /// Enrich Internal API candidates with billing-only data (overage cost, overage requests, daily history).
+    /// The Internal API doesn't provide billing/overage details, so we merge those from cookie+billing path.
+    private func enrichCandidatesWithBillingData(
+        candidates: [CopilotAccountCandidate],
+        billingUsage: CopilotUsage,
+        dailyHistory: [DailyUsage]?,
+        cookieLogin: String?
+    ) -> [CopilotAccountCandidate] {
+        return candidates.map { candidate in
+            let existingDetails = candidate.details
+
+            // Merge billing-only fields into the existing details
+            let enrichedDetails = DetailedUsage(
+                resetPeriod: existingDetails.resetPeriod,
+                planType: existingDetails.planType,
+                email: existingDetails.email ?? cookieLogin,
+                dailyHistory: dailyHistory ?? existingDetails.dailyHistory,
+                authSource: existingDetails.authSource,
+                copilotOverageCost: billingUsage.netBilledAmount,
+                copilotOverageRequests: billingUsage.netQuantity,
+                copilotUsedRequests: existingDetails.copilotUsedRequests,
+                copilotLimitRequests: existingDetails.copilotLimitRequests,
+                copilotQuotaResetDateUTC: existingDetails.copilotQuotaResetDateUTC
+            )
+
+            return CopilotAccountCandidate(
+                accountId: candidate.accountId,
+                usage: candidate.usage,
+                details: enrichedDetails,
+                sourcePriority: candidate.sourcePriority
+            )
+        }
     }
 
     private func buildCandidateFromCache() throws -> CopilotAccountCandidate? {
