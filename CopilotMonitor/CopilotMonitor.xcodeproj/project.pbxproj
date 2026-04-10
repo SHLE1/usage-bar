@@ -107,6 +107,7 @@
 		SETGEN11111111111111111111 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR444444444444444444444 /* GeneralSettingsView.swift */; };
 		SETSB111111111111111111111 /* StatusBarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR555555555555555555555 /* StatusBarSettingsView.swift */; };
 		SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR666666666666666666666 /* SubscriptionSettingsView.swift */; };
+		SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR777777777777777777777 /* SettingsScaffold.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -214,6 +215,7 @@
 		SETFR444444444444444444444 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		SETFR555555555555555555555 /* StatusBarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarSettingsView.swift; sourceTree = "<group>"; };
 		SETFR666666666666666666666 /* SubscriptionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSettingsView.swift; sourceTree = "<group>"; };
+		SETFR777777777777777777777 /* SettingsScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScaffold.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -340,6 +342,7 @@
 				SETFR444444444444444444444 /* GeneralSettingsView.swift */,
 				SETFR555555555555555555555 /* StatusBarSettingsView.swift */,
 				SETFR666666666666666666666 /* SubscriptionSettingsView.swift */,
+				SETFR777777777777777777777 /* SettingsScaffold.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -679,6 +682,7 @@
 				SETGEN11111111111111111111 /* GeneralSettingsView.swift in Sources */,
 				SETSB111111111111111111111 /* StatusBarSettingsView.swift in Sources */,
 				SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */,
+				SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

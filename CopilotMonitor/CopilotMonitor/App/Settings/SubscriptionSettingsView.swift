@@ -16,33 +16,41 @@ struct SubscriptionSettingsView: View {
     }()
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Monthly Total")
-                    .font(.headline)
-                Spacer()
-                Text(String(format: "$%.2f/m", totalCost))
-                    .font(.system(.headline, design: .monospaced))
+        SettingsPage(
+            title: L("Subscriptions"),
+            subtitle: L("Set monthly plan costs for quota-based providers and any detected accounts.")
+        ) {
+            SettingsSectionCard(
+                title: L("Monthly Total"),
+                subtitle: L("This total is used for the quota subscription summary.")
+            ) {
+                HStack {
+                    Text(L("Configured subscription cost"))
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Text(String(format: "$%.2f/m", totalCost))
+                        .font(.system(.title3, design: .monospaced).weight(.semibold))
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
 
-            Divider()
-
-            ScrollView {
+            SettingsSectionCard(
+                title: L("Provider Plans"),
+                subtitle: L("Choose a preset or enter a custom monthly amount for each provider.")
+            ) {
                 LazyVStack(spacing: 0) {
-                    ForEach($rows) { $row in
+                    ForEach(Array($rows.enumerated()), id: \.offset) { index, $row in
                         SubscriptionRowView(row: $row, onChanged: recalculate)
 
-                        Divider()
-                            .padding(.leading, 20)
-                            .padding(.trailing, 20)
+                        if index < rows.count - 1 {
+                            Divider()
+                                .padding(.vertical, 2)
+                        }
                     }
                 }
-                .padding(.vertical, 8)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { reload() }
     }
 
@@ -120,6 +128,7 @@ struct SubscriptionSettingsView: View {
         })
 
         recalculate()
+        subscriptionSettingsLogger.debug("Prepared \(rows.count) subscription rows for settings display")
     }
 
     private func recalculate() {
@@ -188,8 +197,6 @@ private struct SubscriptionRowView: View {
     @State private var customAmountText: String = ""
     @State private var showCustomField: Bool = false
 
-    private let menuWidth: CGFloat = 188
-
     var body: some View {
         VStack(alignment: .leading, spacing: showCustomField ? 10 : 0) {
             HStack(alignment: .center, spacing: 16) {
@@ -210,12 +217,16 @@ private struct SubscriptionRowView: View {
             }
 
             if showCustomField {
-                HStack(spacing: 8) {
+                HStack(alignment: .center, spacing: 12) {
+                    Text(L("Custom monthly cost"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
                     Spacer()
 
                     TextField("0.00", text: $customAmountText)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 88)
+                        .frame(width: 96)
                         .multilineTextAlignment(.trailing)
                         .onSubmit { applyCustomAmount() }
 
@@ -225,13 +236,15 @@ private struct SubscriptionRowView: View {
                     Button(L("Apply")) {
                         applyCustomAmount()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .onAppear { syncFromPlan() }
+        .padding(.vertical, 14)
+        .onAppear {
+            syncFromPlan()
+            subscriptionSettingsLogger.debug("Using compact subscription plan control for \(row.key, privacy: .public)")
+        }
     }
 
     private var subscriptionPlanMenu: some View {
@@ -239,6 +252,7 @@ private struct SubscriptionRowView: View {
             Button(L("None")) {
                 row.plan = .none
                 showCustomField = false
+                subscriptionSettingsLogger.debug("Selected no subscription plan for \(row.key, privacy: .public)")
                 onChanged()
             }
 
@@ -249,6 +263,7 @@ private struct SubscriptionRowView: View {
                     Button("\(preset.name) \(currencyText(for: preset.cost))") {
                         row.plan = .preset(preset.name, preset.cost)
                         showCustomField = false
+                        subscriptionSettingsLogger.debug("Selected preset subscription plan \(preset.name, privacy: .public) for \(row.key, privacy: .public)")
                         onChanged()
                     }
                 }
@@ -256,45 +271,43 @@ private struct SubscriptionRowView: View {
 
             Divider()
 
-            Button(L("Custom")) {
-                showCustomField = true
+            Button(selectionTitle(for: .custom(0))) {
                 if case .custom(let amount) = row.plan {
                     customAmountText = String(format: "%.2f", amount)
-                } else {
-                    customAmountText = ""
+                } else if case .preset(_, let amount) = row.plan {
+                    customAmountText = String(format: "%.2f", amount)
                 }
+                showCustomField = true
+                subscriptionSettingsLogger.debug("Selected custom subscription plan for \(row.key, privacy: .public)")
             }
         } label: {
-            HStack(spacing: 10) {
-                Text(selectionTitle)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(width: menuWidth, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            )
+            CompactSettingsMenuLabel(title: selectionTitle(for: row.plan))
         }
+        .controlSize(.regular)
         .buttonStyle(.plain)
+        .fixedSize()
     }
 
-    private var selectionTitle: String {
-        switch row.plan {
+    private func selectionTitle(for plan: SubscriptionPlan) -> String {
+        switch plan {
         case .none:
             return L("None")
         case .preset(let name, let cost):
             return "\(name) \(currencyText(for: cost))"
-        case .custom(let amount):
-            return "Custom \(currencyText(for: amount))"
+        case .custom:
+            let amount: Double
+            switch row.plan {
+            case .custom(let currentAmount):
+                amount = currentAmount
+            case .preset(_, let currentAmount):
+                amount = currentAmount
+            default:
+                amount = Double(customAmountText) ?? 0
+            }
+            if amount > 0 {
+                return String(format: L("Custom %@"), currencyText(for: amount))
+            }
+            return L("Custom")
         }
     }
 

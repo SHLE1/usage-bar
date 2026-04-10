@@ -29,11 +29,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         let hostingController = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Settings"
-        window.setContentSize(NSSize(width: 520, height: 440))
-        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.setContentSize(NSSize(width: 840, height: 560))
+        window.minSize = NSSize(width: 760, height: 520)
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.toolbarStyle = .preference
         window.isReleasedWhenClosed = false
         window.center()
         window.makeKeyAndOrderFront(nil)
+
+        logger.debug("Opened settings window at \(Int(window.frame.width))x\(Int(window.frame.height))")
 
         settingsWindow = window
     }

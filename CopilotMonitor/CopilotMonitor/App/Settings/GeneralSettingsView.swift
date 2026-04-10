@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let generalSettingsLogger = Logger(subsystem: "com.opencodeproviders", category: "GeneralSettingsView")
 
 struct GeneralSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
@@ -8,68 +11,106 @@ struct GeneralSettingsView: View {
     @State private var showingCLIAlert = false
 
     var body: some View {
-        Form {
-            // MARK: - Refresh & Prediction
+        SettingsPage(
+            title: L("General"),
+            subtitle: L("Control refresh timing, startup behavior, and command line access.")
+        ) {
+            SettingsSectionCard(
+                title: L("Usage Updates"),
+                subtitle: L("Choose how often UsageBar refreshes and how it estimates end-of-month cost.")
+            ) {
+                VStack(spacing: 0) {
+                    SettingsRow(
+                        title: L("Auto Refresh Period"),
+                        description: L("How often provider data refreshes in the background.")
+                    ) {
+                        Menu {
+                            ForEach(RefreshInterval.allCases, id: \.self) { interval in
+                                Button(interval.title) {
+                                    prefs.refreshInterval = interval
+                                    generalSettingsLogger.debug("Selected refresh interval \(interval.title, privacy: .public)")
+                                }
+                            }
+                        } label: {
+                            CompactSettingsMenuLabel(title: prefs.refreshInterval.title)
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                    }
 
-            Section {
-                Picker("Auto Refresh Period", selection: $prefs.refreshInterval) {
-                    ForEach(RefreshInterval.allCases, id: \.self) { interval in
-                        Text(interval.title).tag(interval)
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsRow(
+                        title: L("Prediction Period"),
+                        description: L("The usage window used for monthly cost forecasts.")
+                    ) {
+                        Menu {
+                            ForEach(PredictionPeriod.allCases, id: \.self) { period in
+                                Button(period.title) {
+                                    prefs.predictionPeriod = period
+                                    generalSettingsLogger.debug("Selected prediction period \(period.title, privacy: .public)")
+                                }
+                            }
+                        } label: {
+                            CompactSettingsMenuLabel(title: prefs.predictionPeriod.title)
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
                     }
                 }
+            }
 
-                Picker("Prediction Period", selection: $prefs.predictionPeriod) {
-                    ForEach(PredictionPeriod.allCases, id: \.self) { period in
-                        Text(period.title).tag(period)
+            SettingsSectionCard(
+                title: L("App Behavior"),
+                subtitle: L("Decide how UsageBar behaves after launch.")
+            ) {
+                VStack(spacing: 0) {
+                    SettingsRow(
+                        title: L("Launch at Login"),
+                        description: L("Open UsageBar automatically when you sign in to macOS.")
+                    ) {
+                        Toggle("", isOn: $prefs.launchAtLogin)
+                            .labelsHidden()
+                    }
+
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsRow(
+                        title: L("Critical Badge"),
+                        description: L("Show an attention badge when a provider reaches a critical state.")
+                    ) {
+                        Toggle("", isOn: $prefs.criticalBadge)
+                            .labelsHidden()
                     }
                 }
             }
 
-            // MARK: - Launch at Login
-
-            Section {
-                Toggle("Launch at Login", isOn: $prefs.launchAtLogin)
-            }
-
-            // MARK: - Display
-
-            Section {
-                Toggle("Critical Badge", isOn: $prefs.criticalBadge)
-            }
-
-            // MARK: - CLI
-
-            Section {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Command Line Tool")
-                            .font(.body)
-                        Text(cliInstalled
-                             ? "Installed at \(CLIService.installPath)"
-                             : "Not installed")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+            SettingsSectionCard(
+                title: L("Command Line Tool"),
+                subtitle: L("Install the usagebar command so you can use UsageBar data from Terminal.")
+            ) {
+                SettingsRow(
+                    title: cliInstalled ? L("Installed") : L("Not Installed"),
+                    description: cliInstalled
+                        ? String(format: L("Current path: %@"), CLIService.installPath)
+                        : L("The command line tool is not available yet.")
+                ) {
+                    Button(cliInstalled ? L("Uninstall") : L("Install")) {
+                        performCLIAction(install: !cliInstalled)
                     }
-
-                    Spacer()
-
-                    if cliInstalled {
-                        Button("Uninstall") {
-                            performCLIAction(install: false)
-                        }
-                    } else {
-                        Button("Install") {
-                            performCLIAction(install: true)
-                        }
-                    }
+                    .buttonStyle(.borderedProminent)
                 }
             }
         }
-        .formStyle(.grouped)
         .alert(L("CLI"), isPresented: $showingCLIAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(cliActionMessage ?? "")
+        }
+        .onAppear {
+            generalSettingsLogger.debug("Rendering general settings with compact menu controls")
         }
     }
 

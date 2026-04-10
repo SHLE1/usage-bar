@@ -15,25 +15,50 @@ struct StatusBarSettingsView: View {
     ]
 
     var body: some View {
-        Form {
-            // MARK: - Pay-as-you-go
-
-            Section("Pay-as-you-go") {
-                ForEach(sortedProviders(Self.payAsYouGoProviders), id: \.self) { identifier in
-                    Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
-                }
-                Toggle("GitHub Copilot Add-on", isOn: $prefs.copilotAddOnEnabled)
+        SettingsPage(
+            title: L("Status Bar"),
+            subtitle: L("Choose which providers appear in UsageBar and which extra billing items stay visible.")
+        ) {
+            SettingsSectionCard(
+                title: L("Pay-as-you-go Providers"),
+                subtitle: L("These providers appear in the usage-based cost section.")
+            ) {
+                providerGrid(for: sortedProviders(Self.payAsYouGoProviders))
             }
 
-            // MARK: - Subscriptions
+            SettingsSectionCard(
+                title: L("Additional Cost Items"),
+                subtitle: L("Billing items that can be shown separately from the main provider list.")
+            ) {
+                Toggle(L("GitHub Copilot Add-on"), isOn: $prefs.copilotAddOnEnabled)
+                    .toggleStyle(.checkbox)
+            }
 
-            Section("Subscriptions") {
-                ForEach(sortedProviders(Self.subscriptionProviders), id: \.self) { identifier in
-                    Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
-                }
+            SettingsSectionCard(
+                title: L("Subscription Providers"),
+                subtitle: L("Quota-based providers shown in the quota section and the status bar summary.")
+            ) {
+                providerGrid(for: sortedProviders(Self.subscriptionProviders))
             }
         }
-        .formStyle(.grouped)
+    }
+
+    @ViewBuilder
+    private func providerGrid(for providers: [ProviderIdentifier]) -> some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(minimum: 180), alignment: .leading),
+                GridItem(.flexible(minimum: 180), alignment: .leading)
+            ],
+            alignment: .leading,
+            spacing: 12
+        ) {
+            ForEach(providers, id: \.self) { identifier in
+                Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
+                    .toggleStyle(.checkbox)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     // MARK: - Sorting (enabled first, then disabled; stable order within each group)

@@ -23,7 +23,7 @@ enum CLIService {
 
         guard FileManager.default.fileExists(atPath: cliPath) else {
             logger.error("CLI binary not found in app bundle at \(cliPath)")
-            return "CLI binary not found in app bundle. Please reinstall the app."
+            return L("CLI binary not found in app bundle. Please reinstall the app.")
         }
 
         let escapedCliPath = cliPath.replacingOccurrences(of: "\"", with: "\\\"")
@@ -35,7 +35,7 @@ enum CLIService {
         var error: NSDictionary?
         guard let scriptObject = NSAppleScript(source: script) else {
             logger.error("Failed to create AppleScript object for CLI install")
-            return "Failed to create installation script."
+            return L("Failed to create installation script.")
         }
 
         scriptObject.executeAndReturnError(&error)
@@ -43,7 +43,7 @@ enum CLIService {
         if let error = error {
             let desc = error.description
             logger.error("CLI installation failed: \(desc)")
-            return "Failed to install CLI: \(desc)"
+            return String(format: L("Failed to install CLI: %@"), desc)
         }
 
         logger.info("CLI installed successfully to /usr/local/bin/usagebar")
@@ -63,7 +63,7 @@ enum CLIService {
         var error: NSDictionary?
         guard let scriptObject = NSAppleScript(source: script) else {
             logger.error("Failed to create AppleScript object for CLI uninstall")
-            return "Failed to create uninstall script."
+            return L("Failed to create uninstall script.")
         }
 
         scriptObject.executeAndReturnError(&error)
@@ -71,7 +71,7 @@ enum CLIService {
         if let error = error {
             let desc = error.description
             logger.error("CLI uninstallation failed: \(desc)")
-            return "Failed to uninstall CLI: \(desc)"
+            return String(format: L("Failed to uninstall CLI: %@"), desc)
         }
 
         logger.info("CLI uninstalled from /usr/local/bin/usagebar")
