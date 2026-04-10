@@ -387,11 +387,11 @@ final class StatusBarController: NSObject {
         menu = NSMenu()
         menu.delegate = self
 
-        historyMenuItem = NSMenuItem(title: "Usage History", action: nil, keyEquivalent: "")
+        historyMenuItem = NSMenuItem(title: L("Usage History"), action: nil, keyEquivalent: "")
         historyMenuItem.image = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Usage History")
         historySubmenu = NSMenu()
         historyMenuItem.submenu = historySubmenu
-        let loadingItem = NSMenuItem(title: "Loading...", action: nil, keyEquivalent: "")
+        let loadingItem = NSMenuItem(title: L("Loading..."), action: nil, keyEquivalent: "")
         loadingItem.isEnabled = false
         historySubmenu.addItem(loadingItem)
         // Removed: History now in Copilot submenu only (see createCopilotHistorySubmenu())
@@ -400,12 +400,12 @@ final class StatusBarController: NSObject {
         // Load cached history immediately on startup (before API fetch completes)
         loadCachedHistoryOnStartup()
 
-        let refreshItem = NSMenuItem(title: "Refresh", action: #selector(refreshClicked), keyEquivalent: "r")
+        let refreshItem = NSMenuItem(title: L("Refresh"), action: #selector(refreshClicked), keyEquivalent: "r")
         refreshItem.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: "Refresh")
         refreshItem.target = self
         menu.addItem(refreshItem)
 
-        let checkForUpdatesItem = NSMenuItem(title: "Check for Updates...", action: #selector(AppDelegate.checkForUpdates), keyEquivalent: "u")
+        let checkForUpdatesItem = NSMenuItem(title: L("Check for Updates..."), action: #selector(AppDelegate.checkForUpdates), keyEquivalent: "u")
         checkForUpdatesItem.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: "Check for Updates")
         checkForUpdatesItem.target = NSApp.delegate
         menu.addItem(checkForUpdatesItem)
@@ -446,11 +446,11 @@ final class StatusBarController: NSObject {
             enabledProvidersMenu.addItem(providerItem)
         }
 
-        criticalBadgeMenuItem = NSMenuItem(title: "Critical Badge", action: #selector(toggleCriticalBadge(_:)), keyEquivalent: "")
+        criticalBadgeMenuItem = NSMenuItem(title: L("Critical Badge"), action: #selector(toggleCriticalBadge(_:)), keyEquivalent: "")
         criticalBadgeMenuItem.target = self
         criticalBadgeMenuItem.isHidden = true
 
-        showProviderNameMenuItem = NSMenuItem(title: "Show Provider Icon", action: #selector(toggleShowProviderName(_:)), keyEquivalent: "")
+        showProviderNameMenuItem = NSMenuItem(title: L("Show Provider Icon"), action: #selector(toggleShowProviderName(_:)), keyEquivalent: "")
         showProviderNameMenuItem.target = self
         showProviderNameMenuItem.isHidden = true
 
@@ -469,24 +469,24 @@ final class StatusBarController: NSObject {
         menu.addItem(NSMenuItem.separator())
 
         // Launch at Login and CLI are now in Settings window — keep items allocated but hidden
-        launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(launchAtLoginClicked), keyEquivalent: "")
+        launchAtLoginItem = NSMenuItem(title: L("Launch at Login"), action: #selector(launchAtLoginClicked), keyEquivalent: "")
         launchAtLoginItem.isHidden = true
         launchAtLoginItem.target = self
         updateLaunchAtLoginState()
         menu.addItem(launchAtLoginItem)
 
-        installCLIItem = NSMenuItem(title: "Install CLI (usagebar)", action: #selector(installCLIClicked), keyEquivalent: "")
+        installCLIItem = NSMenuItem(title: L("Install CLI (usagebar)"), action: #selector(installCLIClicked), keyEquivalent: "")
         installCLIItem.isHidden = true
         installCLIItem.target = self
         menu.addItem(installCLIItem)
         updateCLIInstallState()
 
-        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(AppDelegate.openSettingsWindow), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: L("Settings..."), action: #selector(AppDelegate.openSettingsWindow), keyEquivalent: ",")
         settingsItem.image = NSImage(systemSymbolName: "gear", accessibilityDescription: "Settings")
         settingsItem.target = NSApp.delegate
         menu.addItem(settingsItem)
 
-        let shareSnapshotItem = NSMenuItem(title: "Share Usage Snapshot...", action: #selector(shareUsageSnapshotClicked), keyEquivalent: "")
+        let shareSnapshotItem = NSMenuItem(title: L("Share Usage Snapshot..."), action: #selector(shareUsageSnapshotClicked), keyEquivalent: "")
         shareSnapshotItem.image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: "Share Usage Snapshot")
         shareSnapshotItem.target = self
         menu.addItem(shareSnapshotItem)
@@ -495,19 +495,19 @@ final class StatusBarController: NSObject {
         menu.addItem(NSMenuItem.separator())
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let versionItem = NSMenuItem(title: "UsageBar v\(version)", action: #selector(openGitHub), keyEquivalent: "")
+        let versionItem = NSMenuItem(title: String(format: L("UsageBar v%@"), version), action: #selector(openGitHub), keyEquivalent: "")
         versionItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Version")
         versionItem.target = self
         menu.addItem(versionItem)
 
-         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitClicked), keyEquivalent: "q")
+         let quitItem = NSMenuItem(title: L("Quit"), action: #selector(quitClicked), keyEquivalent: "q")
          quitItem.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: "Quit")
          quitItem.target = self
          menu.addItem(quitItem)
          
          menu.addItem(NSMenuItem.separator())
          
-         viewErrorDetailsItem = NSMenuItem(title: "View Error Details...", action: #selector(viewErrorDetailsClicked), keyEquivalent: "e")
+         viewErrorDetailsItem = NSMenuItem(title: L("View Error Details..."), action: #selector(viewErrorDetailsClicked), keyEquivalent: "e")
          viewErrorDetailsItem.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "View Error Details")
          viewErrorDetailsItem.target = self
          viewErrorDetailsItem.isHidden = true
@@ -1549,7 +1549,7 @@ final class StatusBarController: NSObject {
           let subscriptionTotal = SubscriptionSettingsManager.shared.getTotalMonthlySubscriptionCost()
           
           let payAsYouGoHeader = NSMenuItem()
-          payAsYouGoHeader.view = createHeaderView(title: String(format: "Pay-as-you-go: $%.2f", payAsYouGoTotal))
+          payAsYouGoHeader.view = createHeaderView(title: String(format: L("Pay-as-you-go: $%.2f"), payAsYouGoTotal))
           payAsYouGoHeader.tag = 999
           menu.insertItem(payAsYouGoHeader, at: insertIndex)
           insertIndex += 1
@@ -1619,7 +1619,7 @@ final class StatusBarController: NSObject {
                    let overageCost = details.copilotOverageCost {
                     hasPayAsYouGo = true
                     let addOnItem = NSMenuItem(
-                        title: String(format: "Copilot Add-on ($%.2f)", overageCost),
+                        title: String(format: L("Copilot Add-on ($%.2f)"), overageCost),
                         action: nil, keyEquivalent: ""
                     )
                     addOnItem.image = iconForProvider(.copilot)
@@ -1628,11 +1628,11 @@ final class StatusBarController: NSObject {
                     let submenu = NSMenu()
                     let overageRequests = details.copilotOverageRequests ?? 0
                     let overageItem = NSMenuItem()
-                    overageItem.view = createDisabledLabelView(text: String(format: "Overage Requests: %.0f", overageRequests))
+                    overageItem.view = createDisabledLabelView(text: String(format: L("Overage Requests: %.0f"), overageRequests))
                     submenu.addItem(overageItem)
 
                     submenu.addItem(NSMenuItem.separator())
-                    let historyItem = NSMenuItem(title: "Usage History", action: nil, keyEquivalent: "")
+                    let historyItem = NSMenuItem(title: L("Usage History"), action: nil, keyEquivalent: "")
                     historyItem.image = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Usage History")
                     debugLog("updateMultiProviderMenu: calling createCopilotHistorySubmenu")
                     historyItem.submenu = createCopilotHistorySubmenu()
@@ -1644,7 +1644,7 @@ final class StatusBarController: NSObject {
                     if let email = details.email {
                         let emailItem = NSMenuItem()
                         emailItem.view = createDisabledLabelView(
-                            text: "Account: \(email)",
+                            text: String(format: L("Account: %@"), email),
                             icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account"),
                             multiline: false
                         )
@@ -1667,7 +1667,7 @@ final class StatusBarController: NSObject {
                     debugLog("updateMultiProviderMenu: Copilot Add-on inserted with cost $\(overageCost)")
                 } else if loadingProviders.contains(.copilot) {
                     hasPayAsYouGo = true
-                    let item = NSMenuItem(title: "Copilot Add-on (Loading...)", action: nil, keyEquivalent: "")
+                    let item = NSMenuItem(title: L("Copilot Add-on (Loading...)"), action: nil, keyEquivalent: "")
                     item.image = iconForProvider(.copilot)
                     item.isEnabled = false
                     item.tag = 999
@@ -1678,7 +1678,7 @@ final class StatusBarController: NSObject {
 
         if !hasPayAsYouGo {
             let noItem = NSMenuItem()
-            noItem.view = createDisabledLabelView(text: "No providers")
+            noItem.view = createDisabledLabelView(text: L("No providers"))
             noItem.tag = 999
             menu.insertItem(noItem, at: insertIndex)
             insertIndex += 1
@@ -1695,8 +1695,8 @@ final class StatusBarController: NSObject {
 
          let quotaHeader = NSMenuItem()
          let quotaTitle = subscriptionTotal > 0
-             ? String(format: "Quota Status: $%.0f/m", subscriptionTotal)
-             : "Quota Status"
+             ? String(format: L("Quota Status: $%.0f/m"), subscriptionTotal)
+             : L("Quota Status")
          quotaHeader.view = createHeaderView(title: quotaTitle)
          quotaHeader.tag = 999
          menu.insertItem(quotaHeader, at: insertIndex)
@@ -1735,7 +1735,7 @@ final class StatusBarController: NSObject {
                     if let unavailableLabel {
                         displayName += " (\(unavailableLabel))"
                     }
-                    let isUnavailableRateLimited = unavailableLabel == "Rate limited"
+                    let isUnavailableRateLimited = unavailableLabel == L("Rate limited")
                     let usedPercent = account.usage.usagePercentage
                     let quotaItem = createNativeQuotaMenuItem(
                         name: displayName,
@@ -1780,7 +1780,7 @@ final class StatusBarController: NSObject {
 
                     let usagePercent = limit > 0 ? (Double(used) / Double(limit)) * 100 : 0
                     let usedItem = NSMenuItem()
-                    usedItem.view = createDisabledLabelView(text: String(format: "Monthly Usage: %.0f%%", usagePercent))
+                    usedItem.view = createDisabledLabelView(text: String(format: L("Monthly Usage: %.0f%%"), usagePercent))
                     submenu.addItem(usedItem)
 
                     if let resetDate = copilotUsage.quotaResetDateUTC {
@@ -1794,7 +1794,7 @@ final class StatusBarController: NSObject {
 
                         let resetItem = NSMenuItem()
                         resetItem.view = createDisabledLabelView(
-                            text: "Resets: \(formatter.string(from: resetDate)) UTC",
+                            text: String(format: L("Resets: %@ UTC"), formatter.string(from: resetDate)),
                             indent: 0,
                             textColor: .secondaryLabelColor
                         )
@@ -1807,14 +1807,14 @@ final class StatusBarController: NSObject {
                     if let planName = copilotUsage.planDisplayName {
                         let planItem = NSMenuItem()
                         planItem.view = createDisabledLabelView(
-                            text: "Plan: \(planName)",
+                            text: String(format: L("Plan: %@"), planName),
                             icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
                         )
                         submenu.addItem(planItem)
                     }
 
                     let freeItem = NSMenuItem()
-                    freeItem.view = createDisabledLabelView(text: "Quota Limit: \(limit)")
+                    freeItem.view = createDisabledLabelView(text: String(format: L("Quota Limit: %@"), String(limit)))
                     submenu.addItem(freeItem)
 
                     submenu.addItem(NSMenuItem.separator())
@@ -1822,7 +1822,7 @@ final class StatusBarController: NSObject {
                     if let email = providerResults[.copilot]?.details?.email {
                         let emailItem = NSMenuItem()
                         emailItem.view = createDisabledLabelView(
-                            text: "Email: \(email)",
+                            text: String(format: L("Email: %@"), email),
                             icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email"),
                             multiline: false
                         )
@@ -1831,7 +1831,7 @@ final class StatusBarController: NSObject {
 
                     let authItem = NSMenuItem()
                     authItem.view = createDisabledLabelView(
-                        text: "Token From: Browser Cookies (Chrome/Brave/Arc/Edge)",
+                        text: L("Token From: %@").replacingOccurrences(of: "%@", with: "Browser Cookies (Chrome/Brave/Arc/Edge)"),
                         icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
                         multiline: true
                     )
@@ -1944,7 +1944,7 @@ final class StatusBarController: NSObject {
                         if let unavailableLabel {
                             displayName += " (\(unavailableLabel))"
                         }
-                        let isUnavailableRateLimited = unavailableLabel == "Rate limited"
+                        let isUnavailableRateLimited = unavailableLabel == L("Rate limited")
 
                         // Keep menu list rows in multi-window format (e.g., 5h, weekly, monthly together).
                         let usedPercents: [Double]
@@ -2199,7 +2199,7 @@ final class StatusBarController: NSObject {
 
         if !hasQuota {
             let noItem = NSMenuItem()
-            noItem.view = createDisabledLabelView(text: "No providers")
+            noItem.view = createDisabledLabelView(text: L("No providers"))
             noItem.tag = 999
             menu.insertItem(noItem, at: insertIndex)
             insertIndex += 1
@@ -2209,7 +2209,7 @@ final class StatusBarController: NSObject {
         orphanedSubscriptionKeys = orphaned.keys
         orphanedSubscriptionTotal = orphaned.total
         if orphaned.total > 0 {
-            let title = String(format: "Orphaned ($%.2f)", orphaned.total)
+            let title = String(format: L("Orphaned ($%.2f)"), orphaned.total)
             let orphanedItem = NSMenuItem(
                 title: title,
                 action: #selector(confirmResetOrphanedSubscriptions(_:)),
@@ -2491,7 +2491,7 @@ final class StatusBarController: NSObject {
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !authErrorMessage.isEmpty,
            authErrorMessage.lowercased().contains("token expired") {
-            return "Token expired"
+            return L("Token expired")
         }
 
         if identifier == .claude,
@@ -2499,10 +2499,10 @@ final class StatusBarController: NSObject {
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !authErrorMessage.isEmpty,
            authErrorMessage.lowercased().contains("rate limited") {
-            return "Rate limited"
+            return L("Rate limited")
         }
 
-        return "No usage data"
+        return L("No usage data")
     }
 
     // MARK: - Error State Helpers
@@ -2539,13 +2539,13 @@ final class StatusBarController: NSObject {
         var title: String {
             switch self {
             case .rateLimited:
-                return "Rate limited"
+                return L("Rate limited")
             case .noCredentials:
-                return "No Credentials"
+                return L("No Credentials")
             case .noSubscription:
-                return "No Subscription"
+                return L("No Subscription")
             case .error:
-                return "Error"
+                return L("Error")
             }
         }
 
@@ -2654,7 +2654,7 @@ final class StatusBarController: NSObject {
         submenu.addItem(statusItem)
 
         let errorItem = NSMenuItem()
-        errorItem.view = createDisabledLabelView(text: "Error: \(errorMessage)", multiline: true)
+        errorItem.view = createDisabledLabelView(text: String(format: L("Error: %@"), errorMessage), multiline: true)
         submenu.addItem(errorItem)
 
         if let result,
@@ -2662,10 +2662,10 @@ final class StatusBarController: NSObject {
            details.hasAnyValue {
             submenu.addItem(NSMenuItem.separator())
 
-            let cachedItem = NSMenuItem(title: "Cached Details", action: nil, keyEquivalent: "")
+            let cachedItem = NSMenuItem(title: L("Cached Details"), action: nil, keyEquivalent: "")
             cachedItem.image = NSImage(
                 systemSymbolName: "clock.arrow.circlepath",
-                accessibilityDescription: "Cached Details"
+                accessibilityDescription: L("Cached Details")
             )
             cachedItem.submenu = createDetailSubmenu(details, identifier: identifier)
             submenu.addItem(cachedItem)
@@ -2743,10 +2743,10 @@ final class StatusBarController: NSObject {
         var shouldPrompt = true
         while shouldPrompt {
             let alert = NSAlert()
-            alert.messageText = "Custom Subscription Cost"
-            alert.informativeText = "Enter the monthly subscription cost:"
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
+            alert.messageText = L("Custom Subscription Cost")
+            alert.informativeText = L("Enter the monthly subscription cost:")
+            alert.addButton(withTitle: L("OK"))
+            alert.addButton(withTitle: L("Cancel"))
 
             let inputField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
             if case .custom(let currentCost) = SubscriptionSettingsManager.shared.getPlan(forKey: subscriptionKey) {
@@ -2754,7 +2754,7 @@ final class StatusBarController: NSObject {
             } else {
                 inputField.stringValue = ""
             }
-            inputField.placeholderString = "Enter amount in USD"
+            inputField.placeholderString = L("Enter amount in USD")
             alert.accessoryView = inputField
 
             NSApp.activate(ignoringOtherApps: true)
@@ -2768,9 +2768,9 @@ final class StatusBarController: NSObject {
                     shouldPrompt = false
                 } else {
                     let errorAlert = NSAlert()
-                    errorAlert.messageText = "Invalid Amount"
-                    errorAlert.informativeText = "Please enter a valid non-negative number."
-                    errorAlert.addButton(withTitle: "OK")
+                    errorAlert.messageText = L("Invalid Amount")
+                    errorAlert.informativeText = L("Please enter a valid non-negative number.")
+                    errorAlert.addButton(withTitle: L("OK"))
                     errorAlert.runModal()
                 }
             } else {
@@ -2942,8 +2942,8 @@ final class StatusBarController: NSObject {
         guard let shareText = buildUsageShareSnapshotText() else {
             debugLog("shareUsageSnapshotClicked: no provider results available")
             showAlert(
-                title: "No Usage Data Yet",
-                message: "Refresh usage data first, then try sharing again."
+                title: L("No Usage Data Yet"),
+                message: L("Refresh usage data first, then try sharing again.")
             )
             return
         }
@@ -2954,11 +2954,11 @@ final class StatusBarController: NSObject {
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = "Usage Snapshot Copied"
-        alert.informativeText = "Your usage summary is in the clipboard. Open X to share it now."
+        alert.messageText = L("Usage Snapshot Copied")
+        alert.informativeText = L("Your usage summary is in the clipboard. Open X to share it now.")
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "Open X")
-        alert.addButton(withTitle: "Close")
+        alert.addButton(withTitle: L("Open X"))
+        alert.addButton(withTitle: L("Close"))
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
@@ -2998,11 +2998,11 @@ final class StatusBarController: NSObject {
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = "Reset orphaned subscriptions?"
+        alert.messageText = L("Reset orphaned subscriptions?")
         alert.informativeText = detailText
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Reset")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Reset"))
+        alert.addButton(withTitle: L("Cancel"))
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
@@ -3066,8 +3066,8 @@ final class StatusBarController: NSObject {
         errorLogText += "\n"
         
         let alert = NSAlert()
-        alert.messageText = "Provider Errors Detected"
-        alert.informativeText = "Some providers failed to fetch data. You can copy the error log and report this issue on GitHub."
+        alert.messageText = L("Provider Errors Detected")
+        alert.informativeText = L("Some providers failed to fetch data. You can copy the error log and report this issue on GitHub.")
         alert.alertStyle = .warning
         
         let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 450, height: 200))
@@ -3084,9 +3084,9 @@ final class StatusBarController: NSObject {
         scrollView.documentView = textView
         alert.accessoryView = scrollView
         
-        alert.addButton(withTitle: "Copy & Report on GitHub")
-        alert.addButton(withTitle: "Copy Log Only")
-        alert.addButton(withTitle: "Close")
+        alert.addButton(withTitle: L("Copy & Report on GitHub"))
+        alert.addButton(withTitle: L("Copy Log Only"))
+        alert.addButton(withTitle: L("Close"))
         
         let response = alert.runModal()
         
@@ -3214,10 +3214,10 @@ final class StatusBarController: NSObject {
     
     private func showCopiedConfirmation() {
         let confirmAlert = NSAlert()
-        confirmAlert.messageText = "Copied!"
-        confirmAlert.informativeText = "Error log has been copied to clipboard."
+        confirmAlert.messageText = L("Copied!")
+        confirmAlert.informativeText = L("Error log has been copied to clipboard.")
         confirmAlert.alertStyle = .informational
-        confirmAlert.addButton(withTitle: "OK")
+        confirmAlert.addButton(withTitle: L("OK"))
         confirmAlert.runModal()
     }
     
@@ -3257,10 +3257,10 @@ final class StatusBarController: NSObject {
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = "Support UsageBar?"
-        alert.informativeText = "If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project."
-        alert.addButton(withTitle: "Open GitHub")
-        alert.addButton(withTitle: "No Thanks")
+        alert.messageText = L("Support UsageBar?")
+        alert.informativeText = L("If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project.")
+        alert.addButton(withTitle: L("Open GitHub"))
+        alert.addButton(withTitle: L("No Thanks"))
         alert.alertStyle = .informational
 
         let response = alert.runModal()
@@ -3359,7 +3359,7 @@ final class StatusBarController: NSObject {
         guard FileManager.default.fileExists(atPath: cliPath) else {
             logger.error("CLI binary not found in app bundle at \(cliPath)")
             debugLog("❌ CLI binary not found at expected path in app bundle")
-            showAlert(title: "CLI Not Found", message: "CLI binary not found in app bundle. Please reinstall the app.")
+            showAlert(title: L("CLI Not Found"), message: L("CLI binary not found in app bundle. Please reinstall the app."))
             return
         }
         
@@ -3382,17 +3382,17 @@ final class StatusBarController: NSObject {
             if let error = error {
                 logger.error("CLI installation failed: \(error.description)")
                 debugLog("❌ Installation failed: \(error.description)")
-                showAlert(title: "Installation Failed", message: "Failed to install CLI: \(error.description)")
+                showAlert(title: L("Installation Failed"), message: "Failed to install CLI: \(error.description)")
             } else {
                 logger.info("CLI installed successfully to /usr/local/bin/usagebar")
                 debugLog("✅ CLI installed successfully")
-                showAlert(title: "Success", message: "CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal.")
+                showAlert(title: L("Success"), message: L("CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal."))
                 updateCLIInstallState()
             }
         } else {
             logger.error("Failed to create AppleScript object")
             debugLog("❌ Failed to create AppleScript object")
-            showAlert(title: "Installation Failed", message: "Failed to create installation script.")
+            showAlert(title: L("Installation Failed"), message: L("Failed to create installation script."))
         }
     }
 
@@ -3418,7 +3418,7 @@ final class StatusBarController: NSObject {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L("OK"))
         alert.alertStyle = .informational
         
         alert.runModal()
@@ -3585,7 +3585,7 @@ final class StatusBarController: NSObject {
 
         // Create Predicted EOM menu item
         let eomItem = NSMenuItem(
-            title: String(format: "Predicted EOM: $%.0f", predictedEOM),
+            title: String(format: L("Predicted EOM: $%.0f"), predictedEOM),
             action: nil,
             keyEquivalent: ""
         )
@@ -3656,8 +3656,8 @@ final class StatusBarController: NSObject {
         submenu.addItem(NSMenuItem.separator())
 
         // Prediction Period submenu
-        let periodItem = NSMenuItem(title: "Prediction Period", action: nil, keyEquivalent: "")
-        periodItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Prediction Period")
+        let periodItem = NSMenuItem(title: L("Prediction Period"), action: nil, keyEquivalent: "")
+        periodItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: L("Prediction Period"))
 
         // Create a fresh submenu for prediction period to avoid deadlock
         let periodSubmenu = NSMenu()
@@ -3805,8 +3805,8 @@ final class StatusBarController: NSObject {
 
         debugLog("updateHistorySubmenu: adding final separator and prediction period menu")
         historySubmenu.addItem(NSMenuItem.separator())
-        let predictionPeriodItem = NSMenuItem(title: "Prediction Period", action: nil, keyEquivalent: "")
-        predictionPeriodItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Prediction Period")
+        let predictionPeriodItem = NSMenuItem(title: L("Prediction Period"), action: nil, keyEquivalent: "")
+        predictionPeriodItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: L("Prediction Period"))
         
         // Create a fresh submenu to avoid NSMenu parent conflict
         let freshPeriodSubmenu = NSMenu()

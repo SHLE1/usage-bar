@@ -1,0 +1,219 @@
+/* ==========================
+   Menu Items
+   ========================== */
+"Usage History" = "Usage History";
+"Loading..." = "Loading...";
+"Refresh" = "Refresh";
+"Check for Updates..." = "Check for Updates...";
+"Critical Badge" = "Critical Badge";
+"Show Provider Icon" = "Show Provider Icon";
+"Launch at Login" = "Launch at Login";
+"Install CLI (usagebar)" = "Install CLI (usagebar)";
+"CLI Installed (usagebar)" = "CLI Installed (usagebar)";
+"Settings..." = "Settings...";
+"Share Usage Snapshot..." = "Share Usage Snapshot...";
+"UsageBar v%@" = "UsageBar v%@";
+"Quit" = "Quit";
+"View Error Details..." = "View Error Details...";
+"Prediction Period" = "Prediction Period";
+"(Today)" = "(Today)";
+
+/* ==========================
+   Status Labels
+   ========================== */
+"Token expired" = "Token expired";
+"Rate limited" = "Rate limited";
+"No usage data" = "No usage data";
+"No Credentials" = "No Credentials";
+"No Subscription" = "No Subscription";
+"Error" = "Error";
+"No providers" = "No providers";
+"Orphaned ($%.2f)" = "Orphaned ($%.2f)";
+
+/* ==========================
+   Provider Section Headers
+   ========================== */
+"Pay-as-you-go: $%.2f" = "Pay-as-you-go: $%.2f";
+"Quota Status: $%.0f/m" = "Quota Status: $%.0f/m";
+"Quota Status" = "Quota Status";
+"Predicted EOM: $%.0f" = "Predicted EOM: $%.0f";
+"Copilot Add-on ($%.2f)" = "Copilot Add-on ($%.2f)";
+"Copilot Add-on (Loading...)" = "Copilot Add-on (Loading...)";
+"Overage Requests: %.0f" = "Overage Requests: %.0f";
+"%@ (Loading...)" = "%@ (Loading...)";
+
+/* ==========================
+   Provider Detail Items
+   ========================== */
+"Credits: $%.0f" = "Credits: $%.0f";
+"Avg/Day: $%.2f" = "Avg/Day: $%.2f";
+"Sessions: %@" = "Sessions: %@";
+"Messages: %@" = "Messages: %@";
+"Top Models" = "Top Models";
+"Unlimited" = "Unlimited";
+"Usage data unavailable" = "Usage data unavailable";
+"Monthly" = "Monthly";
+"Plan: %@" = "Plan: %@";
+"Quota Limit: %@" = "Quota Limit: %@";
+"Account: %@" = "Account: %@";
+"Token From: %@" = "Token From: %@";
+"Email: %@" = "Email: %@";
+"Account ID: %@" = "Account ID: %@";
+"Using in: %@" = "Using in: %@";
+"5h" = "5h";
+"Weekly" = "Weekly";
+"Sonnet (Weekly)" = "Sonnet (Weekly)";
+"Opus (Weekly)" = "Opus (Weekly)";
+"Extra Usage: ON" = "Extra Usage: ON";
+"Extra Usage: OFF" = "Extra Usage: OFF";
+"Extra (Monthly)" = "Extra (Monthly)";
+"Limit: $%.2f/m" = "Limit: $%.2f/m";
+"Used: $%.2f" = "Used: $%.2f";
+"Tokens (5h)" = "Tokens (5h)";
+"Tokens" = "Tokens";
+"MCP (Monthly)" = "MCP (Monthly)";
+"MCP" = "MCP";
+"Last 24h" = "Last 24h";
+"Tokens Used: %@" = "Tokens Used: %@";
+"Model Calls: %@" = "Model Calls: %@";
+"Tool Usage (24h)" = "Tool Usage (24h)";
+"Network Search: %@" = "Network Search: %@";
+"Web Read: %@" = "Web Read: %@";
+"ZRead: %@" = "ZRead: %@";
+"Weekly Input Tokens" = "Weekly Input Tokens";
+"USD Balance: $%.2f" = "USD Balance: $%.2f";
+"NANO Balance: %.8f" = "NANO Balance: %.8f";
+"Daily Requests: %d / %d (%.0f%% used)" = "Daily Requests: %d / %d (%.0f%% used)";
+"Monthly Value Used: $%.2f / $%.2f (%.0f%% used)" = "Monthly Value Used: $%.2f / $%.2f (%.0f%% used)";
+"Monthly Cap: $%.2f (5× subscription)" = "Monthly Cap: $%.2f (5× subscription)";
+"Credits Balance: $%.2f" = "Credits Balance: $%.2f";
+"Overage: PAYGO after cap" = "Overage: PAYGO after cap";
+"Daily: $%.2f" = "Daily: $%.2f";
+"Weekly: $%.2f" = "Weekly: $%.2f";
+"Monthly: $%.2f" = "Monthly: $%.2f";
+"Credits: $%.2f left" = "Credits: $%.2f left";
+"Limit: $%.2f / $%.2f" = "Limit: $%.2f / $%.2f";
+"Resets: %@" = "Resets: %@";
+"%@: %.0f%% used" = "%@: %.0f%% used";
+
+/* ==========================
+   Pace / Time Labels
+   ========================== */
+"Unavailable" = "Unavailable";
+"less than 1m left" = "less than 1m left";
+"Used Up" = "Used Up";
+"Speed: %@" = "Speed: %@";
+"Status: " = "Status: ";
+"Wait " = "Wait ";
+"Predict: " = "Predict: ";
+"Used: " = "Used: ";
+" left" = " left";
+"Resets: %@ UTC" = "Resets: %@ UTC";
+
+/* ==========================
+   Subscription Section
+   ========================== */
+"Subscription" = "Subscription";
+"None ($0)" = "None ($0)";
+"Set custom..." = "Set custom...";
+"No data" = "No data";
+"Data is stale" = "Data is stale";
+"Cached Details" = "Cached Details";
+"Status: %@" = "Status: %@";
+"Error: %@" = "Error: %@";
+
+/* ==========================
+   Refresh Interval (MenuEnums)
+   ========================== */
+"1m" = "1m";
+"3m" = "3m";
+"5m" = "5m";
+"10m" = "10m";
+"30m" = "30m";
+"1h" = "1h";
+
+/* ==========================
+   Prediction Period (MenuEnums)
+   ========================== */
+"7 days" = "7 days";
+"14 days" = "14 days";
+"21 days" = "21 days";
+
+/* ==========================
+   Status Bar Display Mode (MenuEnums)
+   ========================== */
+"Total Cost" = "Total Cost";
+"Icon Only" = "Icon Only";
+"Only Show" = "Only Show";
+"Multi-Provider Bar" = "Multi-Provider Bar";
+"Pinned Provider" = "Pinned Provider";
+"Alert First" = "Alert First";
+"Recent Quota Change Only" = "Recent Quota Change Only";
+
+/* ==========================
+   Settings Window (SwiftUI)
+   ========================== */
+"General" = "General";
+"Status Bar" = "Status Bar";
+"Subscriptions" = "Subscriptions";
+"Auto Refresh Period" = "Auto Refresh Period";
+"Launch at Login" = "Launch at Login";
+"Critical Badge" = "Critical Badge";
+"Command Line Tool" = "Command Line Tool";
+"Not installed" = "Not installed";
+"Installed at %@" = "Installed at %@";
+"Uninstall" = "Uninstall";
+"Install" = "Install";
+"CLI" = "CLI";
+"CLI %@ successfully." = "CLI %@ successfully.";
+"installed" = "installed";
+"uninstalled" = "uninstalled";
+"Monthly Total" = "Monthly Total";
+"Saved setting without a detected account" = "Saved setting without a detected account";
+"None" = "None";
+"Custom" = "Custom";
+"/m" = "/m";
+"Apply" = "Apply";
+
+/* ==========================
+   Buttons
+   ========================== */
+"OK" = "OK";
+"Cancel" = "Cancel";
+"Close" = "Close";
+"Reset" = "Reset";
+"Open X" = "Open X";
+"Open GitHub" = "Open GitHub";
+"No Thanks" = "No Thanks";
+"Copy & Report on GitHub" = "Copy & Report on GitHub";
+"Copy Log Only" = "Copy Log Only";
+
+/* ==========================
+   Alert Dialogs
+   ========================== */
+"Custom Subscription Cost" = "Custom Subscription Cost";
+"Enter the monthly subscription cost:" = "Enter the monthly subscription cost:";
+"Enter amount in USD" = "Enter amount in USD";
+"Invalid Amount" = "Invalid Amount";
+"Please enter a valid non-negative number." = "Please enter a valid non-negative number.";
+"No Usage Data Yet" = "No Usage Data Yet";
+"Refresh usage data first, then try sharing again." = "Refresh usage data first, then try sharing again.";
+"Usage Snapshot Copied" = "Usage Snapshot Copied";
+"Your usage summary is in the clipboard. Open X to share it now." = "Your usage summary is in the clipboard. Open X to share it now.";
+"Reset orphaned subscriptions?" = "Reset orphaned subscriptions?";
+"This will delete %d stored subscription %@ that no longer match any detected account." = "This will delete %d stored subscription %@ that no longer match any detected account.";
+"entries" = "entries";
+"entry" = "entry";
+"Provider Errors Detected" = "Provider Errors Detected";
+"Some providers failed to fetch data. You can copy the error log and report this issue on GitHub." = "Some providers failed to fetch data. You can copy the error log and report this issue on GitHub.";
+"Copied!" = "Copied!";
+"Error log has been copied to clipboard." = "Error log has been copied to clipboard.";
+"Support UsageBar?" = "Support UsageBar?";
+"If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project." = "If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project.";
+"CLI Not Found" = "CLI Not Found";
+"CLI binary not found in app bundle. Please reinstall the app." = "CLI binary not found in app bundle. Please reinstall the app.";
+"Installation Failed" = "Installation Failed";
+"Failed to install CLI: %@" = "Failed to install CLI: %@";
+"Success" = "Success";
+"CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal." = "CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal.";
+"Failed to create installation script." = "Failed to create installation script.";

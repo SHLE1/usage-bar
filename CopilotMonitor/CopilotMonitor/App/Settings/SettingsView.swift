@@ -13,7 +13,7 @@ struct SettingsView: View {
 
                 Picker("", selection: $selectedTab) {
                     ForEach(SettingsTab.allCases) { tab in
-                        Text(tab.title).tag(tab)
+                        Text(verbatim: tab.title).tag(tab)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -57,11 +57,11 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general:
-            return "General"
+            return L("General")
         case .statusBar:
-            return "Status Bar"
+            return L("Status Bar")
         case .subscriptions:
-            return "Subscriptions"
+            return L("Subscriptions")
         }
     }
 }

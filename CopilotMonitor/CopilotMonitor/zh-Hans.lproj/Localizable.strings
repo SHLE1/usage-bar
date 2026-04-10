@@ -1,0 +1,219 @@
+/* ==========================
+   菜单项
+   ========================== */
+"Usage History" = "使用历史";
+"Loading..." = "加载中…";
+"Refresh" = "刷新";
+"Check for Updates..." = "检查更新…";
+"Critical Badge" = "紧急徽标";
+"Show Provider Icon" = "显示 Provider 图标";
+"Launch at Login" = "登录时启动";
+"Install CLI (usagebar)" = "安装 CLI (usagebar)";
+"CLI Installed (usagebar)" = "CLI 已安装 (usagebar)";
+"Settings..." = "设置…";
+"Share Usage Snapshot..." = "分享使用快照…";
+"UsageBar v%@" = "UsageBar v%@";
+"Quit" = "退出";
+"View Error Details..." = "查看错误详情…";
+"Prediction Period" = "预测周期";
+"(Today)" = "（今天）";
+
+/* ==========================
+   状态标签
+   ========================== */
+"Token expired" = "Token 已过期";
+"Rate limited" = "请求受限";
+"No usage data" = "无使用数据";
+"No Credentials" = "无凭证";
+"No Subscription" = "无订阅";
+"Error" = "错误";
+"No providers" = "无 Provider";
+"Orphaned ($%.2f)" = "孤立订阅 ($%.2f)";
+
+/* ==========================
+   Provider 区块标题
+   ========================== */
+"Pay-as-you-go: $%.2f" = "按量计费: $%.2f";
+"Quota Status: $%.0f/m" = "配额状态: $%.0f/月";
+"Quota Status" = "配额状态";
+"Predicted EOM: $%.0f" = "预计月末: $%.0f";
+"Copilot Add-on ($%.2f)" = "Copilot 附加 ($%.2f)";
+"Copilot Add-on (Loading...)" = "Copilot 附加 (加载中…)";
+"Overage Requests: %.0f" = "超额请求: %.0f";
+"%@ (Loading...)" = "%@ (加载中…)";
+
+/* ==========================
+   Provider 详情
+   ========================== */
+"Credits: $%.0f" = "余额: $%.0f";
+"Avg/Day: $%.2f" = "日均: $%.2f";
+"Sessions: %@" = "会话: %@";
+"Messages: %@" = "消息: %@";
+"Top Models" = "热门模型";
+"Unlimited" = "无限制";
+"Usage data unavailable" = "用量数据不可用";
+"Monthly" = "每月";
+"Plan: %@" = "套餐: %@";
+"Quota Limit: %@" = "配额上限: %@";
+"Account: %@" = "账号: %@";
+"Token From: %@" = "Token 来源: %@";
+"Email: %@" = "邮箱: %@";
+"Account ID: %@" = "账号 ID: %@";
+"Using in: %@" = "使用中: %@";
+"5h" = "5小时";
+"Weekly" = "每周";
+"Sonnet (Weekly)" = "Sonnet（每周）";
+"Opus (Weekly)" = "Opus（每周）";
+"Extra Usage: ON" = "额外用量: 已开启";
+"Extra Usage: OFF" = "额外用量: 已关闭";
+"Extra (Monthly)" = "额外（每月）";
+"Limit: $%.2f/m" = "限额: $%.2f/月";
+"Used: $%.2f" = "已用: $%.2f";
+"Tokens (5h)" = "Token（5小时）";
+"Tokens" = "Token";
+"MCP (Monthly)" = "MCP（每月）";
+"MCP" = "MCP";
+"Last 24h" = "最近 24 小时";
+"Tokens Used: %@" = "Token 用量: %@";
+"Model Calls: %@" = "模型调用: %@";
+"Tool Usage (24h)" = "工具用量（24 小时）";
+"Network Search: %@" = "网络搜索: %@";
+"Web Read: %@" = "网页读取: %@";
+"ZRead: %@" = "ZRead: %@";
+"Weekly Input Tokens" = "每周输入 Token";
+"USD Balance: $%.2f" = "美元余额: $%.2f";
+"NANO Balance: %.8f" = "NANO 余额: %.8f";
+"Daily Requests: %d / %d (%.0f%% used)" = "今日请求: %d / %d（已用 %.0f%%）";
+"Monthly Value Used: $%.2f / $%.2f (%.0f%% used)" = "当月用量: $%.2f / $%.2f（已用 %.0f%%）";
+"Monthly Cap: $%.2f (5× subscription)" = "月度上限: $%.2f（5 倍订阅）";
+"Credits Balance: $%.2f" = "余额: $%.2f";
+"Overage: PAYGO after cap" = "超出：超限后按量计费";
+"Daily: $%.2f" = "日: $%.2f";
+"Weekly: $%.2f" = "周: $%.2f";
+"Monthly: $%.2f" = "月: $%.2f";
+"Credits: $%.2f left" = "余额: $%.2f 剩余";
+"Limit: $%.2f / $%.2f" = "限额: $%.2f / $%.2f";
+"Resets: %@" = "重置: %@";
+"%@: %.0f%% used" = "%@: 已用 %.0f%%";
+
+/* ==========================
+   节奏 / 时间标签
+   ========================== */
+"Unavailable" = "不可用";
+"less than 1m left" = "剩余不到 1 分钟";
+"Used Up" = "已用完";
+"Speed: %@" = "速度: %@";
+"Status: " = "状态: ";
+"Wait " = "等待 ";
+"Predict: " = "预测: ";
+"Used: " = "已用: ";
+" left" = " 剩余";
+"Resets: %@ UTC" = "重置: %@ UTC";
+
+/* ==========================
+   订阅区块
+   ========================== */
+"Subscription" = "订阅";
+"None ($0)" = "无 ($0)";
+"Set custom..." = "自定义…";
+"No data" = "无数据";
+"Data is stale" = "数据已过期";
+"Cached Details" = "已缓存详情";
+"Status: %@" = "状态: %@";
+"Error: %@" = "错误: %@";
+
+/* ==========================
+   刷新间隔（MenuEnums）
+   ========================== */
+"1m" = "1 分钟";
+"3m" = "3 分钟";
+"5m" = "5 分钟";
+"10m" = "10 分钟";
+"30m" = "30 分钟";
+"1h" = "1 小时";
+
+/* ==========================
+   预测周期（MenuEnums）
+   ========================== */
+"7 days" = "7 天";
+"14 days" = "14 天";
+"21 days" = "21 天";
+
+/* ==========================
+   状态栏显示模式（MenuEnums）
+   ========================== */
+"Total Cost" = "总费用";
+"Icon Only" = "仅图标";
+"Only Show" = "限量显示";
+"Multi-Provider Bar" = "多 Provider 状态栏";
+"Pinned Provider" = "固定 Provider";
+"Alert First" = "优先告警";
+"Recent Quota Change Only" = "仅显示近期配额变化";
+
+/* ==========================
+   设置窗口（SwiftUI）
+   ========================== */
+"General" = "通用";
+"Status Bar" = "状态栏";
+"Subscriptions" = "订阅";
+"Auto Refresh Period" = "自动刷新间隔";
+"Launch at Login" = "登录时启动";
+"Critical Badge" = "紧急徽标";
+"Command Line Tool" = "命令行工具";
+"Not installed" = "未安装";
+"Installed at %@" = "安装于 %@";
+"Uninstall" = "卸载";
+"Install" = "安装";
+"CLI" = "CLI";
+"CLI %@ successfully." = "CLI %@ 成功。";
+"installed" = "已安装";
+"uninstalled" = "已卸载";
+"Monthly Total" = "每月总计";
+"Saved setting without a detected account" = "已保存但未检测到关联账号";
+"None" = "无";
+"Custom" = "自定义";
+"/m" = "/月";
+"Apply" = "应用";
+
+/* ==========================
+   按钮
+   ========================== */
+"OK" = "确定";
+"Cancel" = "取消";
+"Close" = "关闭";
+"Reset" = "重置";
+"Open X" = "打开 X";
+"Open GitHub" = "打开 GitHub";
+"No Thanks" = "不了，谢谢";
+"Copy & Report on GitHub" = "复制并在 GitHub 反馈";
+"Copy Log Only" = "仅复制日志";
+
+/* ==========================
+   弹窗对话框
+   ========================== */
+"Custom Subscription Cost" = "自定义订阅费用";
+"Enter the monthly subscription cost:" = "请输入每月订阅费用：";
+"Enter amount in USD" = "输入金额（美元）";
+"Invalid Amount" = "无效金额";
+"Please enter a valid non-negative number." = "请输入有效的非负数。";
+"No Usage Data Yet" = "尚无使用数据";
+"Refresh usage data first, then try sharing again." = "请先刷新使用数据后再尝试分享。";
+"Usage Snapshot Copied" = "使用快照已复制";
+"Your usage summary is in the clipboard. Open X to share it now." = "使用摘要已复制到剪贴板，立即打开 X 分享。";
+"Reset orphaned subscriptions?" = "重置孤立订阅？";
+"This will delete %d stored subscription %@ that no longer match any detected account." = "这将删除 %d 条不再匹配任何已检测账号的订阅%@。";
+"entries" = "条记录";
+"entry" = "条记录";
+"Provider Errors Detected" = "发现 Provider 错误";
+"Some providers failed to fetch data. You can copy the error log and report this issue on GitHub." = "部分 Provider 数据获取失败。您可以复制错误日志并在 GitHub 上报告此问题。";
+"Copied!" = "已复制！";
+"Error log has been copied to clipboard." = "错误日志已复制到剪贴板。";
+"Support UsageBar?" = "支持 UsageBar？";
+"If you find this app useful, would you like to star it on GitHub? It helps others discover this project.\n\nBased on the original opgginc/opencode-bar project." = "如果您觉得这个应用有用，是否愿意在 GitHub 上给它加星？这有助于其他人发现这个项目。\n\n基于原始项目 opgginc/opencode-bar。";
+"CLI Not Found" = "CLI 未找到";
+"CLI binary not found in app bundle. Please reinstall the app." = "应用包中未找到 CLI 文件，请重新安装应用。";
+"Installation Failed" = "安装失败";
+"Failed to install CLI: %@" = "CLI 安装失败: %@";
+"Success" = "成功";
+"CLI installed to /usr/local/bin/usagebar\n\nYou can now use 'usagebar' command in Terminal." = "CLI 已安装至 /usr/local/bin/usagebar\n\n您现在可以在终端中使用 'usagebar' 命令。";
+"Failed to create installation script." = "无法创建安装脚本。";

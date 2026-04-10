@@ -35,6 +35,8 @@
 		A454D8C42F30548900E355E3 /* ZaiCodingPlanProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A454D8C32F30548900E355E3 /* ZaiCodingPlanProvider.swift */; };
 		MINIMAXAPP11111111111111 /* MiniMaxProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = MINIMAXFILE2222222222222 /* MiniMaxProvider.swift */; };
 		NANOGPTAPP11111111111111 /* NanoGptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = NANOGPTFILE222222222222 /* NanoGptProvider.swift */; };
+		LB1111111111111111111111 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = LZ1111111111111111111111 /* Localizable.strings */; };
+		LL1111111111111111111111 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = LF1111111111111111111111 /* L10n.swift */; };
 		A55555555555555555555555 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A66666666666666666666666 /* Assets.xcassets */; };
 		AD95EBD6AE3134DF4C797577 /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDC1B4DE6B5118CE4AE8F82 /* ClaudeProvider.swift */; };
 		AM1111111111111111111111 /* AppMigrationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AM2222222222222222222222 /* AppMigrationHelper.swift */; };
@@ -159,6 +161,9 @@
 		A454D8C32F30548900E355E3 /* ZaiCodingPlanProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZaiCodingPlanProvider.swift; sourceTree = "<group>"; };
 		MINIMAXFILE2222222222222 /* MiniMaxProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniMaxProvider.swift; sourceTree = "<group>"; };
 		NANOGPTFILE222222222222 /* NanoGptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NanoGptProvider.swift; sourceTree = "<group>"; };
+		EN1111111111111111111111 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		LF1111111111111111111111 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		ZH1111111111111111111111 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A66666666666666666666666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A77777777777777777777777 /* UsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "UsageBar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A88888888888888888888888 /* CopilotMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CopilotMonitor.entitlements; sourceTree = "<group>"; };
@@ -295,6 +300,7 @@
 				ME3333333333333333333333 /* Helpers */,
 				E33333333333333333333333 /* Models */,
 				A66666666666666666666666 /* Assets.xcassets */,
+				LZ1111111111111111111111 /* Localizable.strings */,
 				A88888888888888888888888 /* CopilotMonitor.entitlements */,
 				A99999999999999999999999 /* Info.plist */,
 				4D0546BDF4C7CD74746285DF /* Providers */,
@@ -407,6 +413,7 @@
 				PMB222222222222222222222 /* ProviderMenuBuilder.swift */,
 				C1C7C9FDB4600114F02B2915 /* MenuDesignToken.swift */,
 				0F6CE62C58ECA852F25FEF30 /* MenuResultBuilder.swift */,
+				LF1111111111111111111111 /* L10n.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -516,6 +523,18 @@
 		};
 /* End PBXNativeTarget section */
 
+/* Begin PBXVariantGroup section */
+		LZ1111111111111111111111 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				EN1111111111111111111111 /* en */,
+				ZH1111111111111111111111 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin PBXProject section */
 		B44444444444444444444444 /* Project object */ = {
 			isa = PBXProject;
@@ -536,6 +555,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = ABBBBBBBBBBBBBBBBBBBBBBB;
 			packageReferences = (
@@ -560,6 +580,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A55555555555555555555555 /* Assets.xcassets in Resources */,
+				LB1111111111111111111111 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -644,6 +665,7 @@
 				283348FF2F313096004DADE1 /* BrowserCookieService.swift in Sources */,
 				6C4146861DE2C13836DE1D35 /* CopilotHistoryService.swift in Sources */,
 				PMB111111111111111111111 /* ProviderMenuBuilder.swift in Sources */,
+				LL1111111111111111111111 /* L10n.swift in Sources */,
 				F08C918116D7B3024B68C81A /* MenuDesignToken.swift in Sources */,
 				A14AF9AC6A646726B7C94978 /* MenuResultBuilder.swift in Sources */,
 				8EA90F9E26F29FC7938D2924 /* ViewModels/ProviderViewModel.swift in Sources */,

@@ -66,7 +66,7 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .alert("CLI", isPresented: $showingCLIAlert) {
+        .alert(L("CLI"), isPresented: $showingCLIAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(cliActionMessage ?? "")
@@ -89,8 +89,8 @@ struct GeneralSettingsView: View {
             cliActionMessage = error
             showingCLIAlert = true
         } else {
-            let verb = install ? "installed" : "uninstalled"
-            cliActionMessage = "CLI \(verb) successfully."
+            let verb = install ? L("installed") : L("uninstalled")
+            cliActionMessage = String(format: L("CLI %@ successfully."), verb)
             showingCLIAlert = true
         }
     }

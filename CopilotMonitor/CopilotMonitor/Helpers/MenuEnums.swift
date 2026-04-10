@@ -11,12 +11,12 @@ enum RefreshInterval: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .oneMinute: return "1m"
-        case .threeMinutes: return "3m"
-        case .fiveMinutes: return "5m"
-        case .tenMinutes: return "10m"
-        case .thirtyMinutes: return "30m"
-        case .oneHour: return "1h"
+        case .oneMinute: return L("1m")
+        case .threeMinutes: return L("3m")
+        case .fiveMinutes: return L("5m")
+        case .tenMinutes: return L("10m")
+        case .thirtyMinutes: return L("30m")
+        case .oneHour: return L("1h")
         }
     }
 
@@ -31,9 +31,9 @@ enum PredictionPeriod: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .oneWeek: return "7 days"
-        case .twoWeeks: return "14 days"
-        case .threeWeeks: return "21 days"
+        case .oneWeek: return L("7 days")
+        case .twoWeeks: return L("14 days")
+        case .threeWeeks: return L("21 days")
         }
     }
 
@@ -60,10 +60,10 @@ enum MenuBarDisplayMode: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .totalCost: return "Total Cost"
-        case .iconOnly: return "Icon Only"
-        case .onlyShow: return "Only Show"
-        case .multiProvider: return "Multi-Provider Bar"
+        case .totalCost: return L("Total Cost")
+        case .iconOnly: return L("Icon Only")
+        case .onlyShow: return L("Only Show")
+        case .multiProvider: return L("Multi-Provider Bar")
         }
     }
 
@@ -77,9 +77,9 @@ enum OnlyShowMode: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .pinnedProvider: return "Pinned Provider"
-        case .alertFirst: return "Alert First"
-        case .recentChange: return "Recent Quota Change Only"
+        case .pinnedProvider: return L("Pinned Provider")
+        case .alertFirst: return L("Alert First")
+        case .recentChange: return L("Recent Quota Change Only")
         }
     }
 

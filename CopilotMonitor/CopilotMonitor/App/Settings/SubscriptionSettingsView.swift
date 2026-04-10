@@ -199,7 +199,7 @@ private struct SubscriptionRowView: View {
                         .lineLimit(1)
 
                     if row.isOrphaned {
-                        Text("Saved setting without a detected account")
+                        Text(LocalizedStringKey("Saved setting without a detected account"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -219,10 +219,10 @@ private struct SubscriptionRowView: View {
                         .multilineTextAlignment(.trailing)
                         .onSubmit { applyCustomAmount() }
 
-                    Text("/m")
+                    Text(verbatim: L("/m"))
                         .foregroundStyle(.secondary)
 
-                    Button("Apply") {
+                    Button(L("Apply")) {
                         applyCustomAmount()
                     }
                     .buttonStyle(.bordered)
@@ -236,7 +236,7 @@ private struct SubscriptionRowView: View {
 
     private var subscriptionPlanMenu: some View {
         Menu {
-            Button("None") {
+            Button(L("None")) {
                 row.plan = .none
                 showCustomField = false
                 onChanged()
@@ -256,7 +256,7 @@ private struct SubscriptionRowView: View {
 
             Divider()
 
-            Button("Custom") {
+            Button(L("Custom")) {
                 showCustomField = true
                 if case .custom(let amount) = row.plan {
                     customAmountText = String(format: "%.2f", amount)
@@ -290,7 +290,7 @@ private struct SubscriptionRowView: View {
     private var selectionTitle: String {
         switch row.plan {
         case .none:
-            return "None"
+            return L("None")
         case .preset(let name, let cost):
             return "\(name) \(currencyText(for: cost))"
         case .custom(let amount):
