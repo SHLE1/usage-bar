@@ -588,15 +588,7 @@ final class ClaudeProvider: ProviderProtocol {
             let remaining = 100 - utilization
 
             func parseISO8601Date(_ string: String) -> Date? {
-                let formatterWithFrac = ISO8601DateFormatter()
-                formatterWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                if let date = formatterWithFrac.date(from: string) {
-                    return date
-                }
-
-                let formatterWithoutFrac = ISO8601DateFormatter()
-                formatterWithoutFrac.formatOptions = [.withInternetDateTime]
-                return formatterWithoutFrac.date(from: string)
+                ISO8601DateParsing.parse(string)
             }
 
             let fiveHourReset = response.five_hour?.resets_at.flatMap { parseISO8601Date($0) }

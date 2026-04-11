@@ -571,8 +571,7 @@ struct JSONFormatter {
                     providerDict["cost"] = cost
                 }
                 if let resetsAt = resetsAt {
-                    let formatter = ISO8601DateFormatter()
-                    providerDict["resetsAt"] = formatter.string(from: resetsAt)
+                    providerDict["resetsAt"] = ISO8601DateParsing.string(from: resetsAt)
                 }
 
             case .quotaBased(let remaining, let entitlement, let overagePermitted):

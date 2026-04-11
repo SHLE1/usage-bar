@@ -84,11 +84,11 @@ private struct NanoGptSubscriptionUsageResponse: Decodable {
                 forKeys: [.used, .usage, .inputTokensUsed, .inputTokensUsedSnake, .usedTokens, .usedTokensSnake]
             )
             remaining = NanoGptSubscriptionUsageResponse.decodeInt(container, forKeys: [.remaining, .left])
-            percentUsed = NanoGptSubscriptionUsageResponse.decodeDouble(
+            percentUsed = FlexibleDecoder.decodeDouble(
                 container,
                 forKeys: [.percentUsed, .percentUsedSnake, .usagePercent, .usagePercentSnake]
             )
-            resetAt = NanoGptSubscriptionUsageResponse.decodeInt64(
+            resetAt = FlexibleDecoder.decodeInt64(
                 container,
                 forKeys: [.resetAt, .resetAtSnake, .nextResetAt, .nextResetAtSnake]
             )
@@ -174,11 +174,11 @@ private struct NanoGptSubscriptionUsageResponse: Decodable {
                 container,
                 forKeys: [.weeklyInputTokensRemaining, .weeklyInputTokensRemainingSnake]
             ),
-            percentUsed: NanoGptSubscriptionUsageResponse.decodeDouble(
+            percentUsed: FlexibleDecoder.decodeDouble(
                 container,
                 forKeys: [.weeklyInputTokensPercentUsed, .weeklyInputTokensPercentUsedSnake]
             ),
-            resetAt: NanoGptSubscriptionUsageResponse.decodeInt64(
+            resetAt: FlexibleDecoder.decodeInt64(
                 container,
                 forKeys: [.weeklyInputTokensResetAt, .weeklyInputTokensResetAtSnake]
             )
@@ -211,84 +211,6 @@ private struct NanoGptBalanceResponse: Decodable {
 }
 
 private extension NanoGptSubscriptionUsageResponse {
-    static func decodeInt<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKey key: Key) -> Int? {
-        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
-            return Int(value)
-        }
-        if let value = try? container.decodeIfPresent(String.self, forKey: key) {
-            return Int(value)
-        }
-        return nil
-    }
-
-    static func decodeInt<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKeys keys: [Key]) -> Int? {
-        for key in keys {
-            if let value = decodeInt(container, forKey: key) {
-                return value
-            }
-        }
-        return nil
-    }
-
-    static func decodeInt64<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKey key: Key) -> Int64? {
-        if let value = try? container.decodeIfPresent(Int64.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
-            return Int64(value)
-        }
-        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
-            return Int64(value)
-        }
-        if let value = try? container.decodeIfPresent(String.self, forKey: key) {
-            return Int64(value)
-        }
-        return nil
-    }
-
-    static func decodeInt64<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKeys keys: [Key]) -> Int64? {
-        for key in keys {
-            if let value = decodeInt64(container, forKey: key) {
-                return value
-            }
-        }
-        return nil
-    }
-
-    static func decodeDouble<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKey key: Key) -> Double? {
-        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
-            return value
-        }
-        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
-            return Double(value)
-        }
-        if let value = try? container.decodeIfPresent(String.self, forKey: key) {
-            if let parsed = Double(value) {
-                return parsed
-            }
-            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasSuffix("%") {
-                let percentless = String(trimmed.dropLast())
-                if let parsedPercent = Double(percentless) {
-                    return parsedPercent / 100.0
-                }
-            }
-        }
-        return nil
-    }
-
-    static func decodeDouble<Key: CodingKey>(_ container: KeyedDecodingContainer<Key>, forKeys keys: [Key]) -> Double? {
-        for key in keys {
-            if let value = decodeDouble(container, forKey: key) {
-                return value
-            }
-        }
-        return nil
-    }
-
     static func decodeWindowUsage<Key: CodingKey>(
         _ container: KeyedDecodingContainer<Key>,
         forKeys keys: [Key]
@@ -474,13 +396,7 @@ final class NanoGptProvider: ProviderProtocol {
     private func formatISO8601(_ value: String?) -> String? {
         guard let value, !value.isEmpty else { return nil }
 
-        let formatterWithFractional = ISO8601DateFormatter()
-        formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        let formatterWithoutFractional = ISO8601DateFormatter()
-        formatterWithoutFractional.formatOptions = [.withInternetDateTime]
-
-        let date = formatterWithFractional.date(from: value) ?? formatterWithoutFractional.date(from: value)
+        let date = ISO8601DateParsing.parse(value)
         guard let date else { return nil }
 
         let displayFormatter = DateFormatter()

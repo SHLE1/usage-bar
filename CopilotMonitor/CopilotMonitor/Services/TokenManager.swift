@@ -2120,16 +2120,7 @@ final class TokenManager: @unchecked Sendable {
 
     private func parseISO8601Date(_ value: String?) -> Date? {
         guard let value = normalizedNonEmpty(value) else { return nil }
-
-        let formatterWithFrac = ISO8601DateFormatter()
-        formatterWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatterWithFrac.date(from: value) {
-            return date
-        }
-
-        let formatterWithoutFrac = ISO8601DateFormatter()
-        formatterWithoutFrac.formatOptions = [.withInternetDateTime]
-        return formatterWithoutFrac.date(from: value)
+        return ISO8601DateParsing.parse(value)
     }
 
     private struct ClaudeOAuthPayload {
@@ -3506,15 +3497,7 @@ final class TokenManager: @unchecked Sendable {
 
             // Parse quota_reset_date_utc (format: "2026-03-01T00:00:00.000Z")
             if let resetDateStr = json["quota_reset_date_utc"] as? String {
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                resetDate = formatter.date(from: resetDateStr)
-
-                if resetDate == nil {
-                    let fallbackFormatter = ISO8601DateFormatter()
-                    fallbackFormatter.formatOptions = [.withInternetDateTime]
-                    resetDate = fallbackFormatter.date(from: resetDateStr)
-                }
+                resetDate = ISO8601DateParsing.parse(resetDateStr)
             }
 
             // Fallback to quota_reset_date (format: "2026-03-01")
@@ -3527,14 +3510,7 @@ final class TokenManager: @unchecked Sendable {
 
             // Additional fallback: limited_user_reset_date
             if resetDate == nil, let limitedReset = json["limited_user_reset_date"] as? String {
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                resetDate = formatter.date(from: limitedReset)
-                if resetDate == nil {
-                    let fallbackFormatter = ISO8601DateFormatter()
-                    fallbackFormatter.formatOptions = [.withInternetDateTime]
-                    resetDate = fallbackFormatter.date(from: limitedReset)
-                }
+                resetDate = ISO8601DateParsing.parse(limitedReset)
             }
 
             // Try multiple quota sources for different API versions

@@ -69,19 +69,8 @@ final class SyntheticProvider: ProviderProtocol {
             let remaining = max(0, Int(Double(limit) - requests))  // Handle fractional requests
             let usagePercent = limit > 0 ? (Double(requests) / Double(limit) * 100) : 0
 
-            let renewsAt: Date?
-            if let dateStr = apiResponse.subscription.renewsAt {
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                if let date = formatter.date(from: dateStr) {
-                    renewsAt = date
-                } else {
-                    let fallbackFormatter = ISO8601DateFormatter()
-                    fallbackFormatter.formatOptions = [.withInternetDateTime]
-                    renewsAt = fallbackFormatter.date(from: dateStr)
-                }
-            } else {
-                renewsAt = nil
+            let renewsAt: Date? = apiResponse.subscription.renewsAt.flatMap {
+                ISO8601DateParsing.parse($0)
             }
 
             logger.info("Synthetic usage fetched: \(requests)/\(limit), renews at \(renewsAt?.description ?? "nil")")

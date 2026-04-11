@@ -298,17 +298,11 @@ final class AntigravityProvider: ProviderProtocol {
         var modelBreakdown: [String: Double] = [:]
         var modelResetTimes: [String: Date] = [:]
 
-        let iso8601Formatter = ISO8601DateFormatter()
-        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let iso8601FormatterNoFrac = ISO8601DateFormatter()
-        iso8601FormatterNoFrac.formatOptions = [.withInternetDateTime]
-
         for bucket in buckets {
             let clampedFraction = max(0.0, min(1.0, bucket.remainingFraction))
             modelBreakdown[bucket.modelId] = clampedFraction * 100.0
 
-            if let resetDate = iso8601Formatter.date(from: bucket.resetTime)
-                ?? iso8601FormatterNoFrac.date(from: bucket.resetTime) {
+            if let resetDate = ISO8601DateParsing.parse(bucket.resetTime) {
                 modelResetTimes[bucket.modelId] = resetDate
             }
         }

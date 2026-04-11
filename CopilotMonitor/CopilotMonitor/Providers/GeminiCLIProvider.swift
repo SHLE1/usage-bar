@@ -303,18 +303,12 @@ final class GeminiCLIProvider: ProviderProtocol {
         var minFraction = 1.0
         var earliestReset: Date?
 
-        let iso8601Formatter = ISO8601DateFormatter()
-        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let iso8601FormatterNoFrac = ISO8601DateFormatter()
-        iso8601FormatterNoFrac.formatOptions = [.withInternetDateTime]
-
         for bucket in quotaResponse.buckets {
             let percentage = bucket.remainingFraction * 100.0
             modelBreakdown[bucket.modelId] = percentage
             minFraction = min(minFraction, bucket.remainingFraction)
 
-            if let resetDate = iso8601Formatter.date(from: bucket.resetTime)
-                ?? iso8601FormatterNoFrac.date(from: bucket.resetTime) {
+            if let resetDate = ISO8601DateParsing.parse(bucket.resetTime) {
                 modelResetTimes[bucket.modelId] = resetDate
                 if let current = earliestReset {
                     earliestReset = min(current, resetDate)

@@ -103,14 +103,7 @@ final class KimiProvider: ProviderProtocol {
             let weeklyUsed = Int(usage.used ?? "0") ?? 0
 
             func parseISO8601Date(_ string: String) -> Date? {
-                let formatterWithFrac = ISO8601DateFormatter()
-                formatterWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                if let date = formatterWithFrac.date(from: string) {
-                    return date
-                }
-                let formatterWithoutFrac = ISO8601DateFormatter()
-                formatterWithoutFrac.formatOptions = [.withInternetDateTime]
-                return formatterWithoutFrac.date(from: string)
+                ISO8601DateParsing.parse(string)
             }
 
             let weeklyReset = usage.resetTime.flatMap { parseISO8601Date($0) }

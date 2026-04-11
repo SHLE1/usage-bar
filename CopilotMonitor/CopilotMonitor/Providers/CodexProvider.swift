@@ -280,15 +280,7 @@ final class CodexProvider: ProviderProtocol {
                     : Date(timeIntervalSince1970: timestamp)
             }
 
-            let formatterWithFractional = ISO8601DateFormatter()
-            formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatterWithFractional.date(from: trimmed) {
-                return date
-            }
-
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            return formatter.date(from: trimmed)
+            return ISO8601DateParsing.parse(trimmed)
         }
     }
 
