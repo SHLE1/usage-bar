@@ -38,7 +38,7 @@ final class LocalizationManager {
         return NSLocalizedString(key, bundle: bundle, comment: "")
     }
 
-    func localizedBundle(for mode: AppLanguageMode) -> Bundle {
+    private func localizedBundle(for mode: AppLanguageMode) -> Bundle {
         guard let code = mode.localizationCode,
               let path = Bundle.main.path(forResource: code, ofType: "lproj"),
               let bundle = Bundle(path: path) else {

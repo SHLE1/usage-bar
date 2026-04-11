@@ -281,6 +281,21 @@ final class StatusBarController: NSObject {
         }
     }
 
+    private func codexFiveHourUsedPercent(for account: ProviderAccountResult) -> Double {
+        account.details?.dailyUsage ?? account.usage.usagePercentage
+    }
+
+    /// Returns the remaining percents for the Codex five-hour and weekly windows.
+    /// The five-hour value always resolves to a non-nil Double; weekly is nil when no secondary usage exists.
+    private func codexWindowRemainingPercents(
+        for account: ProviderAccountResult
+    ) -> (fiveHour: Double, weekly: Double?) {
+        let fiveHour = codexRemainingPercent(from: codexFiveHourUsedPercent(for: account))
+            ?? max(0.0, 100.0 - account.usage.usagePercentage)
+        let weekly = codexRemainingPercent(from: account.details?.secondaryUsage)
+        return (fiveHour, weekly)
+    }
+
     private func isProviderInMultiBar(_ identifier: ProviderIdentifier) -> Bool {
         multiProviderSelection.contains(identifier)
     }
@@ -1072,68 +1087,43 @@ final class StatusBarController: NSObject {
         return max(0.0, 100.0 - usedPercent)
     }
 
-    private func codexRemainingText(
-        from usedPercent: Double?
-    ) -> String? {
-        guard let remainingPercent = codexRemainingPercent(from: usedPercent) else { return nil }
-        return UsagePercentDisplayFormatter.string(from: remainingPercent)
-    }
-
-    private func codexCompactRemainingText(
-        from usedPercent: Double?
-    ) -> String? {
-        guard let remainingPercent = codexRemainingPercent(from: usedPercent) else { return nil }
-        return String(UsagePercentDisplayFormatter.wholePercent(from: remainingPercent))
-    }
-
     private func codexStatusBarText(
         for account: ProviderAccountResult,
         compact: Bool
     ) -> String {
-        let fiveHourText = codexRemainingText(from: account.details?.dailyUsage ?? account.usage.usagePercentage)
-            ?? UsagePercentDisplayFormatter.string(from: max(0.0, 100.0 - account.usage.usagePercentage))
-        let weeklyText = codexRemainingText(from: account.details?.secondaryUsage)
+        let (fiveHour, weekly) = codexWindowRemainingPercents(for: account)
 
         switch codexStatusBarWindowMode {
         case .fiveHourOnly:
-            return fiveHourText
+            return UsagePercentDisplayFormatter.string(from: fiveHour)
         case .weeklyOnly:
-            return weeklyText ?? fiveHourText
+            return UsagePercentDisplayFormatter.string(from: weekly ?? fiveHour)
         case .fiveHourAndWeekly:
-            guard let weeklyText else {
-                return fiveHourText
+            guard let weekly else {
+                return UsagePercentDisplayFormatter.string(from: fiveHour)
             }
             if compact {
-                let fiveHourCompactText = codexCompactRemainingText(
-                    from: account.details?.dailyUsage ?? account.usage.usagePercentage
-                ) ?? String(
-                    UsagePercentDisplayFormatter.wholePercent(
-                        from: max(0.0, 100.0 - account.usage.usagePercentage)
-                    )
-                )
-                let weeklyCompactText = codexCompactRemainingText(from: account.details?.secondaryUsage)
-                    ?? String(UsagePercentDisplayFormatter.wholePercent(from: max(0.0, 100.0 - account.usage.usagePercentage)))
-                return "\(fiveHourCompactText)/\(weeklyCompactText)"
+                let fiveHourCompact = String(UsagePercentDisplayFormatter.wholePercent(from: fiveHour))
+                let weeklyCompact = String(UsagePercentDisplayFormatter.wholePercent(from: weekly))
+                return "\(fiveHourCompact)/\(weeklyCompact)"
             }
-            return "\(fiveHourText), \(weeklyText)"
+            return "\(UsagePercentDisplayFormatter.string(from: fiveHour)), \(UsagePercentDisplayFormatter.string(from: weekly))"
         }
     }
 
     private func codexStatusBarEmphasisRemainingPercent(for account: ProviderAccountResult) -> Double {
-        let fiveHourRemaining = codexRemainingPercent(from: account.details?.dailyUsage ?? account.usage.usagePercentage)
-            ?? max(0.0, 100.0 - account.usage.usagePercentage)
-        let weeklyRemaining = codexRemainingPercent(from: account.details?.secondaryUsage)
+        let (fiveHour, weekly) = codexWindowRemainingPercents(for: account)
 
         switch codexStatusBarWindowMode {
         case .fiveHourOnly:
-            return fiveHourRemaining
+            return fiveHour
         case .weeklyOnly:
-            return weeklyRemaining ?? fiveHourRemaining
+            return weekly ?? fiveHour
         case .fiveHourAndWeekly:
-            guard let weeklyRemaining else {
-                return fiveHourRemaining
+            guard let weekly else {
+                return fiveHour
             }
-            return min(fiveHourRemaining, weeklyRemaining)
+            return min(fiveHour, weekly)
         }
     }
 
@@ -1145,9 +1135,7 @@ final class StatusBarController: NSObject {
     private func preferredUsedPercentForStatusBar(identifier: ProviderIdentifier, result: ProviderResult) -> Double? {
         if identifier == .codex,
            let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
-            let fiveHourUsedPercent = normalizedUsagePercent(
-                selectedAccount.details?.dailyUsage ?? selectedAccount.usage.usagePercentage
-            )
+            let fiveHourUsedPercent = normalizedUsagePercent(codexFiveHourUsedPercent(for: selectedAccount))
             let weeklyUsedPercent = normalizedUsagePercent(selectedAccount.details?.secondaryUsage)
 
             switch codexStatusBarWindowMode {
