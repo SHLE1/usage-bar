@@ -18,6 +18,8 @@ final class AppPreferences: ObservableObject {
     static let showProviderIconDidChange = Notification.Name("AppPreferences.showProviderIconDidChange")
     static let multiProviderProvidersDidChange = Notification.Name("AppPreferences.multiProviderProvidersDidChange")
     static let codexStatusBarAccountDidChange = Notification.Name("AppPreferences.codexStatusBarAccountDidChange")
+    static let codexStatusBarWindowDidChange = Notification.Name("AppPreferences.codexStatusBarWindowDidChange")
+    static let appLanguageDidChange = Notification.Name("AppPreferences.appLanguageDidChange")
     static let subscriptionDidChange = Notification.Name("AppPreferences.subscriptionDidChange")
     static let copilotAddOnDidChange = Notification.Name("AppPreferences.copilotAddOnDidChange")
 
@@ -52,6 +54,13 @@ final class AppPreferences: ObservableObject {
                 // Revert on failure
                 _launchAtLogin = Published(wrappedValue: service.status == .enabled)
             }
+        }
+    }
+
+    @Published var appLanguageMode: AppLanguageMode {
+        didSet {
+            defaults.set(appLanguageMode.rawValue, forKey: "app.languageMode")
+            NotificationCenter.default.post(name: Self.appLanguageDidChange, object: nil)
         }
     }
 
@@ -107,6 +116,13 @@ final class AppPreferences: ObservableObject {
         }
     }
 
+    @Published var codexStatusBarWindowMode: CodexStatusBarWindowMode {
+        didSet {
+            defaults.set(codexStatusBarWindowMode.rawValue, forKey: "provider.codex.statusBarWindowMode")
+            NotificationCenter.default.post(name: Self.codexStatusBarWindowDidChange, object: nil)
+        }
+    }
+
     // MARK: - Copilot Add-on
 
     @Published var copilotAddOnEnabled: Bool {
@@ -143,6 +159,13 @@ final class AppPreferences: ObservableObject {
         self.predictionPeriod = PredictionPeriod(rawValue: rawPrediction) ?? .defaultPeriod
 
         self.launchAtLogin = SMAppService.mainApp.status == .enabled
+
+        if let rawLanguageMode = UserDefaults.standard.string(forKey: "app.languageMode"),
+           let appLanguageMode = AppLanguageMode(rawValue: rawLanguageMode) {
+            self.appLanguageMode = appLanguageMode
+        } else {
+            self.appLanguageMode = .system
+        }
 
         // Note: getter in StatusBarController is hardcoded to .multiProvider.
         // We read the actual stored value so the Settings UI reflects reality.
@@ -182,6 +205,16 @@ final class AppPreferences: ObservableObject {
         self.codexStatusBarAccountSelectionKey = UserDefaults.standard.string(
             forKey: "provider.codex.statusBarAccountSelectionKey"
         )
+
+        if UserDefaults.standard.object(forKey: "provider.codex.statusBarWindowMode") != nil {
+            let rawCodexStatusBarWindowMode = UserDefaults.standard.integer(
+                forKey: "provider.codex.statusBarWindowMode"
+            )
+            self.codexStatusBarWindowMode = CodexStatusBarWindowMode(rawValue: rawCodexStatusBarWindowMode)
+                ?? .defaultMode
+        } else {
+            self.codexStatusBarWindowMode = .defaultMode
+        }
 
         if UserDefaults.standard.object(forKey: "provider.copilot_add_on.enabled") != nil {
             self.copilotAddOnEnabled = UserDefaults.standard.bool(forKey: "provider.copilot_add_on.enabled")

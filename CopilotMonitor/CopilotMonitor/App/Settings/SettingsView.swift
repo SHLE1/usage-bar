@@ -4,6 +4,7 @@ import os.log
 private let settingsViewLogger = Logger(subsystem: "com.opencodeproviders", category: "SettingsView")
 
 struct SettingsView: View {
+    @ObservedObject private var prefs = AppPreferences.shared
     @State private var selectedTab: SettingsTab? = .general
 
     var body: some View {
@@ -23,6 +24,8 @@ struct SettingsView: View {
                     GeneralSettingsView()
                 case .statusBar:
                     StatusBarSettingsView()
+                case .codex:
+                    CodexSettingsView()
                 case .subscriptions:
                     SubscriptionSettingsView()
                 }
@@ -30,6 +33,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 760, idealWidth: 840, minHeight: 520, idealHeight: 560)
+        .id(prefs.appLanguageMode.rawValue)
         .onAppear {
             if selectedTab == nil {
                 selectedTab = .general
@@ -71,6 +75,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case statusBar
     case subscriptions
+    case codex
 
     var id: String { rawValue }
 
@@ -80,6 +85,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return L("General")
         case .statusBar:
             return L("Status Bar")
+        case .codex:
+            return L("Codex")
         case .subscriptions:
             return L("Subscriptions")
         }
@@ -91,6 +98,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return L("Refresh, startup, and command line tool")
         case .statusBar:
             return L("Choose which providers appear in UsageBar")
+        case .codex:
+            return L("Choose the Codex account and limit window shown in the status bar")
         case .subscriptions:
             return L("Manage monthly plans and custom costs")
         }
@@ -102,6 +111,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return "gearshape"
         case .statusBar:
             return "menubar.rectangle"
+        case .codex:
+            return "person.text.rectangle"
         case .subscriptions:
             return "creditcard"
         }

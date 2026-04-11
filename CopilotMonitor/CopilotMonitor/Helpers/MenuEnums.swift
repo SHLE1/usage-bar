@@ -96,3 +96,22 @@ enum StatusBarDisplayPreferences {
     static let showProviderNameKey = "statusBarDisplay.showProviderName"
     static let multiProviderProvidersKey = "statusBarDisplay.multiProviderProviders"
 }
+
+enum CodexStatusBarWindowMode: Int, CaseIterable {
+    case fiveHourOnly = 0
+    case fiveHourAndWeekly = 1
+    case weeklyOnly = 2
+
+    var title: String {
+        switch self {
+        case .fiveHourOnly:
+            return L("5h Only")
+        case .fiveHourAndWeekly:
+            return L("5h + Weekly")
+        case .weeklyOnly:
+            return L("Weekly Only")
+        }
+    }
+
+    static var defaultMode: CodexStatusBarWindowMode { .fiveHourAndWeekly }
+}

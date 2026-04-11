@@ -106,6 +106,7 @@
 		SETMAIN1111111111111111111 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR333333333333333333333 /* SettingsView.swift */; };
 		SETGEN11111111111111111111 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR444444444444444444444 /* GeneralSettingsView.swift */; };
 		SETSB111111111111111111111 /* StatusBarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR555555555555555555555 /* StatusBarSettingsView.swift */; };
+		SETCOD11111111111111111111 /* CodexSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR888888888888888888888 /* CodexSettingsView.swift */; };
 		SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR666666666666666666666 /* SubscriptionSettingsView.swift */; };
 		SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR777777777777777777777 /* SettingsScaffold.swift */; };
 /* End PBXBuildFile section */
@@ -216,6 +217,7 @@
 		SETFR555555555555555555555 /* StatusBarSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarSettingsView.swift; sourceTree = "<group>"; };
 		SETFR666666666666666666666 /* SubscriptionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSettingsView.swift; sourceTree = "<group>"; };
 		SETFR777777777777777777777 /* SettingsScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScaffold.swift; sourceTree = "<group>"; };
+		SETFR888888888888888888888 /* CodexSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -341,6 +343,7 @@
 				SETFR333333333333333333333 /* SettingsView.swift */,
 				SETFR444444444444444444444 /* GeneralSettingsView.swift */,
 				SETFR555555555555555555555 /* StatusBarSettingsView.swift */,
+				SETFR888888888888888888888 /* CodexSettingsView.swift */,
 				SETFR666666666666666666666 /* SubscriptionSettingsView.swift */,
 				SETFR777777777777777777777 /* SettingsScaffold.swift */,
 			);
@@ -681,6 +684,7 @@
 				SETMAIN1111111111111111111 /* SettingsView.swift in Sources */,
 				SETGEN11111111111111111111 /* GeneralSettingsView.swift in Sources */,
 				SETSB111111111111111111111 /* StatusBarSettingsView.swift in Sources */,
+				SETCOD11111111111111111111 /* CodexSettingsView.swift in Sources */,
 				SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */,
 				SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */,
 			);

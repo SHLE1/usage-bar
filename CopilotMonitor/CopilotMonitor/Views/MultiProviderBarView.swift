@@ -5,7 +5,8 @@ import AppKit
 final class MultiProviderBarView: NSView {
     struct Entry {
         let icon: NSImage
-        let remainingPercent: Double
+        let displayText: String
+        let emphasisRemainingPercent: Double
     }
 
     private var entries: [Entry] = []
@@ -39,7 +40,7 @@ final class MultiProviderBarView: NSView {
         var w = leftPadding + rightPadding
         for (i, entry) in entries.enumerated() {
             w += iconSize + iconTextGap
-            let text = textForRemaining(entry.remainingPercent)
+            let text = entry.displayText
             w += (text as NSString).size(withAttributes: [.font: font]).width
             if i < entries.count - 1 { w += pairSpacing }
         }
@@ -54,8 +55,7 @@ final class MultiProviderBarView: NSView {
         var x = leftPadding
 
         for (i, entry) in entries.enumerated() {
-            let remaining = entry.remainingPercent
-            let color = colorForRemaining(remaining)
+            let color = colorForRemaining(entry.emphasisRemainingPercent)
 
             // Icon
             let iconY = (h - iconSize) / 2
@@ -64,7 +64,7 @@ final class MultiProviderBarView: NSView {
             x += iconSize + iconTextGap
 
             // Text
-            let text = textForRemaining(remaining)
+            let text = entry.displayText
             let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
             let textSize = (text as NSString).size(withAttributes: attrs)
             let textRect = NSRect(x: x, y: (h - textSize.height) / 2, width: textSize.width, height: textSize.height)
@@ -86,12 +86,6 @@ final class MultiProviderBarView: NSView {
         if remaining <= 10 { return .systemRed }
         if remaining <= 30 { return .systemOrange }
         return textColor
-    }
-
-    private func textForRemaining(_ remaining: Double) -> String {
-        let clamped = max(0.0, min(999.0, remaining))
-        if clamped > 0.0, clamped < 1.0 { return "1%" }
-        return String(format: "%.0f%%", clamped)
     }
 
     private func tinted(_ image: NSImage, color: NSColor) -> NSImage {

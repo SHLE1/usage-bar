@@ -206,7 +206,7 @@ private struct SubscriptionRowView: View {
                         .lineLimit(1)
 
                     if row.isOrphaned {
-                        Text(LocalizedStringKey("Saved setting without a detected account"))
+                        Text(L("Saved setting without a detected account"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

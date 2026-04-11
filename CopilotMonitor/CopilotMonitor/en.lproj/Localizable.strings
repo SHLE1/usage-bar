@@ -156,16 +156,22 @@
 "General" = "General";
 "Status Bar" = "Status Bar";
 "Subscriptions" = "Subscriptions";
+"Codex" = "Codex";
 "Refresh, startup, and command line tool" = "Refresh, startup, and command line tool";
 "Choose which providers appear in UsageBar" = "Choose which providers appear in UsageBar";
 "Manage monthly plans and custom costs" = "Manage monthly plans and custom costs";
+"Choose the Codex account and limit window shown in the status bar" = "Choose the Codex account and limit window shown in the status bar";
 "Control refresh timing, startup behavior, and command line access." = "Control refresh timing, startup behavior, and command line access.";
 "Usage Updates" = "Usage Updates";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "Choose how often UsageBar refreshes and how it estimates end-of-month cost.";
 "Auto Refresh Period" = "Auto Refresh Period";
 "How often provider data refreshes in the background." = "How often provider data refreshes in the background.";
 "Launch at Login" = "Launch at Login";
+"Settings" = "Settings";
 "The usage window used for monthly cost forecasts." = "The usage window used for monthly cost forecasts.";
+"App Language" = "App Language";
+"Choose which language UsageBar uses. The default follows macOS." = "Choose which language UsageBar uses. The default follows macOS.";
+"Follow System" = "Follow System";
 "App Behavior" = "App Behavior";
 "Decide how UsageBar behaves after launch." = "Decide how UsageBar behaves after launch.";
 "Open UsageBar automatically when you sign in to macOS." = "Open UsageBar automatically when you sign in to macOS.";
@@ -206,6 +212,23 @@
 "Custom %@" = "Custom %@";
 "/m" = "/m";
 "Apply" = "Apply";
+"Manage which Codex account and limit window UsageBar shows in the status bar." = "Manage which Codex account and limit window UsageBar shows in the status bar.";
+"Status Bar Account" = "Status Bar Account";
+"Choose which detected Codex account the status bar should follow." = "Choose which detected Codex account the status bar should follow.";
+"No Codex accounts detected yet." = "No Codex accounts detected yet.";
+"No Codex accounts detected" = "No Codex accounts detected";
+"Selected Account" = "Selected Account";
+"The only detected Codex account on this Mac." = "The only detected Codex account on this Mac.";
+"Switch which Codex account drives the status bar." = "Switch which Codex account drives the status bar.";
+"Status Bar Window" = "Status Bar Window";
+"Choose which Codex limit window stays visible in the status bar." = "Choose which Codex limit window stays visible in the status bar.";
+"Display Mode" = "Display Mode";
+"Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format." = "Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format.";
+"5h Only" = "5h Only";
+"Weekly Only" = "Weekly Only";
+"5h + Weekly" = "5h + Weekly";
+"Account %@" = "Account %@";
+"Account #%d" = "Account #%d";
 
 /* ==========================
    Buttons

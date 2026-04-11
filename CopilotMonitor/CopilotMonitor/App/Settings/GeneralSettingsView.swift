@@ -67,6 +67,27 @@ struct GeneralSettingsView: View {
             ) {
                 VStack(spacing: 0) {
                     SettingsRow(
+                        title: L("App Language"),
+                        description: L("Choose which language UsageBar uses. The default follows macOS.")
+                    ) {
+                        Menu {
+                            ForEach(AppLanguageMode.allCases, id: \.self) { mode in
+                                Button(mode.title) {
+                                    prefs.appLanguageMode = mode
+                                    generalSettingsLogger.debug("Selected app language \(mode.rawValue, privacy: .public)")
+                                }
+                            }
+                        } label: {
+                            CompactSettingsMenuLabel(title: prefs.appLanguageMode.title)
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                    }
+
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsRow(
                         title: L("Launch at Login"),
                         description: L("Open UsageBar automatically when you sign in to macOS.")
                     ) {

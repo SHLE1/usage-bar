@@ -372,11 +372,6 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            if let statusBarAccountItem = makeCodexStatusBarAccountMenuItem() {
-                submenu.addItem(NSMenuItem.separator())
-                submenu.addItem(statusBarAccountItem)
-            }
-
             // === Subscription ===
             addSubscriptionItems(to: submenu, provider: .codex, accountId: accountId)
 

@@ -272,6 +272,15 @@ final class StatusBarController: NSObject {
         }
     }
 
+    private var codexStatusBarWindowMode: CodexStatusBarWindowMode {
+        get {
+            AppPreferences.shared.codexStatusBarWindowMode
+        }
+        set {
+            AppPreferences.shared.codexStatusBarWindowMode = newValue
+        }
+    }
+
     private func isProviderInMultiBar(_ identifier: ProviderIdentifier) -> Bool {
         multiProviderSelection.contains(identifier)
     }
@@ -590,12 +599,6 @@ final class StatusBarController: NSObject {
         updateStatusBarText()
     }
 
-    @objc private func codexStatusBarAccountSelected(_ sender: NSMenuItem) {
-        guard let selectionKey = sender.representedObject as? String else { return }
-        codexStatusBarAccountSelectionKey = selectionKey
-        debugLog("codexStatusBarAccountSelected: selectionKey=\(selectionKey)")
-    }
-
     @objc private func toggleCriticalBadge(_ sender: NSMenuItem) {
         criticalBadgeEnabled.toggle()
         debugLog("toggleCriticalBadge: value=\(criticalBadgeEnabled)")
@@ -707,6 +710,14 @@ final class StatusBarController: NSObject {
         NotificationCenter.default.addObserver(
             self, selector: #selector(handleCodexStatusBarAccountChange),
             name: AppPreferences.codexStatusBarAccountDidChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleCodexStatusBarWindowChange),
+            name: AppPreferences.codexStatusBarWindowDidChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleAppLanguageChange),
+            name: AppPreferences.appLanguageDidChange, object: nil
         )
         NotificationCenter.default.addObserver(
             self, selector: #selector(handleSubscriptionChange),
@@ -1054,81 +1065,76 @@ final class StatusBarController: NSObject {
         return fallbackAccount
     }
 
-    private func codexStatusBarSelectionDisplayName(
-        for account: ProviderAccountResult,
-        allAccounts: [ProviderAccountResult]
-    ) -> String {
-        let normalizedEmail = account.details?.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let emailDisplayName = normalizedEmail?.isEmpty == false ? normalizedEmail : nil
-
-        guard allAccounts.count > 1 else {
-            return emailDisplayName
-                ?? account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines)
-                ?? "Account #\(account.accountIndex + 1)"
-        }
-
-        let emailCount = allAccounts.reduce(into: [String: Int]()) { counts, other in
-            let key = other.details?.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
-            guard !key.isEmpty else { return }
-            counts[key, default: 0] += 1
-        }
-
-        if let emailDisplayName {
-            let emailKey = emailDisplayName.lowercased()
-            if emailCount[emailKey, default: 0] > 1 {
-                if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   !accountId.isEmpty {
-                    return "\(emailDisplayName) (\(accountId))"
-                }
-                if let authSource = authSourceLabel(for: account.details?.authSource, provider: .codex),
-                   !authSource.isEmpty {
-                    return "\(emailDisplayName) (\(authSource))"
-                }
-            }
-            return emailDisplayName
-        }
-
-        if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !accountId.isEmpty {
-            return "Account \(accountId)"
-        }
-        if let authSource = authSourceLabel(for: account.details?.authSource, provider: .codex),
-           !authSource.isEmpty {
-            return authSource
-        }
-        return "Account #\(account.accountIndex + 1)"
+    private func codexRemainingPercent(
+        from usedPercent: Double?
+    ) -> Double? {
+        guard let usedPercent = normalizedUsagePercent(usedPercent) else { return nil }
+        return max(0.0, 100.0 - usedPercent)
     }
 
-    func makeCodexStatusBarAccountMenuItem() -> NSMenuItem? {
-        guard let result = providerResults[.codex],
-              let accounts = result.accounts,
-              accounts.count > 1 else {
-            return nil
+    private func codexRemainingText(
+        from usedPercent: Double?
+    ) -> String? {
+        guard let remainingPercent = codexRemainingPercent(from: usedPercent) else { return nil }
+        return UsagePercentDisplayFormatter.string(from: remainingPercent)
+    }
+
+    private func codexCompactRemainingText(
+        from usedPercent: Double?
+    ) -> String? {
+        guard let remainingPercent = codexRemainingPercent(from: usedPercent) else { return nil }
+        return String(UsagePercentDisplayFormatter.wholePercent(from: remainingPercent))
+    }
+
+    private func codexStatusBarText(
+        for account: ProviderAccountResult,
+        compact: Bool
+    ) -> String {
+        let fiveHourText = codexRemainingText(from: account.details?.dailyUsage ?? account.usage.usagePercentage)
+            ?? UsagePercentDisplayFormatter.string(from: max(0.0, 100.0 - account.usage.usagePercentage))
+        let weeklyText = codexRemainingText(from: account.details?.secondaryUsage)
+
+        switch codexStatusBarWindowMode {
+        case .fiveHourOnly:
+            return fiveHourText
+        case .weeklyOnly:
+            return weeklyText ?? fiveHourText
+        case .fiveHourAndWeekly:
+            guard let weeklyText else {
+                return fiveHourText
+            }
+            if compact {
+                let fiveHourCompactText = codexCompactRemainingText(
+                    from: account.details?.dailyUsage ?? account.usage.usagePercentage
+                ) ?? String(
+                    UsagePercentDisplayFormatter.wholePercent(
+                        from: max(0.0, 100.0 - account.usage.usagePercentage)
+                    )
+                )
+                let weeklyCompactText = codexCompactRemainingText(from: account.details?.secondaryUsage)
+                    ?? String(UsagePercentDisplayFormatter.wholePercent(from: max(0.0, 100.0 - account.usage.usagePercentage)))
+                return "\(fiveHourCompactText)/\(weeklyCompactText)"
+            }
+            return "\(fiveHourText), \(weeklyText)"
         }
+    }
 
-        let selectedAccount = resolvedCodexStatusBarAccount(from: result, persistCorrection: false)
-        let selectedSelectionKey = selectedAccount.map { codexSelectionKey(for: $0) }
+    private func codexStatusBarEmphasisRemainingPercent(for account: ProviderAccountResult) -> Double {
+        let fiveHourRemaining = codexRemainingPercent(from: account.details?.dailyUsage ?? account.usage.usagePercentage)
+            ?? max(0.0, 100.0 - account.usage.usagePercentage)
+        let weeklyRemaining = codexRemainingPercent(from: account.details?.secondaryUsage)
 
-        let item = NSMenuItem(title: "Status Bar Account", action: nil, keyEquivalent: "")
-        let submenu = NSMenu()
-
-        for account in accounts {
-            let selectionKey = codexSelectionKey(for: account)
-            let title = codexStatusBarSelectionDisplayName(for: account, allAccounts: accounts)
-            let accountItem = NSMenuItem(
-                title: title,
-                action: #selector(codexStatusBarAccountSelected(_:)),
-                keyEquivalent: ""
-            )
-            accountItem.target = self
-            accountItem.representedObject = selectionKey
-            accountItem.state = selectionKey == selectedSelectionKey ? .on : .off
-            submenu.addItem(accountItem)
+        switch codexStatusBarWindowMode {
+        case .fiveHourOnly:
+            return fiveHourRemaining
+        case .weeklyOnly:
+            return weeklyRemaining ?? fiveHourRemaining
+        case .fiveHourAndWeekly:
+            guard let weeklyRemaining else {
+                return fiveHourRemaining
+            }
+            return min(fiveHourRemaining, weeklyRemaining)
         }
-
-        item.submenu = submenu
-        return item
     }
 
     /// Collects all UsagePercentCandidates from all accounts for a provider,
@@ -1139,11 +1145,19 @@ final class StatusBarController: NSObject {
     private func preferredUsedPercentForStatusBar(identifier: ProviderIdentifier, result: ProviderResult) -> Double? {
         if identifier == .codex,
            let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
-            return preferredUsedPercent(
-                identifier: identifier,
-                usage: selectedAccount.usage,
-                details: selectedAccount.details
-            ) ?? normalizedUsagePercent(selectedAccount.usage.usagePercentage)
+            let fiveHourUsedPercent = normalizedUsagePercent(
+                selectedAccount.details?.dailyUsage ?? selectedAccount.usage.usagePercentage
+            )
+            let weeklyUsedPercent = normalizedUsagePercent(selectedAccount.details?.secondaryUsage)
+
+            switch codexStatusBarWindowMode {
+            case .fiveHourOnly:
+                return fiveHourUsedPercent
+            case .weeklyOnly:
+                return weeklyUsedPercent ?? fiveHourUsedPercent
+            case .fiveHourAndWeekly:
+                return [fiveHourUsedPercent, weeklyUsedPercent].compactMap { $0 }.max()
+            }
         }
 
         var allCandidates: [UsagePercentCandidate] = []
@@ -1357,6 +1371,11 @@ final class StatusBarController: NSObject {
             return "--"
         }
 
+        if candidate.identifier == .codex,
+           let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
+            return codexStatusBarText(for: selectedAccount, compact: false)
+        }
+
         switch result.usage {
         case .payAsYouGo(_, let cost, _):
             return formatCostForStatusBar(cost ?? 0.0)
@@ -1376,7 +1395,13 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private func formatAlertText(identifier _: ProviderIdentifier, usedPercent: Double) -> String {
+    private func formatAlertText(identifier: ProviderIdentifier, usedPercent: Double) -> String {
+        if identifier == .codex,
+           let result = providerResults[identifier],
+           let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
+            return codexStatusBarText(for: selectedAccount, compact: false)
+        }
+
         let remaining = max(0.0, 100.0 - usedPercent)
         return UsagePercentDisplayFormatter.string(from: remaining)
     }
@@ -1387,6 +1412,10 @@ final class StatusBarController: NSObject {
             let costText = formatCostForStatusBar(cost ?? 0)
             return costText
         case .quotaBased:
+            if identifier == .codex,
+               let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
+                return codexStatusBarText(for: selectedAccount, compact: false)
+            }
             let maxUsedPercent = preferredUsedPercentForStatusBar(identifier: identifier, result: result) ?? result.usage.usagePercentage
             let remainingPercent = max(0.0, 100.0 - maxUsedPercent)
             return UsagePercentDisplayFormatter.string(from: remainingPercent)
@@ -1495,10 +1524,28 @@ final class StatusBarController: NSObject {
                   let icon = iconForProvider(identifier)
             else { continue }
 
+            if identifier == .codex,
+               let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
+                entries.append(
+                    MultiProviderBarView.Entry(
+                        icon: icon,
+                        displayText: codexStatusBarText(for: selectedAccount, compact: true),
+                        emphasisRemainingPercent: codexStatusBarEmphasisRemainingPercent(for: selectedAccount)
+                    )
+                )
+                continue
+            }
+
             let usedPercent = preferredUsedPercentForStatusBar(identifier: identifier, result: result)
                 ?? result.usage.usagePercentage
             let remainingPercent = max(0.0, 100.0 - usedPercent)
-            entries.append(MultiProviderBarView.Entry(icon: icon, remainingPercent: remainingPercent))
+            entries.append(
+                MultiProviderBarView.Entry(
+                    icon: icon,
+                    displayText: UsagePercentDisplayFormatter.string(from: remainingPercent),
+                    emphasisRemainingPercent: remainingPercent
+                )
+            )
         }
         debugLog("updateMultiProviderBarView: \(entries.count) provider(s)")
         multiProviderBarView?.update(entries: entries)
@@ -3479,6 +3526,19 @@ final class StatusBarController: NSObject {
         debugLog("🔔 Settings: codexStatusBarAccount changed")
         updateStatusBarText()
         updateMultiProviderMenu()
+    }
+
+    @objc private func handleCodexStatusBarWindowChange() {
+        debugLog("🔔 Settings: codexStatusBarWindow changed")
+        updateStatusBarText()
+        updateMultiProviderMenu()
+    }
+
+    @objc private func handleAppLanguageChange() {
+        debugLog("🔔 Settings: appLanguage changed")
+        setupMenu()
+        updateMultiProviderMenu()
+        updateStatusBarText()
     }
 
     @objc private func handleSubscriptionChange() {

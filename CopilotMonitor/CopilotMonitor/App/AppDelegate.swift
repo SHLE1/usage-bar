@@ -10,6 +10,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var statusBarController: StatusBarController!
     private(set) var updaterController: SPUStandardUpdaterController!
     private var settingsWindow: NSWindow?
+    private var localizationObserver: NSObjectProtocol?
 
     @objc func checkForUpdates() {
         logger.info("⌨️ [Keyboard] ⌘U Check for Updates triggered")
@@ -28,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
         let hostingController = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "Settings"
+        window.title = L("Settings")
         window.setContentSize(NSSize(width: 840, height: 560))
         window.minSize = NSSize(width: 760, height: 520)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
@@ -55,6 +56,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             updaterDelegate: self,
             userDriverDelegate: nil
         )
+
+        localizationObserver = NotificationCenter.default.addObserver(
+            forName: AppPreferences.appLanguageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.settingsWindow?.title = L("Settings")
+        }
         
         configureAutomaticUpdates()
         statusBarController = StatusBarController()

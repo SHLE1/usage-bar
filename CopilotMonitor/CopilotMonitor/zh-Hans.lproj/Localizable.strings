@@ -156,16 +156,22 @@
 "General" = "通用";
 "Status Bar" = "状态栏";
 "Subscriptions" = "订阅";
+"Codex" = "Codex";
 "Refresh, startup, and command line tool" = "刷新、启动与命令行工具";
 "Choose which providers appear in UsageBar" = "选择哪些 Provider 显示在 UsageBar 中";
 "Manage monthly plans and custom costs" = "管理月费套餐与自定义费用";
+"Choose the Codex account and limit window shown in the status bar" = "选择显示在状态栏中的 Codex 账号和限额窗口";
 "Control refresh timing, startup behavior, and command line access." = "管理刷新频率、启动方式和命令行访问。";
 "Usage Updates" = "用量更新";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "设置 UsageBar 的刷新频率，以及月末费用预测的计算方式。";
 "Auto Refresh Period" = "自动刷新间隔";
 "How often provider data refreshes in the background." = "Provider 数据在后台刷新的频率。";
 "Launch at Login" = "登录时启动";
+"Settings" = "设置";
 "The usage window used for monthly cost forecasts." = "用于月度费用预测的用量时间范围。";
+"App Language" = "应用语言";
+"Choose which language UsageBar uses. The default follows macOS." = "选择 UsageBar 使用的语言。默认跟随 macOS。";
+"Follow System" = "跟随系统";
 "App Behavior" = "应用行为";
 "Decide how UsageBar behaves after launch." = "设置 UsageBar 启动后的行为方式。";
 "Open UsageBar automatically when you sign in to macOS." = "在您登录 macOS 时自动启动 UsageBar。";
@@ -206,6 +212,23 @@
 "Custom %@" = "自定义 %@";
 "/m" = "/月";
 "Apply" = "应用";
+"Manage which Codex account and limit window UsageBar shows in the status bar." = "管理 UsageBar 在状态栏中显示哪个 Codex 账号与限额窗口。";
+"Status Bar Account" = "状态栏账号";
+"Choose which detected Codex account the status bar should follow." = "选择状态栏跟随哪个已检测到的 Codex 账号。";
+"No Codex accounts detected yet." = "尚未检测到 Codex 账号。";
+"No Codex accounts detected" = "未检测到 Codex 账号";
+"Selected Account" = "当前账号";
+"The only detected Codex account on this Mac." = "这是这台 Mac 上当前唯一检测到的 Codex 账号。";
+"Switch which Codex account drives the status bar." = "切换由哪个 Codex 账号驱动状态栏显示。";
+"Status Bar Window" = "状态栏窗口";
+"Choose which Codex limit window stays visible in the status bar." = "选择哪个 Codex 限额窗口保持显示在状态栏中。";
+"Display Mode" = "显示模式";
+"Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format." = "单 Provider 模式显示百分比，多 Provider 模式使用紧凑的 Codex 格式。";
+"5h Only" = "仅 5 小时";
+"Weekly Only" = "仅每周";
+"5h + Weekly" = "5 小时 + 每周";
+"Account %@" = "账号 %@";
+"Account #%d" = "账号 #%d";
 
 /* ==========================
    按钮
