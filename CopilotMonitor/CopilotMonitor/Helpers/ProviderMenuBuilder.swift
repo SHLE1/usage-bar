@@ -130,22 +130,21 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === Plan & Quota ===
+            // === Plan ===
             submenu.addItem(NSMenuItem.separator())
+            let planHeaderItem = NSMenuItem()
+            planHeaderItem.view = createHeaderView(title: L("Plan"))
+            submenu.addItem(planHeaderItem)
 
-            if let planType = details.planType {
-                // Replicate CopilotUsage.planDisplayName logic since DetailedUsage stores raw plan string
-                let planName: String
-                switch planType.lowercased() {
-                case "individual_pro": planName = "Pro"
-                case "individual_free": planName = "Free"
-                case "business": planName = "Business"
-                case "enterprise": planName = "Enterprise"
-                default: planName = planType.replacingOccurrences(of: "_", with: " ").capitalized
-                }
+            if let planText = resolvedPlanDisplayText(
+                for: .copilot,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
                 let planItem = NSMenuItem()
                 planItem.view = createDisabledLabelView(
-                    text: String(format: L("Plan: %@"), planName),
+                    text: planText,
                     icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
                 )
                 submenu.addItem(planItem)
@@ -158,13 +157,16 @@ extension StatusBarController {
                 submenu.addItem(freeItem)
             }
 
-            // === Account Info ===
+            // === Account ===
             submenu.addItem(NSMenuItem.separator())
+            let accountHeaderItem = NSMenuItem()
+            accountHeaderItem.view = createHeaderView(title: L("Account"))
+            submenu.addItem(accountHeaderItem)
 
             if let email = details.email {
                 let emailItem = NSMenuItem()
                 emailItem.view = createDisabledLabelView(
-                    text: String(format: L("Account: %@"), email),
+                    text: email,
                     icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account"),
                     multiline: false
                 )
@@ -179,9 +181,6 @@ extension StatusBarController {
                 multiline: true
             )
             submenu.addItem(authItem)
-
-            // === Subscription ===
-            addSubscriptionItems(to: submenu, provider: .copilot, accountId: accountId)
 
         case .claude:
             // === Usage Windows ===
@@ -248,7 +247,8 @@ extension StatusBarController {
                     submenu.addItem(NSMenuItem.separator())
                 }
                 let statusItem = NSMenuItem()
-                statusItem.view = createDisabledLabelView(text: "Extra Usage: \(extraUsageEnabled ? "ON" : "OFF")")
+                let extraUsageStatus = extraUsageEnabled ? L("Extra Usage: ON") : L("Extra Usage: OFF")
+                statusItem.view = createDisabledLabelView(text: extraUsageStatus)
                 submenu.addItem(statusItem)
 
                 if extraUsageEnabled,
@@ -275,19 +275,44 @@ extension StatusBarController {
                 }
             }
 
-            if let email = details.email?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !email.isEmpty {
+            if let planText = resolvedPlanDisplayText(
+                for: .claude,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
                 submenu.addItem(NSMenuItem.separator())
-                let emailItem = NSMenuItem()
-                emailItem.view = createDisabledLabelView(
-                    text: String(format: L("Email: %@"), email),
-                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
-                )
-                submenu.addItem(emailItem)
+                addPlanSection(to: submenu, planText: planText)
             }
 
-            // === Subscription (includes separator internally) ===
-            addSubscriptionItems(to: submenu, provider: .claude, accountId: accountId)
+            // === Account ===
+            let claudeEmail = details.email?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let claudeAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if (claudeEmail?.isEmpty == false) || (claudeAuthSource?.isEmpty == false) {
+                submenu.addItem(NSMenuItem.separator())
+                let accountHeader = NSMenuItem()
+                accountHeader.view = createHeaderView(title: L("Account"))
+                submenu.addItem(accountHeader)
+
+                if let claudeEmail, !claudeEmail.isEmpty {
+                    let emailItem = NSMenuItem()
+                    emailItem.view = createDisabledLabelView(
+                        text: claudeEmail,
+                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
+                    )
+                    submenu.addItem(emailItem)
+                }
+
+                if let claudeAuthSource, !claudeAuthSource.isEmpty {
+                    let authItem = NSMenuItem()
+                    authItem.view = createDisabledLabelView(
+                        text: String(format: L("Token From: %@"), claudeAuthSource),
+                        icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
+                        multiline: true
+                    )
+                    submenu.addItem(authItem)
+                }
+            }
 
         case .codex:
             // === Usage Windows ===
@@ -332,7 +357,7 @@ extension StatusBarController {
                 sparkUsageRows.append((label: "5h (\(sparkLabel))", usage: sparkPrimary, resetDate: details.sparkReset, windowHours: 5))
             }
             if let sparkSecondary = details.sparkSecondaryUsage {
-                sparkUsageRows.append((label: "Weekly (\(sparkLabel))", usage: sparkSecondary, resetDate: details.sparkSecondaryReset, windowHours: 168))
+                sparkUsageRows.append((label: "\(L("Weekly")) (\(sparkLabel))", usage: sparkSecondary, resetDate: details.sparkSecondaryReset, windowHours: 168))
             }
             if !sparkUsageRows.isEmpty, !baseUsageRows.isEmpty {
                 submenu.addItem(NSMenuItem.separator())
@@ -350,30 +375,57 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            // === Credits & Plan ===
+            // === Plan ===
             submenu.addItem(NSMenuItem.separator())
-            if let plan = details.planType {
+            let codexPlanHeader = NSMenuItem()
+            codexPlanHeader.view = createHeaderView(title: L("Plan"))
+            submenu.addItem(codexPlanHeader)
+
+            if let planText = resolvedPlanDisplayText(
+                for: .codex,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
                 let item = NSMenuItem()
-                item.view = createDisabledLabelView(text: String(format: L("Plan: %@"), plan))
+                item.view = createDisabledLabelView(
+                    text: planText,
+                    icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
+                )
                 submenu.addItem(item)
             }
             if let credits = details.creditsBalance {
                 let item = NSMenuItem()
-                item.view = createDisabledLabelView(text: String(format: "Credits: $%.2f", credits))
+                item.view = createDisabledLabelView(text: String(format: L("Credits: $%.2f"), credits))
                 submenu.addItem(item)
             }
+
+            // === Account ===
             let codexEmail = details.email ?? codexEmail(for: accountId)
+            let codexAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if codexEmail != nil || (codexAuthSource?.isEmpty == false) {
+                submenu.addItem(NSMenuItem.separator())
+                let codexAccountHeader = NSMenuItem()
+                codexAccountHeader.view = createHeaderView(title: L("Account"))
+                submenu.addItem(codexAccountHeader)
+            }
             if let email = codexEmail {
                 let item = NSMenuItem()
                 item.view = createDisabledLabelView(
-                    text: String(format: L("Email: %@"), email),
+                    text: email,
                     icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
                 )
                 submenu.addItem(item)
             }
-
-            // === Subscription ===
-            addSubscriptionItems(to: submenu, provider: .codex, accountId: accountId)
+            if let codexAuthSource, !codexAuthSource.isEmpty {
+                let authItem = NSMenuItem()
+                authItem.view = createDisabledLabelView(
+                    text: String(format: L("Token From: %@"), codexAuthSource),
+                    icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
+                    multiline: true
+                )
+                submenu.addItem(authItem)
+            }
 
         case .geminiCLI:
             // modelBreakdown stores remaining% — convert to used% at display layer
@@ -386,17 +438,45 @@ extension StatusBarController {
                     debugContext: "createDetailSubmenu(gemini_cli \(details.email ?? "unknown"))"
                 )
             }
-            if let email = details.email {
+
+            if let planText = resolvedPlanDisplayText(
+                for: .geminiCLI,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
                 submenu.addItem(NSMenuItem.separator())
-                let item = NSMenuItem()
-                item.view = createDisabledLabelView(
-                    text: String(format: L("Email: %@"), email),
-                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
-                )
-                submenu.addItem(item)
+                addPlanSection(to: submenu, planText: planText)
             }
 
-            addSubscriptionItems(to: submenu, provider: .geminiCLI, accountId: details.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? accountId)
+            // === Account ===
+            let geminiEmail = details.email?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let geminiAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if (geminiEmail?.isEmpty == false) || (geminiAuthSource?.isEmpty == false) {
+                submenu.addItem(NSMenuItem.separator())
+                let geminiAccountHeader = NSMenuItem()
+                geminiAccountHeader.view = createHeaderView(title: L("Account"))
+                submenu.addItem(geminiAccountHeader)
+
+                if let geminiEmail, !geminiEmail.isEmpty {
+                    let item = NSMenuItem()
+                    item.view = createDisabledLabelView(
+                        text: geminiEmail,
+                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
+                    )
+                    submenu.addItem(item)
+                }
+
+                if let geminiAuthSource, !geminiAuthSource.isEmpty {
+                    let authItem = NSMenuItem()
+                    authItem.view = createDisabledLabelView(
+                        text: String(format: L("Token From: %@"), geminiAuthSource),
+                        icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
+                        multiline: true
+                    )
+                    submenu.addItem(authItem)
+                }
+            }
 
         case .antigravity:
             // modelBreakdown stores remaining% — convert to used% at display layer
@@ -410,18 +490,26 @@ extension StatusBarController {
                 )
             }
 
-            var accountItems: [(sfSymbol: String, text: String)] = []
-            if let plan = details.planType {
-                accountItems.append((sfSymbol: "crown", text: String(format: L("Plan: %@"), plan)))
+            // === Plan & Account ===
+            var antigravityAccountItems: [(sfSymbol: String, text: String)] = []
+            if let planText = resolvedPlanDisplayText(
+                for: .antigravity,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                antigravityAccountItems.append((sfSymbol: "crown", text: planText))
             }
             if let email = details.email {
-                accountItems.append((sfSymbol: "person.circle", text: String(format: L("Email: %@"), email)))
+                antigravityAccountItems.append((sfSymbol: "person.circle", text: email))
             }
-            if !accountItems.isEmpty {
-                createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
+            if let authSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !authSource.isEmpty {
+                antigravityAccountItems.append((sfSymbol: "key", text: String(format: L("Token From: %@"), authSource)))
             }
-
-            addSubscriptionItems(to: submenu, provider: .antigravity, accountId: accountId)
+            if !antigravityAccountItems.isEmpty {
+                createAccountInfoSection(items: antigravityAccountItems).forEach { submenu.addItem($0) }
+            }
 
         case .kimi:
             // === Usage Windows ===
@@ -450,13 +538,22 @@ extension StatusBarController {
             // === Plan ===
             if let plan = details.planType {
                 submenu.addItem(NSMenuItem.separator())
+                let kimiPlanHeader = NSMenuItem()
+                kimiPlanHeader.view = createHeaderView(title: L("Plan"))
+                submenu.addItem(kimiPlanHeader)
+
                 let item = NSMenuItem()
-                item.view = createDisabledLabelView(text: String(format: L("Plan: %@"), plan))
+                item.view = createDisabledLabelView(
+                    text: resolvedPlanDisplayText(
+                        for: .kimi,
+                        rawPlanName: plan,
+                        accountId: accountId,
+                        email: details.email
+                    ) ?? plan,
+                    icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
+                )
                 submenu.addItem(item)
             }
-
-            // === Subscription ===
-            addSubscriptionItems(to: submenu, provider: .kimi, accountId: accountId)
 
         case .minimaxCodingPlan:
             if let fiveHour = details.fiveHourUsage {
@@ -481,7 +578,15 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            addSubscriptionItems(to: submenu, provider: .minimaxCodingPlan, accountId: accountId)
+            if let planText = resolvedPlanDisplayText(
+                for: .minimaxCodingPlan,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                submenu.addItem(NSMenuItem.separator())
+                addPlanSection(to: submenu, planText: planText)
+            }
 
         case .zaiCodingPlan:
             // === Token Usage ===
@@ -568,8 +673,15 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === Subscription ===
-            addSubscriptionItems(to: submenu, provider: .zaiCodingPlan, accountId: accountId)
+            if let planText = resolvedPlanDisplayText(
+                for: .zaiCodingPlan,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                submenu.addItem(NSMenuItem.separator())
+                addPlanSection(to: submenu, planText: planText)
+            }
 
         case .nanoGpt:
             if let weeklyUsage = details.sevenDayUsage {
@@ -598,13 +710,24 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            addSubscriptionItems(to: submenu, provider: .nanoGpt, accountId: accountId)
+            if let planText = resolvedPlanDisplayText(
+                for: .nanoGpt,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                submenu.addItem(NSMenuItem.separator())
+                addPlanSection(to: submenu, planText: planText)
+            }
 
         case .chutes:
-            if let plan = details.planType {
-                let item = NSMenuItem()
-                item.view = createDisabledLabelView(text: String(format: L("Plan: %@"), plan))
-                submenu.addItem(item)
+            if let planText = resolvedPlanDisplayText(
+                for: .chutes,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                addPlanSection(to: submenu, planText: planText)
             }
 
             if let daily = details.dailyUsage,
@@ -631,7 +754,7 @@ extension StatusBarController {
             } else if let capUSD = chutesMonthlyValue.capUSD {
                 let item = NSMenuItem()
                 item.view = createDisabledLabelView(
-                    text: String(format: "Monthly Cap: $%.2f (5× subscription)", capUSD)
+                    text: String(format: L("Monthly Cap: $%.2f (5× subscription)"), capUSD)
                 )
                 submenu.addItem(item)
             }
@@ -646,8 +769,6 @@ extension StatusBarController {
             overageItem.view = createDisabledLabelView(text: L("Overage: PAYGO after cap"))
             submenu.addItem(overageItem)
 
-            addSubscriptionItems(to: submenu, provider: .chutes)
-
         case .synthetic:
             if let fiveHour = details.fiveHourUsage {
                 let rows = createUsageWindowRow(
@@ -661,15 +782,21 @@ extension StatusBarController {
             if let limit = details.limit, let remaining = details.limitRemaining {
                 let item = NSMenuItem()
                 item.view = createDisabledLabelView(
-                    text: String(format: "Limit: %.1f/%.1f", remaining, limit),
+                    text: String(format: L("Limit: %.1f/%.1f"), remaining, limit),
                     icon: NSImage(systemSymbolName: "chart.bar", accessibilityDescription: "Limit")
                 )
                 submenu.addItem(item)
             }
-            submenu.addItem(NSMenuItem.separator())
-            addSubscriptionItems(to: submenu, provider: .synthetic)
-            debugLog("createDetailSubmenu: added subscription items for Synthetic")
 
+            if let planText = resolvedPlanDisplayText(
+                for: .synthetic,
+                rawPlanName: details.planType,
+                accountId: accountId,
+                email: details.email
+            ) {
+                submenu.addItem(NSMenuItem.separator())
+                addPlanSection(to: submenu, planText: planText)
+            }
         default:
             break
         }
@@ -729,8 +856,14 @@ extension StatusBarController {
         }
 
         // Skip generic "Token From:" for providers that already render it in their case block above.
-        if let authSource = details.authSource, identifier != .copilot {
+        // Providers with their own Account section: copilot, claude, codex, geminiCLI, antigravity
+        let providersWithOwnAccountSection: Set<ProviderIdentifier> = [.copilot, .claude, .codex, .geminiCLI, .antigravity]
+        if let authSource = details.authSource, !providersWithOwnAccountSection.contains(identifier) {
             submenu.addItem(NSMenuItem.separator())
+            let genericAccountHeader = NSMenuItem()
+            genericAccountHeader.view = createHeaderView(title: L("Account"))
+            submenu.addItem(genericAccountHeader)
+
             let authItem = NSMenuItem()
             authItem.view = createDisabledLabelView(
                 text: String(format: L("Token From: %@"), authSource),
@@ -746,7 +879,7 @@ extension StatusBarController {
             }
             let usageItem = NSMenuItem()
             usageItem.view = createDisabledLabelView(
-                text: "Using in: \(authUsageSummary)",
+                text: String(format: L("Using in: %@"), authUsageSummary),
                 icon: NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: "Auth Usage")
             )
             submenu.addItem(usageItem)
@@ -757,6 +890,19 @@ extension StatusBarController {
 
     private func addHorizontalDivider(to submenu: NSMenu) {
         submenu.addItem(NSMenuItem.separator())
+    }
+
+    private func addPlanSection(to submenu: NSMenu, planText: String) {
+        let headerItem = NSMenuItem()
+        headerItem.view = createHeaderView(title: L("Plan"))
+        submenu.addItem(headerItem)
+
+        let item = NSMenuItem()
+        item.view = createDisabledLabelView(
+            text: planText,
+            icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
+        )
+        submenu.addItem(item)
     }
 
     private func codexEmail(for accountId: String?) -> String? {
@@ -786,6 +932,93 @@ extension StatusBarController {
         }
 
         return (usedUSD, capUSD, usedPercent)
+    }
+
+    private func resolvedPlanDisplayText(
+        for provider: ProviderIdentifier,
+        rawPlanName: String?,
+        accountId: String?,
+        email: String?
+    ) -> String? {
+        let normalizedRawPlanName = normalizedPlanName(rawPlanName, for: provider)
+        let subscriptionAccountId = resolvedSubscriptionAccountId(
+            for: provider,
+            accountId: accountId,
+            email: email
+        )
+        let configuredPlan = SubscriptionSettingsManager.shared.getPlan(
+            for: provider,
+            accountId: subscriptionAccountId
+        )
+
+        guard configuredPlan.isSet else {
+            return normalizedRawPlanName
+        }
+
+        let amountText = String(format: "$%.2f/m", configuredPlan.cost)
+        if let normalizedRawPlanName {
+            return "\(normalizedRawPlanName) (\(amountText))"
+        }
+
+        switch configuredPlan {
+        case .preset(let name, _):
+            return "\(name) (\(amountText))"
+        case .custom:
+            return "\(L("Custom")) (\(amountText))"
+        case .none:
+            return nil
+        }
+    }
+
+    private func resolvedSubscriptionAccountId(
+        for provider: ProviderIdentifier,
+        accountId: String?,
+        email: String?
+    ) -> String? {
+        let trimmedEmail = email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let trimmedEmail, !trimmedEmail.isEmpty {
+            return trimmedEmail
+        }
+
+        let trimmedAccountId = accountId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmedAccountId, !trimmedAccountId.isEmpty {
+            return trimmedAccountId
+        }
+
+        debugLog("resolvedSubscriptionAccountId: no stable account identifier for \(provider.rawValue)")
+        return nil
+    }
+
+    private func normalizedPlanName(_ rawPlanName: String?, for provider: ProviderIdentifier) -> String? {
+        guard let rawPlanName = rawPlanName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawPlanName.isEmpty else {
+            return nil
+        }
+
+        if provider == .copilot {
+            switch rawPlanName.lowercased() {
+            case "individual_pro":
+                return "Pro"
+            case "individual_free":
+                return "Free"
+            case "business":
+                return "Business"
+            case "enterprise":
+                return "Enterprise"
+            default:
+                break
+            }
+        }
+
+        let normalized = rawPlanName
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !normalized.isEmpty else { return nil }
+        if normalized.lowercased() == normalized {
+            return normalized.capitalized
+        }
+        return normalized
     }
 
     private func addGroupedModelUsageSection(
@@ -842,7 +1075,7 @@ extension StatusBarController {
 
                 let resetItem = NSMenuItem()
                 resetItem.view = createDisabledLabelView(
-                    text: "Resets: \(formatter.string(from: resetDate))",
+                    text: String(format: L("Resets: %@"), formatter.string(from: resetDate)),
                     indent: 0,
                     textColor: .secondaryLabelColor
                 )
@@ -868,64 +1101,20 @@ extension StatusBarController {
             debugContext: "createGeminiAccountSubmenu(\(account.email))"
         )
 
+        // === Account ===
         var accountItems: [(sfSymbol: String, text: String)] = [
-            (sfSymbol: "person.circle", text: "Email: \(account.email)"),
-            (sfSymbol: "key", text: "Token From: \(account.authSource)")
+            (sfSymbol: "person.circle", text: account.email),
+            (sfSymbol: "key", text: String(format: L("Token From: %@"), account.authSource))
         ]
         if let accountId = account.accountId, !accountId.isEmpty {
-            accountItems.insert((sfSymbol: "number.circle", text: "Account ID: \(accountId)"), at: 1)
+            accountItems.insert((sfSymbol: "number.circle", text: String(format: L("Account ID: %@"), accountId)), at: 1)
         }
         if let authUsageSummary = account.authUsageSummary, !authUsageSummary.isEmpty {
-            accountItems.append((sfSymbol: "arrow.triangle.branch", text: "Using in: \(authUsageSummary)"))
+            accountItems.append((sfSymbol: "arrow.triangle.branch", text: String(format: L("Using in: %@"), authUsageSummary)))
         }
         createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
 
-        let emailNormalized = account.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let subscriptionAccountId = emailNormalized.isEmpty ? account.accountId : emailNormalized
-        addSubscriptionItems(to: submenu, provider: .geminiCLI, accountId: subscriptionAccountId)
-
         return submenu
-    }
-
-    func addSubscriptionItems(to submenu: NSMenu, provider: ProviderIdentifier, accountId: String? = nil) {
-        let subscriptionKey = SubscriptionSettingsManager.shared.subscriptionKey(for: provider, accountId: accountId)
-        let currentPlan = SubscriptionSettingsManager.shared.getPlan(forKey: subscriptionKey)
-        let presets = ProviderSubscriptionPresets.presets(for: provider)
-
-        submenu.addItem(NSMenuItem.separator())
-
-        let headerItem = NSMenuItem()
-        headerItem.view = createHeaderView(title: L("Subscription"))
-        submenu.addItem(headerItem)
-
-        let noneItem = NSMenuItem(title: L("None ($0)"), action: #selector(subscriptionPlanSelected(_:)), keyEquivalent: "")
-        noneItem.target = self
-        noneItem.representedObject = SubscriptionMenuAction(subscriptionKey: subscriptionKey, plan: .none)
-        noneItem.state = (currentPlan == .none) ? .on : .off
-        submenu.addItem(noneItem)
-
-        for preset in presets {
-            let item = NSMenuItem(
-                title: "\(preset.name) ($\(Int(preset.cost))/m)",
-                action: #selector(subscriptionPlanSelected(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = SubscriptionMenuAction(subscriptionKey: subscriptionKey, plan: .preset(preset.name, preset.cost))
-            if case .preset(_, let currentCost) = currentPlan, currentCost == preset.cost {
-                item.state = .on
-            }
-            submenu.addItem(item)
-        }
-
-        let customItem = NSMenuItem(title: L("Set custom..."), action: #selector(customSubscriptionSelected(_:)), keyEquivalent: "")
-        customItem.target = self
-        customItem.representedObject = subscriptionKey
-        if case .custom(let amount) = currentPlan {
-            customItem.state = .on
-            customItem.title = "Set custom ($\(Int(amount))/m)"
-        }
-        submenu.addItem(customItem)
     }
 
     func createCopilotHistorySubmenu() -> NSMenu {
@@ -1200,7 +1389,7 @@ extension StatusBarController {
 
         let paceText = paceInfo.paceRateText
         debugLog("createPaceView: pace label computed: \(paceText)")
-        let leftTextField = NSTextField(labelWithString: "Speed: \(paceText)")
+        let leftTextField = NSTextField(labelWithString: String(format: L("Speed: %@"), paceText))
         leftTextField.font = NSFont.systemFont(ofSize: fontSize)
         leftTextField.textColor = .secondaryLabelColor
         leftTextField.lineBreakMode = .byTruncatingTail
@@ -1466,7 +1655,7 @@ extension StatusBarController {
         formatter.timeZone = TimeZone.current
         let resetItem = NSMenuItem()
         resetItem.view = createDisabledLabelView(
-            text: "Resets: \(formatter.string(from: resetDate))",
+            text: String(format: L("Resets: %@"), formatter.string(from: resetDate)),
             indent: 0,
             textColor: .secondaryLabelColor
         )
@@ -1495,14 +1684,18 @@ extension StatusBarController {
     }
 
     /// Creates unified account info section with SF Symbol icons.
-    /// Returns [separator, item1, item2, ...]. Enables multiline for "Token From:" items.
+    /// Returns [separator, header, item1, item2, ...]. Enables multiline for "Token From:" items.
     func createAccountInfoSection(items: [(sfSymbol: String, text: String)]) -> [NSMenuItem] {
         var menuItems: [NSMenuItem] = []
         menuItems.append(NSMenuItem.separator())
 
+        let headerItem = NSMenuItem()
+        headerItem.view = createHeaderView(title: L("Account"))
+        menuItems.append(headerItem)
+
         for item in items {
             let menuItem = NSMenuItem()
-            let needsMultiline = item.text.hasPrefix("Token From:")
+            let needsMultiline = item.sfSymbol == "key"
             menuItem.view = createDisabledLabelView(
                 text: item.text,
                 icon: NSImage(systemSymbolName: item.sfSymbol, accessibilityDescription: nil),

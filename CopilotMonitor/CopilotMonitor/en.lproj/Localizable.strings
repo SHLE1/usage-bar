@@ -193,6 +193,9 @@
 "uninstalled" = "uninstalled";
 "Monthly Total" = "Monthly Total";
 "Choose which providers appear in UsageBar and which extra billing items stay visible." = "Choose which providers appear in UsageBar and which extra billing items stay visible.";
+"Menu Preview" = "Menu Preview";
+"Showing %d provider(s)" = "Showing %d provider(s)";
+"Pay-as-you-go" = "Pay-as-you-go";
 "Pay-as-you-go Providers" = "Pay-as-you-go Providers";
 "These providers appear in the usage-based cost section." = "These providers appear in the usage-based cost section.";
 "Additional Cost Items" = "Additional Cost Items";
@@ -274,3 +277,29 @@
 "Failed to create installation script." = "Failed to create installation script.";
 "Failed to create uninstall script." = "Failed to create uninstall script.";
 "Failed to uninstall CLI: %@" = "Failed to uninstall CLI: %@";
+
+/* ==========================
+   Additional Menu Localization
+   ========================== */
+"%@ ($%.2f)" = "%@ ($%.2f)";
+"Unknown" = "Unknown";
+"Monthly Usage: %.0f%%" = "Monthly Usage: %.0f%%";
+"%@ (Today): %d overage ($%.2f)" = "%@ (Today): %d overage ($%.2f)";
+"%@: %d overage ($%.2f)" = "%@: %d overage ($%.2f)";
+"%dd %dh left" = "%dd %dh left";
+"%dh left" = "%dh left";
+"%dm left" = "%dm left";
+"Zero" = "Zero";
+"%@: %@" = "%@: %@";
+"%@: %@ (Today)" = "%@: %@ (Today)";
+"%@: $%.2f" = "%@: $%.2f";
+"Predicted EOM: %@ requests" = "Predicted EOM: %@ requests";
+"Predicted Add-on: $%.2f" = "Predicted Add-on: $%.2f";
+"Low prediction accuracy" = "Low prediction accuracy";
+"Medium prediction accuracy" = "Medium prediction accuracy";
+"%@ (Today): %@ req" = "%@ (Today): %@ req";
+"%@: %@ req" = "%@: %@ req";
+"Limit: %.1f/%.1f" = "Limit: %.1f/%.1f";
+"Account" = "Account";
+"Plan" = "Plan";
+"Credits: $%.2f" = "Credits: $%.2f";

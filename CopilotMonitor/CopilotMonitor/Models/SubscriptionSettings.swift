@@ -1,10 +1,5 @@
 import Foundation
 
-struct SubscriptionMenuAction {
-    let subscriptionKey: String
-    let plan: SubscriptionPlan
-}
-
 enum SubscriptionPlan: Codable, Equatable {
     case none
     case preset(String, Double)

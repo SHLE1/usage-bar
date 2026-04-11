@@ -88,9 +88,9 @@
 "Monthly Cap: $%.2f (5× subscription)" = "月度上限: $%.2f（5 倍订阅）";
 "Credits Balance: $%.2f" = "余额: $%.2f";
 "Overage: PAYGO after cap" = "超出：超限后按量计费";
-"Daily: $%.2f" = "日: $%.2f";
-"Weekly: $%.2f" = "周: $%.2f";
-"Monthly: $%.2f" = "月: $%.2f";
+"Daily: $%.2f" = "今日: $%.2f";
+"Weekly: $%.2f" = "本周: $%.2f";
+"Monthly: $%.2f" = "本月: $%.2f";
 "Credits: $%.2f left" = "余额: $%.2f 剩余";
 "Limit: $%.2f / $%.2f" = "限额: $%.2f / $%.2f";
 "Resets: %@" = "重置: %@";
@@ -193,6 +193,9 @@
 "uninstalled" = "已卸载";
 "Monthly Total" = "每月总计";
 "Choose which providers appear in UsageBar and which extra billing items stay visible." = "选择哪些 Provider 显示在 UsageBar 中，以及哪些额外计费项继续显示。";
+"Menu Preview" = "菜单预览";
+"Showing %d provider(s)" = "已开启 %d 个";
+"Pay-as-you-go" = "按量计费";
 "Pay-as-you-go Providers" = "按量计费 Provider";
 "These providers appear in the usage-based cost section." = "这些 Provider 会显示在按量计费区块中。";
 "Additional Cost Items" = "额外计费项";
@@ -274,3 +277,29 @@
 "Failed to create installation script." = "无法创建安装脚本。";
 "Failed to create uninstall script." = "无法创建卸载脚本。";
 "Failed to uninstall CLI: %@" = "CLI 卸载失败: %@";
+
+/* ==========================
+   Additional Menu Localization
+   ========================== */
+"%@ ($%.2f)" = "%@（$%.2f）";
+"Unknown" = "未知";
+"Monthly Usage: %.0f%%" = "月度用量：%.0f%%";
+"%@ (Today): %d overage ($%.2f)" = "%@（今天）：%d 次超额（$%.2f）";
+"%@: %d overage ($%.2f)" = "%@：%d 次超额（$%.2f）";
+"%dd %dh left" = "剩余 %d 天 %d 小时";
+"%dh left" = "剩余 %d 小时";
+"%dm left" = "剩余 %d 分钟";
+"Zero" = "零";
+"%@: %@" = "%@：%@";
+"%@: %@ (Today)" = "%@：%@（今天）";
+"%@: $%.2f" = "%@：$%.2f";
+"Predicted EOM: %@ requests" = "预计月末：%@ 次请求";
+"Predicted Add-on: $%.2f" = "预计附加费用：$%.2f";
+"Low prediction accuracy" = "预测准确度较低";
+"Medium prediction accuracy" = "预测准确度中等";
+"%@ (Today): %@ req" = "%@（今天）：%@ 次请求";
+"%@: %@ req" = "%@：%@ 次请求";
+"Limit: %.1f/%.1f" = "限额：%.1f/%.1f";
+"Account" = "账号";
+"Plan" = "套餐";
+"Credits: $%.2f" = "余额：$%.2f";

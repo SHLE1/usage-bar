@@ -116,6 +116,44 @@ enum ProviderIdentifier: String, CaseIterable {
             return "c.circle"
         }
     }
+
+    var menuIconAssetName: String? {
+        switch self {
+        case .copilot:
+            return "CopilotIcon"
+        case .claude:
+            return "ClaudeIcon"
+        case .codex:
+            return "CodexIcon"
+        case .geminiCLI:
+            return "GeminiIcon"
+        case .openCode:
+            return "OpencodeIcon"
+        case .minimaxCodingPlan:
+            return "MinimaxIcon"
+        case .zaiCodingPlan:
+            return "ZaiIcon"
+        case .nanoGpt:
+            return "NanoGptIcon"
+        case .synthetic:
+            return "SyntheticIcon"
+        case .chutes:
+            return "ChutesIcon"
+        case .openRouter, .antigravity, .kimi:
+            return nil
+        }
+    }
+
+    var menuIconSymbolName: String {
+        switch self {
+        case .openRouter:
+            return "arrow.triangle.branch"
+        case .antigravity, .kimi:
+            return iconName
+        default:
+            return iconName
+        }
+    }
 }
 
 /// Protocol for fetching usage data from AI providers
