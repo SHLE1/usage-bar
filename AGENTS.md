@@ -1,3 +1,7 @@
+## Communication Rules
+- Reply to the user in Chinese unless they explicitly request another language.
+- Keep code comments, commit messages, PR content, PR titles, and other repository artifacts in English.
+
 ## Important Restriction
 - All of comments in code base, commit message, PR content and title should be written in English.
   - If you find any Korean text, please translate it to English.
@@ -95,6 +99,7 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
 
 ### Instruction of each task
 - In all changes, always write debugging log for actually printing before you confirming the feature is fully functional.
+- After each change, check whether the corresponding Chinese i18n is missing or incomplete, and finish it before handing off.
 - After each change, follow:
   - Clear cache and compile the binary
   - Kill the existing process, and run the new app.

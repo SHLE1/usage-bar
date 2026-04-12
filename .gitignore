@@ -27,11 +27,15 @@ DerivedData/
 # Sensitive Data
 api.txt
 .env
+.env.*
 
 # Build Artifacts
 *.dmg
 dist/
 exportOptions.plist
+.swiftpm/
+*.xcscmblueprint
+.idea/
 
 # Node.js (CI tools)
 node_modules/
@@ -47,3 +51,9 @@ data/
 *.profraw
 *.profdata
 nohup.out
+
+# Local AI/tooling config
+.pi
+.pi-lens
+.claude
+.mcp.json
