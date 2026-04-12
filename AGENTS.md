@@ -107,11 +107,13 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
 
 ## Release Policy
 - **Workflow**: STRICTLY follow `docs/RELEASE_WORKFLOW.md` for versioning, building, signing, and notarizing.
-- **Signing**: All DMGs distributed via GitHub Releases **MUST** be signed with Developer ID and **NOTARIZED** to pass macOS Gatekeeper.
+- **Signing Availability**: There is currently no Apple signing certificate available for this project.
+- **Distribution Constraint**: Until a valid Apple signing certificate is provided, release packaging can only publish unsigned `.zip` and unsigned `.dmg` artifacts.
+- **Gatekeeper Expectation**: Unsigned release artifacts will not pass macOS Gatekeeper without manual user override.
 - **Documentation**: Update `README.md` and screenshots if UI changes significantly before release.
 
 ### CI Universal Binary
-- Release workflows must build universal macOS binaries (`arm64` + `x86_64`) and verify with `lipo -archs` for both the main app and the embedded CLI before notarization.
+- Release workflows must build universal macOS binaries (`arm64` + `x86_64`) and verify with `lipo -archs` for both the main app and the embedded CLI before packaging.
 
 ## Tips
 ### How to get quota usage?

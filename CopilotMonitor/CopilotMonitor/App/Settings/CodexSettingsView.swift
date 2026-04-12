@@ -1,74 +1,85 @@
 import SwiftUI
 
-struct CodexSettingsView: View {
+struct AdvancedProviderSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
 
     @State private var accountOptions: [CodexStatusBarAccountOption] = []
 
     var body: some View {
         SettingsPage(
-            title: L("Codex"),
-            subtitle: L("Manage which Codex account and limit window UsageBar shows in the status bar.")
+            title: L("Advanced Providers"),
+            subtitle: L("Manage provider-specific overrides that do not belong in the main status bar settings.")
         ) {
             SettingsSectionCard(
-                title: L("Status Bar Account"),
-                subtitle: L("Choose which detected Codex account the status bar should follow.")
+                title: L("Codex"),
+                subtitle: L("Choose which Codex account and limit window UsageBar follows in the status bar.")
             ) {
-                if accountOptions.isEmpty {
-                    Text(L("No Codex accounts detected yet."))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else if accountOptions.count == 1, let option = accountOptions.first {
-                    SettingsRow(
-                        title: L("Selected Account"),
-                        description: L("The only detected Codex account on this Mac.")
-                    ) {
-                        Text(option.displayName)
-                            .foregroundStyle(.secondary)
+                VStack(spacing: 0) {
+                    if accountOptions.isEmpty {
+                        SettingsRow(
+                            title: L("Status Bar Account"),
+                            description: L("Choose which detected Codex account the status bar should follow.")
+                        ) {
+                            Text(L("No Codex accounts detected yet."))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if accountOptions.count == 1, let option = accountOptions.first {
+                        SettingsRow(
+                            title: L("Selected Account"),
+                            description: L("The only detected Codex account on this Mac.")
+                        ) {
+                            Text(option.displayName)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        SettingsRow(
+                            title: L("Selected Account"),
+                            description: L("Switch which Codex account drives the status bar.")
+                        ) {
+                            Menu {
+                                ForEach(accountOptions) { option in
+                                    Button(option.displayName) {
+                                        prefs.codexStatusBarAccountSelectionKey = option.selectionKey
+                                    }
+                                }
+                            } label: {
+                                CompactSettingsMenuLabel(title: selectedAccountTitle)
+                            }
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                        }
                     }
-                } else {
+
+                    Divider()
+                        .padding(.vertical, 16)
+
                     SettingsRow(
-                        title: L("Selected Account"),
-                        description: L("Switch which Codex account drives the status bar.")
+                        title: L("Status Bar Window"),
+                        description: L("Choose which Codex limit window stays visible in the status bar.")
                     ) {
                         Menu {
-                            ForEach(accountOptions) { option in
-                                Button(option.displayName) {
-                                    prefs.codexStatusBarAccountSelectionKey = option.selectionKey
+                            ForEach(statusBarWindowModes, id: \.self) { mode in
+                                Button(mode.title) {
+                                    prefs.codexStatusBarWindowMode = mode
                                 }
                             }
                         } label: {
-                            CompactSettingsMenuLabel(title: selectedAccountTitle)
+                            CompactSettingsMenuLabel(title: prefs.codexStatusBarWindowMode.title)
                         }
                         .buttonStyle(.plain)
                         .fixedSize()
                     }
                 }
             }
-
-            SettingsSectionCard(
-                title: L("Status Bar Window"),
-                subtitle: L("Choose which Codex limit window stays visible in the status bar.")
-            ) {
-                SettingsRow(
-                    title: L("Display Mode"),
-                    description: L("Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format.")
-                ) {
-                    Menu {
-                        ForEach(statusBarWindowModes, id: \.self) { mode in
-                            Button(mode.title) {
-                                prefs.codexStatusBarWindowMode = mode
-                            }
-                        }
-                    } label: {
-                        CompactSettingsMenuLabel(title: prefs.codexStatusBarWindowMode.title)
-                    }
-                    .buttonStyle(.plain)
-                    .fixedSize()
-                }
-            }
         }
         .onAppear {
+            reloadAccounts()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppPreferences.codexStatusBarAccountDidChange)) { _ in
+            reloadAccounts()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppPreferences.enabledProvidersDidChange)) { _ in
             reloadAccounts()
         }
     }

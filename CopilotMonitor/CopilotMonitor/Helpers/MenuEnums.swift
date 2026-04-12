@@ -51,47 +51,7 @@ enum PredictionPeriod: Int, CaseIterable {
     static var defaultPeriod: PredictionPeriod { .oneWeek }
 }
 
-// MARK: - Menu Bar Display
-enum MenuBarDisplayMode: Int, CaseIterable {
-    case totalCost = 0
-    case iconOnly = 1
-    case onlyShow = 2
-    case multiProvider = 3
-
-    var title: String {
-        switch self {
-        case .totalCost: return L("Total Cost")
-        case .iconOnly: return L("Icon Only")
-        case .onlyShow: return L("Only Show")
-        case .multiProvider: return L("Multi-Provider Bar")
-        }
-    }
-
-    static var defaultMode: MenuBarDisplayMode { .totalCost }
-}
-
-enum OnlyShowMode: Int, CaseIterable {
-    case pinnedProvider = 0
-    case alertFirst = 1
-    case recentChange = 2
-
-    var title: String {
-        switch self {
-        case .pinnedProvider: return L("Pinned Provider")
-        case .alertFirst: return L("Alert First")
-        case .recentChange: return L("Recent Quota Change Only")
-        }
-    }
-
-    static var defaultMode: OnlyShowMode { .pinnedProvider }
-}
-
 enum StatusBarDisplayPreferences {
-    static let modeKey = "statusBarDisplay.mode"
-    static let onlyShowModeKey = "statusBarDisplay.onlyShowMode"
-    static let providerKey = "statusBarDisplay.provider"
-    // Legacy key kept for migration from old toggle-based UI.
-    static let showAlertFirstKey = "statusBarDisplay.showAlertFirst"
     static let criticalBadgeKey = "statusBarDisplay.criticalBadge"
     static let showProviderNameKey = "statusBarDisplay.showProviderName"
     static let multiProviderProvidersKey = "statusBarDisplay.multiProviderProviders"

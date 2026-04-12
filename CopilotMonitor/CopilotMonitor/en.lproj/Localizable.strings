@@ -157,10 +157,13 @@
 "Status Bar" = "Status Bar";
 "Subscriptions" = "Subscriptions";
 "Codex" = "Codex";
+"Advanced Providers" = "Advanced Providers";
 "Refresh, startup, and command line tool" = "Refresh, startup, and command line tool";
 "Choose which providers appear in UsageBar" = "Choose which providers appear in UsageBar";
 "Manage monthly plans and custom costs" = "Manage monthly plans and custom costs";
 "Choose the Codex account and limit window shown in the status bar" = "Choose the Codex account and limit window shown in the status bar";
+"Provider-specific account and window overrides" = "Provider-specific account and window overrides";
+"Manage provider-specific overrides that do not belong in the main status bar settings." = "Manage provider-specific overrides that do not belong in the main status bar settings.";
 "Control refresh timing, startup behavior, and command line access." = "Control refresh timing, startup behavior, and command line access.";
 "Usage Updates" = "Usage Updates";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "Choose how often UsageBar refreshes and how it estimates end-of-month cost.";
@@ -203,6 +206,7 @@
 "GitHub Copilot Add-on" = "GitHub Copilot Add-on";
 "Subscription Providers" = "Subscription Providers";
 "Quota-based providers shown in the quota section and the status bar summary." = "Quota-based providers shown in the quota section and the status bar summary.";
+"Quota-based providers shown in the quota section and the top status bar summary." = "Quota-based providers shown in the quota section and the top status bar summary.";
 "Set monthly plan costs for quota-based providers and any detected accounts." = "Set monthly plan costs for quota-based providers and any detected accounts.";
 "This total is used for the quota subscription summary." = "This total is used for the quota subscription summary.";
 "Configured subscription cost" = "Configured subscription cost";
@@ -216,6 +220,7 @@
 "/m" = "/m";
 "Apply" = "Apply";
 "Manage which Codex account and limit window UsageBar shows in the status bar." = "Manage which Codex account and limit window UsageBar shows in the status bar.";
+"Choose which Codex account and limit window UsageBar follows in the status bar." = "Choose which Codex account and limit window UsageBar follows in the status bar.";
 "Status Bar Account" = "Status Bar Account";
 "Choose which detected Codex account the status bar should follow." = "Choose which detected Codex account the status bar should follow.";
 "No Codex accounts detected yet." = "No Codex accounts detected yet.";
@@ -227,6 +232,10 @@
 "Choose which Codex limit window stays visible in the status bar." = "Choose which Codex limit window stays visible in the status bar.";
 "Display Mode" = "Display Mode";
 "Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format." = "Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format.";
+"How this appears" = "How this appears";
+"The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section." = "The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.";
+"Use Advanced Providers for provider-specific overrides such as the Codex account and limit window." = "Use Advanced Providers for provider-specific overrides such as the Codex account and limit window.";
+"—% left" = "—% left";
 "5h Only" = "5h Only";
 "Weekly Only" = "Weekly Only";
 "5h + Weekly" = "5h + Weekly";

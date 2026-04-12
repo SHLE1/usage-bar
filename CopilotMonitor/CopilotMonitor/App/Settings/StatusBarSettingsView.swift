@@ -53,7 +53,7 @@ struct StatusBarSettingsView: View {
             // MARK: - Subscription Providers
             SettingsSectionCard(
                 title: L("Subscription Providers"),
-                subtitle: L("Quota-based providers shown in the quota section and the status bar summary.")
+                subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
             ) {
                 providerGrid(for: sortedProviders(Self.subscriptionProviders))
             }
@@ -65,6 +65,16 @@ struct StatusBarSettingsView: View {
             ) {
                 Toggle(L("GitHub Copilot Add-on"), isOn: $prefs.copilotAddOnEnabled)
                     .toggleStyle(.checkbox)
+            }
+
+            SettingsSecondaryCard(
+                title: L("How this appears"),
+                subtitle: L("The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.")
+            ) {
+                Text(L("Use Advanced Providers for provider-specific overrides such as the Codex account and limit window."))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -120,7 +130,7 @@ struct StatusBarSettingsView: View {
                         previewRow(
                             provider: .copilot,
                             text: ProviderIdentifier.copilot.displayName,
-                            trailingText: "—% used"
+                            trailingText: L("—% left")
                         )
                     }
 
@@ -132,7 +142,7 @@ struct StatusBarSettingsView: View {
                         previewRow(
                             provider: provider,
                             text: provider.displayName,
-                            trailingText: "—% used"
+                            trailingText: L("—% left")
                         )
                     }
 
@@ -140,7 +150,7 @@ struct StatusBarSettingsView: View {
                         previewRow(
                             provider: .geminiCLI,
                             text: ProviderIdentifier.geminiCLI.displayName,
-                            trailingText: "—% used"
+                            trailingText: L("—% left")
                         )
                     }
                 }

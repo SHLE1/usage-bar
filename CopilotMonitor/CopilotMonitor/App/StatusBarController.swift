@@ -76,28 +76,25 @@ enum UsageFetcherError: LocalizedError {
 
 @MainActor
 final class StatusBarController: NSObject {
-    private var statusItem: NSStatusItem?
-    private var statusBarIconView: StatusBarIconView?
-    private var multiProviderBarView: MultiProviderBarView?
-    private var multiProviderBarMenu: NSMenu!
-    private var menu: NSMenu!
+    var statusItem: NSStatusItem?
+    var statusBarIconView: StatusBarIconView?
+    var multiProviderBarView: MultiProviderBarView?
+    var multiProviderBarMenu: NSMenu!
+    var menu: NSMenu!
     private var signInItem: NSMenuItem!
     private var resetLoginItem: NSMenuItem!
-    private var launchAtLoginItem: NSMenuItem!
-    private var installCLIItem: NSMenuItem!
-    private var refreshIntervalMenu: NSMenu!
-    private var menuBarDisplayModeMenu: NSMenu!
-    private var onlyShowModeMenu: NSMenu!
-    private var onlyShowProviderMenu: NSMenu!
-    private var criticalBadgeMenuItem: NSMenuItem!
-    private var showProviderNameMenuItem: NSMenuItem!
+    var launchAtLoginItem: NSMenuItem!
+    var installCLIItem: NSMenuItem!
+    var refreshIntervalMenu: NSMenu!
+    var criticalBadgeMenuItem: NSMenuItem!
+    var showProviderNameMenuItem: NSMenuItem!
     private var refreshTimer: Timer?
     private var initialRefreshTask: Task<Void, Never>?
-    private var isMainMenuTracking = false
-    private var hasDeferredMenuRebuild = false
-    private var hasDeferredStatusBarRefresh = false
+    var isMainMenuTracking = false
+    var hasDeferredMenuRebuild = false
+    var hasDeferredStatusBarRefresh = false
 
-    private var currentUsage: CopilotUsage?
+    var currentUsage: CopilotUsage?
     private var lastFetchTime: Date?
     private var isFetching = false
 
@@ -110,18 +107,18 @@ final class StatusBarController: NSObject {
     private var lastHistoryFetchResult: HistoryFetchResult = .none
 
     // History UI properties
-    private var historySubmenu: NSMenu!
-    private var historyMenuItem: NSMenuItem!
+    var historySubmenu: NSMenu!
+    var historyMenuItem: NSMenuItem!
     var predictionPeriodMenu: NSMenu!
 
     // Multi-provider properties
-    private var providerResults: [ProviderIdentifier: ProviderResult] = [:]
-    private var loadingProviders: Set<ProviderIdentifier> = []
-    private var enabledProvidersMenu: NSMenu!
-    private var lastProviderErrors: [ProviderIdentifier: String] = [:]
-    private var viewErrorDetailsItem: NSMenuItem!
-    private var orphanedSubscriptionKeys: [String] = []
-    private var orphanedSubscriptionTotal: Double = 0
+    var providerResults: [ProviderIdentifier: ProviderResult] = [:]
+    var loadingProviders: Set<ProviderIdentifier> = []
+    var enabledProvidersMenu: NSMenu!
+    var lastProviderErrors: [ProviderIdentifier: String] = [:]
+    var viewErrorDetailsItem: NSMenuItem!
+    var orphanedSubscriptionKeys: [String] = []
+    var orphanedSubscriptionTotal: Double = 0
     private let criticalUsageThreshold: Double = 90.0
     private let alertFirstUsageThreshold: Double = 100.0
     private let recentChangeMaxAge: TimeInterval = 3 * 60 * 60
@@ -151,7 +148,7 @@ final class StatusBarController: NSObject {
         let hasNoData: Bool
     }
 
-    private var refreshInterval: RefreshInterval {
+    var refreshInterval: RefreshInterval {
         get {
             let rawValue = UserDefaults.standard.integer(forKey: "refreshInterval")
             return RefreshInterval(rawValue: rawValue) ?? .defaultInterval
@@ -163,7 +160,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private var predictionPeriod: PredictionPeriod {
+    var predictionPeriod: PredictionPeriod {
         get {
             let rawValue = UserDefaults.standard.integer(forKey: "predictionPeriod")
             return PredictionPeriod(rawValue: rawValue) ?? .defaultPeriod
@@ -176,58 +173,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private var menuBarDisplayMode: MenuBarDisplayMode {
-        get {
-            .multiProvider
-        }
-        set {
-            UserDefaults.standard.set(MenuBarDisplayMode.multiProvider.rawValue, forKey: StatusBarDisplayPreferences.modeKey)
-            updateStatusBarDisplayMenuState()
-            updateStatusBarText()
-        }
-    }
-
-    private var onlyShowMode: OnlyShowMode {
-        get {
-            if let object = UserDefaults.standard.object(forKey: StatusBarDisplayPreferences.onlyShowModeKey) {
-                if let rawValue = object as? Int, let mode = OnlyShowMode(rawValue: rawValue) {
-                    return mode
-                }
-            }
-
-            // Legacy migration: map old toggle to alert mode.
-            if boolPreference(forKey: StatusBarDisplayPreferences.showAlertFirstKey, defaultValue: false) {
-                return .alertFirst
-            }
-
-            if menuBarDisplayProvider != nil {
-                return .pinnedProvider
-            }
-
-            return .defaultMode
-        }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: StatusBarDisplayPreferences.onlyShowModeKey)
-            updateStatusBarDisplayMenuState()
-            updateStatusBarText()
-        }
-    }
-
-    private var menuBarDisplayProvider: ProviderIdentifier? {
-        get {
-            guard let rawValue = UserDefaults.standard.string(forKey: StatusBarDisplayPreferences.providerKey) else {
-                return nil
-            }
-            return ProviderIdentifier(rawValue: rawValue)
-        }
-        set {
-            UserDefaults.standard.set(newValue?.rawValue, forKey: StatusBarDisplayPreferences.providerKey)
-            updateStatusBarDisplayMenuState()
-            updateStatusBarText()
-        }
-    }
-
-    private var criticalBadgeEnabled: Bool {
+    var criticalBadgeEnabled: Bool {
         get {
             boolPreference(forKey: StatusBarDisplayPreferences.criticalBadgeKey, defaultValue: true)
         }
@@ -238,7 +184,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private var showProviderName: Bool {
+    var showProviderName: Bool {
         get {
             boolPreference(forKey: StatusBarDisplayPreferences.showProviderNameKey, defaultValue: false)
         }
@@ -251,7 +197,7 @@ final class StatusBarController: NSObject {
 
     /// Which providers to show in Multi-Provider Bar mode.
     /// Defaults to all known providers so users see something useful immediately.
-    private var multiProviderSelection: [ProviderIdentifier] {
+    var multiProviderSelection: [ProviderIdentifier] {
         get {
             guard let saved = UserDefaults.standard.array(forKey: StatusBarDisplayPreferences.multiProviderProvidersKey) as? [String] else {
                 return ProviderIdentifier.allCases
@@ -382,24 +328,23 @@ final class StatusBarController: NSObject {
         updateStatusItemLayout(reason: "setup")
     }
 
-    /// Detaches all status bar subviews and attaches the correct one for the current display mode.
-    private func attachActiveStatusBarView() {
+    /// Detaches all status bar subviews and attaches the active status bar view.
+    func attachActiveStatusBarView() {
         guard let button = statusItem?.button else { return }
         button.subviews.forEach { $0.removeFromSuperview() }
         button.title = ""
         button.image = nil
 
-        switch menuBarDisplayMode {
-        case .multiProvider:
-            if let mpv = multiProviderBarView { button.addSubview(mpv) }
-        default:
-            if let iconView = statusBarIconView { button.addSubview(iconView) }
+        if let mpv = multiProviderBarView {
+            button.addSubview(mpv)
+        } else if let iconView = statusBarIconView {
+            button.addSubview(iconView)
         }
     }
 
-    private func updateStatusItemLayout(reason: String) {
+    func updateStatusItemLayout(reason: String) {
         guard let statusItem, let button = statusItem.button else { return }
-        let activeView: NSView? = menuBarDisplayMode == .multiProvider ? multiProviderBarView : statusBarIconView
+        let activeView: NSView? = multiProviderBarView ?? statusBarIconView
         guard let activeView else { return }
 
         let intrinsicSize = activeView.intrinsicContentSize
@@ -416,140 +361,6 @@ final class StatusBarController: NSObject {
         logger.debug("statusIconLayout[\(reason)]: width=\(widthText, privacy: .public)")
     }
 
-    private func setupMenu() {
-        menu = NSMenu()
-        menu.delegate = self
-
-        historyMenuItem = NSMenuItem(title: L("Usage History"), action: nil, keyEquivalent: "")
-        historyMenuItem.image = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Usage History")
-        historySubmenu = NSMenu()
-        historyMenuItem.submenu = historySubmenu
-        let loadingItem = NSMenuItem(title: L("Loading..."), action: nil, keyEquivalent: "")
-        loadingItem.isEnabled = false
-        historySubmenu.addItem(loadingItem)
-        // Removed: History now in Copilot submenu only (see createCopilotHistorySubmenu())
-        // menu.addItem(historyMenuItem)
-
-        // Load cached history immediately on startup (before API fetch completes)
-        loadCachedHistoryOnStartup()
-
-        let refreshItem = NSMenuItem(title: L("Refresh"), action: #selector(refreshClicked), keyEquivalent: "r")
-        refreshItem.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: "Refresh")
-        refreshItem.target = self
-        menu.addItem(refreshItem)
-
-        let checkForUpdatesItem = NSMenuItem(title: L("Check for Updates..."), action: #selector(AppDelegate.checkForUpdates), keyEquivalent: "u")
-        checkForUpdatesItem.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: "Check for Updates")
-        checkForUpdatesItem.target = NSApp.delegate
-        menu.addItem(checkForUpdatesItem)
-
-        // Auto Refresh and Status Bar Options moved to Settings window.
-        // Keep internal menus allocated but hidden to avoid nil reference crashes.
-        refreshIntervalMenu = NSMenu()
-        for interval in RefreshInterval.allCases {
-            let item = NSMenuItem(title: interval.title, action: #selector(refreshIntervalSelected(_:)), keyEquivalent: "")
-            item.target = self
-            item.tag = interval.rawValue
-            refreshIntervalMenu.addItem(item)
-        }
-        updateRefreshIntervalMenu()
-
-        menuBarDisplayModeMenu = NSMenu()
-        multiProviderBarMenu = menuBarDisplayModeMenu
-        for identifier in ProviderIdentifier.allCases {
-            let providerItem = NSMenuItem(
-                title: identifier.displayName,
-                action: #selector(multiProviderProviderSelected(_:)),
-                keyEquivalent: ""
-            )
-            providerItem.target = self
-            providerItem.representedObject = identifier.rawValue
-            menuBarDisplayModeMenu.addItem(providerItem)
-        }
-
-        enabledProvidersMenu = NSMenu()
-        for identifier in ProviderIdentifier.allCases {
-            let providerItem = NSMenuItem(
-                title: identifier.displayName,
-                action: #selector(toggleProvider(_:)),
-                keyEquivalent: ""
-            )
-            providerItem.target = self
-            providerItem.representedObject = identifier.rawValue
-            enabledProvidersMenu.addItem(providerItem)
-        }
-
-        criticalBadgeMenuItem = NSMenuItem(title: L("Critical Badge"), action: #selector(toggleCriticalBadge(_:)), keyEquivalent: "")
-        criticalBadgeMenuItem.target = self
-        criticalBadgeMenuItem.isHidden = true
-
-        showProviderNameMenuItem = NSMenuItem(title: L("Show Provider Icon"), action: #selector(toggleShowProviderName(_:)), keyEquivalent: "")
-        showProviderNameMenuItem.target = self
-        showProviderNameMenuItem.isHidden = true
-
-        updateEnabledProvidersMenu()
-        updateStatusBarDisplayMenuState()
-
-        predictionPeriodMenu = NSMenu()
-        for period in PredictionPeriod.allCases {
-            let item = NSMenuItem(title: period.title, action: #selector(predictionPeriodSelected(_:)), keyEquivalent: "")
-            item.target = self
-            item.tag = period.rawValue
-            predictionPeriodMenu.addItem(item)
-        }
-        updatePredictionPeriodMenu()
-
-        menu.addItem(NSMenuItem.separator())
-
-        // Launch at Login and CLI are now in Settings window — keep items allocated but hidden
-        launchAtLoginItem = NSMenuItem(title: L("Launch at Login"), action: #selector(launchAtLoginClicked), keyEquivalent: "")
-        launchAtLoginItem.isHidden = true
-        launchAtLoginItem.target = self
-        updateLaunchAtLoginState()
-        menu.addItem(launchAtLoginItem)
-
-        installCLIItem = NSMenuItem(title: L("Install CLI (usagebar)"), action: #selector(installCLIClicked), keyEquivalent: "")
-        installCLIItem.isHidden = true
-        installCLIItem.target = self
-        menu.addItem(installCLIItem)
-        updateCLIInstallState()
-
-        let settingsItem = NSMenuItem(title: L("Settings..."), action: #selector(AppDelegate.openSettingsWindow), keyEquivalent: ",")
-        settingsItem.image = NSImage(systemSymbolName: "gear", accessibilityDescription: "Settings")
-        settingsItem.target = NSApp.delegate
-        menu.addItem(settingsItem)
-
-        let shareSnapshotItem = NSMenuItem(title: L("Share Usage Snapshot..."), action: #selector(shareUsageSnapshotClicked), keyEquivalent: "")
-        shareSnapshotItem.image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: "Share Usage Snapshot")
-        shareSnapshotItem.target = self
-        menu.addItem(shareSnapshotItem)
-        debugLog("setupMenu: Share Usage Snapshot menu item added")
-
-        menu.addItem(NSMenuItem.separator())
-
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let versionItem = NSMenuItem(title: String(format: L("UsageBar v%@"), version), action: #selector(openGitHub), keyEquivalent: "")
-        versionItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Version")
-        versionItem.target = self
-        menu.addItem(versionItem)
-
-         let quitItem = NSMenuItem(title: L("Quit"), action: #selector(quitClicked), keyEquivalent: "q")
-         quitItem.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: "Quit")
-         quitItem.target = self
-         menu.addItem(quitItem)
-         
-         menu.addItem(NSMenuItem.separator())
-         
-         viewErrorDetailsItem = NSMenuItem(title: L("View Error Details..."), action: #selector(viewErrorDetailsClicked), keyEquivalent: "e")
-         viewErrorDetailsItem.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "View Error Details")
-         viewErrorDetailsItem.target = self
-         viewErrorDetailsItem.isHidden = true
-         menu.addItem(viewErrorDetailsItem)
-         
-         statusItem?.menu = menu
-         logMenuStructure()
-     }
-
     /// Attach the existing menu to an external NSStatusItem (for MenuBarExtraAccess bridge)
     func attachTo(_ statusItem: NSStatusItem) {
         debugLog("attachTo: called with statusItem")
@@ -562,97 +373,7 @@ final class StatusBarController: NSObject {
         updateStatusItemLayout(reason: "attach")
     }
 
-    private func updateRefreshIntervalMenu() {
-        for item in refreshIntervalMenu.items {
-            item.state = (item.tag == refreshInterval.rawValue) ? .on : .off
-        }
-    }
-
-    @objc private func refreshIntervalSelected(_ sender: NSMenuItem) {
-        if let interval = RefreshInterval(rawValue: sender.tag) {
-            refreshInterval = interval
-        }
-    }
-
-    @objc private func menuBarDisplayModeSelected(_ sender: NSMenuItem) {
-        guard let mode = MenuBarDisplayMode(rawValue: sender.tag) else { return }
-        debugLog("menuBarDisplayModeSelected: mode=\(mode.title)")
-        menuBarDisplayMode = mode
-    }
-
-    @objc private func onlyShowModeSelected(_ sender: NSMenuItem) {
-        guard let mode = OnlyShowMode(rawValue: sender.tag) else { return }
-        debugLog("onlyShowModeSelected: mode=\(mode.title)")
-        menuBarDisplayMode = .onlyShow
-        onlyShowMode = mode
-    }
-
-    @objc private func menuBarOnlyShowProviderSelected(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let identifier = ProviderIdentifier(rawValue: rawValue) else {
-            return
-        }
-        debugLog("menuBarOnlyShowProviderSelected: provider=\(identifier.displayName)")
-        menuBarDisplayMode = .onlyShow
-        onlyShowMode = .pinnedProvider
-        menuBarDisplayProvider = identifier
-    }
-
-    @objc private func multiProviderProviderSelected(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let identifier = ProviderIdentifier(rawValue: rawValue) else { return }
-        var current = multiProviderSelection
-        if let idx = current.firstIndex(of: identifier) {
-            current.remove(at: idx)
-        } else {
-            current.append(identifier)
-        }
-        multiProviderSelection = current
-        debugLog("multiProviderProviderSelected: \(identifier.displayName), now \(current.count) selected")
-        menuBarDisplayMode = .multiProvider
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-    }
-
-    @objc private func toggleCriticalBadge(_ sender: NSMenuItem) {
-        criticalBadgeEnabled.toggle()
-        debugLog("toggleCriticalBadge: value=\(criticalBadgeEnabled)")
-    }
-
-    @objc private func toggleShowProviderName(_ sender: NSMenuItem) {
-        showProviderName.toggle()
-        debugLog("toggleShowProviderName: value=\(showProviderName)")
-    }
-
-    private func updateStatusBarDisplayMenuState() {
-        if let menuBarDisplayModeMenu {
-            let currentMultiSelection = multiProviderSelection
-            for item in menuBarDisplayModeMenu.items {
-                guard let rawValue = item.representedObject as? String,
-                      let identifier = ProviderIdentifier(rawValue: rawValue) else { continue }
-                item.state = currentMultiSelection.contains(identifier) ? .on : .off
-                item.isEnabled = isProviderEnabled(identifier)
-            }
-        }
-
-        updateEnabledProvidersMenu()
-        criticalBadgeMenuItem?.state = criticalBadgeEnabled ? .on : .off
-        showProviderNameMenuItem?.state = showProviderName ? .on : .off
-    }
-
-    private func updatePredictionPeriodMenu() {
-        for item in predictionPeriodMenu.items {
-            item.state = (item.tag == predictionPeriod.rawValue) ? .on : .off
-        }
-    }
-
-    @objc func predictionPeriodSelected(_ sender: NSMenuItem) {
-        if let period = PredictionPeriod(rawValue: sender.tag) {
-            predictionPeriod = period
-        }
-    }
-
-    private func isProviderEnabled(_ identifier: ProviderIdentifier) -> Bool {
+    func isProviderEnabled(_ identifier: ProviderIdentifier) -> Bool {
         let key = "provider.\(identifier.rawValue).enabled"
         if UserDefaults.standard.object(forKey: key) == nil {
             return true
@@ -660,88 +381,15 @@ final class StatusBarController: NSObject {
         return UserDefaults.standard.bool(forKey: key)
     }
 
-    private var isCopilotAddOnEnabled: Bool {
+    var isCopilotAddOnEnabled: Bool {
         if UserDefaults.standard.object(forKey: "provider.copilot_add_on.enabled") == nil {
             return true
         }
         return UserDefaults.standard.bool(forKey: "provider.copilot_add_on.enabled")
     }
 
-    @objc private func toggleProvider(_ sender: NSMenuItem) {
-        guard let idString = sender.representedObject as? String,
-              let identifier = ProviderIdentifier(rawValue: idString) else { return }
-        let key = "provider.\(identifier.rawValue).enabled"
-        let current = isProviderEnabled(identifier)
-        UserDefaults.standard.set(!current, forKey: key)
-        updateEnabledProvidersMenu()
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-        refreshClicked()
-    }
-
-    private func updateEnabledProvidersMenu() {
-        guard let enabledProvidersMenu else { return }
-        for item in enabledProvidersMenu.items {
-            guard let idString = item.representedObject as? String,
-                  let identifier = ProviderIdentifier(rawValue: idString) else { continue }
-            item.state = isProviderEnabled(identifier) ? .on : .off
-        }
-    }
-
-    private func restartRefreshTimer() {
+    func restartRefreshTimer() {
         startRefreshTimer()
-    }
-
-    private func setupNotificationObservers() {
-        // React to settings changes from the SwiftUI Settings window
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleRefreshIntervalChange),
-            name: AppPreferences.refreshIntervalDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handlePredictionPeriodChange),
-            name: AppPreferences.predictionPeriodDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleDisplayModeChange),
-            name: AppPreferences.displayModeDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleEnabledProvidersChange),
-            name: AppPreferences.enabledProvidersDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleCriticalBadgeChange),
-            name: AppPreferences.criticalBadgeDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleShowProviderIconChange),
-            name: AppPreferences.showProviderIconDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleMultiProviderProvidersChange),
-            name: AppPreferences.multiProviderProvidersDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleCodexStatusBarAccountChange),
-            name: AppPreferences.codexStatusBarAccountDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleCodexStatusBarWindowChange),
-            name: AppPreferences.codexStatusBarWindowDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleAppLanguageChange),
-            name: AppPreferences.appLanguageDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleSubscriptionChange),
-            name: AppPreferences.subscriptionDidChange, object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(handleCopilotAddOnChange),
-            name: AppPreferences.copilotAddOnDidChange, object: nil
-        )
     }
 
     private func startRefreshTimer() {
@@ -893,7 +541,7 @@ final class StatusBarController: NSObject {
            debugLog("🟢 fetchMultiProviderData: completed")
        }
 
-    private func calculatePayAsYouGoTotal(providerResults: [ProviderIdentifier: ProviderResult], copilotUsage: CopilotUsage?) -> Double {
+    func calculatePayAsYouGoTotal(providerResults: [ProviderIdentifier: ProviderResult], copilotUsage: CopilotUsage?) -> Double {
         var total = 0.0
 
         if isCopilotAddOnEnabled, let copilot = copilotUsage {
@@ -909,13 +557,13 @@ final class StatusBarController: NSObject {
         return total
     }
 
-    private func calculateTotalWithSubscriptions(providerResults: [ProviderIdentifier: ProviderResult], copilotUsage: CopilotUsage?) -> Double {
+    func calculateTotalWithSubscriptions(providerResults: [ProviderIdentifier: ProviderResult], copilotUsage: CopilotUsage?) -> Double {
         let payAsYouGo = calculatePayAsYouGoTotal(providerResults: providerResults, copilotUsage: copilotUsage)
         let subscriptions = SubscriptionSettingsManager.shared.getTotalMonthlySubscriptionCost()
         return payAsYouGo + subscriptions
     }
 
-    private struct AlertProviderCandidate {
+    struct AlertProviderCandidate {
         let identifier: ProviderIdentifier
         let usedPercent: Double
     }
@@ -931,21 +579,12 @@ final class StatusBarController: NSObject {
         return formatCostForStatusBar(cost)
     }
 
-    private func selectedPinnedProvider() -> ProviderIdentifier? {
-        if let selected = menuBarDisplayProvider {
-            // If user explicitly pinned a provider but it's disabled, return nil
-            // so the UI falls back to Total Cost instead of silently switching providers
-            return isProviderEnabled(selected) ? selected : nil
-        }
-        return ProviderIdentifier.allCases.first(where: { isProviderEnabled($0) })
-    }
-
-    private func normalizedUsagePercent(_ percent: Double?) -> Double? {
+    func normalizedUsagePercent(_ percent: Double?) -> Double? {
         guard let percent, percent.isFinite else { return nil }
         return min(max(percent, 0), 999)
     }
 
-    private func dailyPercentFromDetails(_ details: DetailedUsage?) -> Double? {
+    func dailyPercentFromDetails(_ details: DetailedUsage?) -> Double? {
         guard let details else { return nil }
         if let limit = details.limit, limit > 0, let used = details.dailyUsage {
             return (used / limit) * 100.0
@@ -953,7 +592,7 @@ final class StatusBarController: NSObject {
         return details.dailyUsage
     }
 
-    private func chutesMonthlyPercentFromDetails(_ details: DetailedUsage?) -> Double? {
+    func chutesMonthlyPercentFromDetails(_ details: DetailedUsage?) -> Double? {
         guard let details else { return nil }
 
         let configuredPlan = SubscriptionSettingsManager.shared.getPlan(for: .chutes)
@@ -1056,7 +695,7 @@ final class StatusBarController: NSObject {
         )
     }
 
-    private func resolvedCodexStatusBarAccount(from result: ProviderResult, persistCorrection: Bool = true) -> ProviderAccountResult? {
+    func resolvedCodexStatusBarAccount(from result: ProviderResult, persistCorrection: Bool = true) -> ProviderAccountResult? {
         guard let accounts = result.accounts, !accounts.isEmpty else {
             if persistCorrection, codexStatusBarAccountSelectionKey != nil {
                 codexStatusBarAccountSelectionKey = nil
@@ -1066,8 +705,7 @@ final class StatusBarController: NSObject {
 
         let savedSelectionKey = codexStatusBarAccountSelectionKey?.trimmingCharacters(in: .whitespacesAndNewlines)
         if let savedSelectionKey, !savedSelectionKey.isEmpty,
-           let selectedAccount = accounts.first(where: { codexSelectionKey(for: $0) == savedSelectionKey })
-        {
+           let selectedAccount = accounts.first(where: { codexSelectionKey(for: $0) == savedSelectionKey }) {
             return selectedAccount
         }
 
@@ -1087,7 +725,7 @@ final class StatusBarController: NSObject {
         return max(0.0, 100.0 - usedPercent)
     }
 
-    private func codexStatusBarText(
+    func codexStatusBarText(
         for account: ProviderAccountResult,
         compact: Bool
     ) -> String {
@@ -1111,7 +749,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private func codexStatusBarEmphasisRemainingPercent(for account: ProviderAccountResult) -> Double {
+    func codexStatusBarEmphasisRemainingPercent(for account: ProviderAccountResult) -> Double {
         let (fiveHour, weekly) = codexWindowRemainingPercents(for: account)
 
         switch codexStatusBarWindowMode {
@@ -1132,7 +770,7 @@ final class StatusBarController: NSObject {
     /// across ALL accounts, then return the max percent within that window.
     /// This prevents a high hourly value from one account beating a lower weekly
     /// value from another account.
-    private func preferredUsedPercentForStatusBar(identifier: ProviderIdentifier, result: ProviderResult) -> Double? {
+    func preferredUsedPercentForStatusBar(identifier: ProviderIdentifier, result: ProviderResult) -> Double? {
         if identifier == .codex,
            let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
             let fiveHourUsedPercent = normalizedUsagePercent(codexFiveHourUsedPercent(for: selectedAccount))
@@ -1336,7 +974,7 @@ final class StatusBarController: NSObject {
         return candidates
     }
 
-    private func mostCriticalProvider(minUsagePercent: Double) -> AlertProviderCandidate? {
+    func mostCriticalProvider(minUsagePercent: Double) -> AlertProviderCandidate? {
         quotaAlertCandidates()
             .filter { $0.usedPercent >= minUsagePercent }
             .max(by: { $0.usedPercent < $1.usedPercent })
@@ -1350,7 +988,7 @@ final class StatusBarController: NSObject {
         return candidate
     }
 
-    private func mostCriticalProvider() -> AlertProviderCandidate? {
+    func mostCriticalProvider() -> AlertProviderCandidate? {
         mostCriticalProvider(minUsagePercent: criticalUsageThreshold)
     }
 
@@ -1410,1457 +1048,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private func updateStatusBarDisplay(text: String, provider: ProviderIdentifier? = nil) {
-        let providerIcon = showProviderName ? provider.flatMap { iconForProvider($0) } : nil
-        if let provider, providerIcon != nil {
-            debugLog("updateStatusBarDisplay: providerIcon=\(provider.displayName), text=\(text)")
-        } else {
-            debugLog("updateStatusBarDisplay: providerIcon=default, text=\(text)")
-        }
-        statusBarIconView?.update(displayText: text, providerIcon: providerIcon)
-    }
-
-    private func updateStatusBarText() {
-        if isMainMenuTracking {
-            hasDeferredStatusBarRefresh = true
-            debugLog("updateStatusBarText: deferred while menu is open")
-            return
-        }
-        hasDeferredStatusBarRefresh = false
-
-        let criticalCandidate = mostCriticalProvider()
-        let shouldShowCriticalBadge = criticalBadgeEnabled && criticalCandidate != nil
-        statusBarIconView?.setCriticalBadgeVisible(shouldShowCriticalBadge)
-
-        switch menuBarDisplayMode {
-        case .iconOnly:
-            debugLog("updateStatusBarText: mode=Icon Only")
-            statusBarIconView?.updateIconOnly()
-        case .totalCost:
-            let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-            debugLog("updateStatusBarText: mode=Total Cost, value=\(String(format: "$%.2f", totalCost))")
-            updateStatusBarDisplay(text: formatCostOrStatusBarBrand(totalCost))
-        case .onlyShow:
-            switch onlyShowMode {
-            case .alertFirst:
-                let alertFirstCandidate = singleEnabledQuotaProvider(atOrAbove: alertFirstUsageThreshold)
-                    ?? mostCriticalProvider(minUsagePercent: alertFirstUsageThreshold)
-                if let alertFirstCandidate {
-                    let alertText = formatAlertText(
-                        identifier: alertFirstCandidate.identifier,
-                        usedPercent: alertFirstCandidate.usedPercent
-                    )
-                    debugLog(
-                        "updateStatusBarText: mode=Only Show(Alert First), provider=\(alertFirstCandidate.identifier.displayName), used=\(Int(alertFirstCandidate.usedPercent.rounded()))%"
-                    )
-                    updateStatusBarDisplay(text: alertText, provider: alertFirstCandidate.identifier)
-                } else {
-                    let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-                    debugLog("updateStatusBarText: mode=Only Show(Alert First), no critical provider, fallback total=\(String(format: "$%.2f", totalCost))")
-                    updateStatusBarDisplay(text: formatCostOrStatusBarBrand(totalCost))
-                }
-            case .pinnedProvider:
-                guard let provider = selectedPinnedProvider() else {
-                    debugLog("updateStatusBarText: mode=Only Show(Pinned Provider), no provider available, fallback to total")
-                    let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-                    updateStatusBarDisplay(text: formatCostOrStatusBarBrand(totalCost))
-                    return
-                }
-
-                if let result = providerResults[provider] {
-                    let text = formatProviderForStatusBar(identifier: provider, result: result)
-                    debugLog("updateStatusBarText: mode=Only Show(Pinned Provider), provider=\(provider.displayName), text=\(text)")
-                    updateStatusBarDisplay(text: text, provider: provider)
-                } else {
-                    let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-                    let fallback = formatCostOrStatusBarBrand(totalCost)
-                    debugLog("updateStatusBarText: mode=Only Show(Pinned Provider), missing result for \(provider.displayName), fallback total=\(String(format: "$%.2f", totalCost))")
-                    updateStatusBarDisplay(text: fallback)
-                }
-            case .recentChange:
-                if let recentChangeCandidate, Date().timeIntervalSince(recentChangeCandidate.observedAt) <= recentChangeMaxAge {
-                    let text = formatRecentChangeText(recentChangeCandidate)
-                    debugLog("updateStatusBarText: mode=Only Show(Recent Quota Change Only), text=\(text)")
-                    updateStatusBarDisplay(text: text, provider: recentChangeCandidate.identifier)
-                } else {
-                    if let recentChangeCandidate {
-                        let staleMinutes = Int(Date().timeIntervalSince(recentChangeCandidate.observedAt) / 60.0)
-                        debugLog(
-                            "updateStatusBarText: mode=Only Show(Recent Quota Change Only), candidate stale (\(staleMinutes)m), fallback total cost"
-                        )
-                        self.recentChangeCandidate = nil
-                    } else {
-                        debugLog("updateStatusBarText: mode=Only Show(Recent Quota Change Only), no candidate, fallback total cost")
-                    }
-
-                    let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-                    updateStatusBarDisplay(text: formatCostOrStatusBarBrand(totalCost))
-                }
-            }
-        case .multiProvider:
-            attachActiveStatusBarView()
-            updateMultiProviderBarView()
-        }
-    }
-
-    private func updateMultiProviderBarView() {
-        var entries: [MultiProviderBarView.Entry] = []
-        for identifier in multiProviderSelection {
-            guard isProviderEnabled(identifier),
-                  let result = providerResults[identifier],
-                  case .quotaBased = result.usage,
-                  let icon = iconForProvider(identifier)
-            else { continue }
-
-            if identifier == .codex,
-               let selectedAccount = resolvedCodexStatusBarAccount(from: result) {
-                entries.append(
-                    MultiProviderBarView.Entry(
-                        icon: icon,
-                        displayText: codexStatusBarText(for: selectedAccount, compact: true),
-                        emphasisRemainingPercent: codexStatusBarEmphasisRemainingPercent(for: selectedAccount)
-                    )
-                )
-                continue
-            }
-
-            let usedPercent = preferredUsedPercentForStatusBar(identifier: identifier, result: result)
-                ?? result.usage.usagePercentage
-            let remainingPercent = max(0.0, 100.0 - usedPercent)
-            entries.append(
-                MultiProviderBarView.Entry(
-                    icon: icon,
-                    displayText: UsagePercentDisplayFormatter.string(from: remainingPercent),
-                    emphasisRemainingPercent: remainingPercent
-                )
-            )
-        }
-        debugLog("updateMultiProviderBarView: \(entries.count) provider(s)")
-        multiProviderBarView?.update(entries: entries)
-        updateStatusItemLayout(reason: "multi-provider-update")
-    }
-
-    private func sanitizedSubscriptionKey(_ key: String) -> String {
-        let parts = key.split(separator: ".", maxSplits: 1)
-        if parts.count > 1 {
-            return "\(parts[0]).<redacted>"
-        }
-        return String(parts[0])
-    }
-
-    private func orphanedIcon() -> NSImage? {
-        let symbol = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Orphaned")
-        let sizeConfig = NSImage.SymbolConfiguration(pointSize: MenuDesignToken.Dimension.iconSize, weight: .regular)
-        let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: NSColor.systemOrange)
-        let config = sizeConfig.applying(colorConfig)
-        let image = symbol?.withSymbolConfiguration(config)
-        image?.isTemplate = false
-        return image
-    }
-
-    private func italicMenuTitle(_ text: String) -> NSAttributedString {
-        let baseFont = MenuDesignToken.Typography.defaultFont
-        let italicFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
-        return NSAttributedString(string: text, attributes: [.font: italicFont])
-    }
-
-    private func providerIdentifier(for subscriptionKey: String) -> ProviderIdentifier? {
-        let prefix = subscriptionKey.split(separator: ".", maxSplits: 1).first
-        guard let prefix else { return nil }
-        return ProviderIdentifier(rawValue: String(prefix))
-    }
-
-    private func collectVisibleSubscriptionKeys(providerResults: [ProviderIdentifier: ProviderResult]) -> Set<String> {
-        var keys = Set<String>()
-
-        for (identifier, result) in providerResults {
-            guard isProviderEnabled(identifier) else { continue }
-
-            if identifier == .geminiCLI,
-               let details = result.details,
-               let geminiAccounts = details.geminiAccounts,
-               !geminiAccounts.isEmpty {
-                for account in geminiAccounts {
-                    let subscriptionAccountId: String?
-                    let trimmedEmail = account.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                    if !trimmedEmail.isEmpty {
-                        subscriptionAccountId = trimmedEmail
-                    } else if let accountId = account.accountId, !accountId.isEmpty {
-                        subscriptionAccountId = accountId
-                    } else {
-                        subscriptionAccountId = nil
-                    }
-                    let key = SubscriptionSettingsManager.shared.subscriptionKey(
-                        for: .geminiCLI,
-                        accountId: subscriptionAccountId
-                    )
-                    keys.insert(key)
-                }
-                continue
-            }
-
-            if let accounts = result.accounts, !accounts.isEmpty {
-                for account in accounts {
-                    if let subId = account.subscriptionId, !subId.isEmpty {
-                        keys.insert(SubscriptionSettingsManager.shared.subscriptionKey(for: identifier, accountId: subId))
-                    } else {
-                        keys.insert(SubscriptionSettingsManager.shared.subscriptionKey(for: identifier))
-                    }
-                }
-            } else {
-                keys.insert(SubscriptionSettingsManager.shared.subscriptionKey(for: identifier))
-            }
-        }
-
-        return keys
-    }
-
-    private func calculateOrphanedSubscriptions(providerResults: [ProviderIdentifier: ProviderResult]) -> (keys: [String], total: Double) {
-        let visibleKeys = collectVisibleSubscriptionKeys(providerResults: providerResults)
-        let allKeys = SubscriptionSettingsManager.shared.getAllSubscriptionKeys()
-
-        var orphaned: [String] = []
-        var total = 0.0
-
-        for key in allKeys {
-            if visibleKeys.contains(key) {
-                continue
-            }
-
-            // Skip if provider is currently loading, disabled, or not visible in results.
-            // This prevents false positives when:
-            // 1. Provider is disabled in settings
-            // 2. Network error caused fetch to fail (provider not in providerResults)
-            // 3. Provider is still loading
-            if let provider = providerIdentifier(for: key) {
-                if loadingProviders.contains(provider) {
-                    continue
-                }
-                if !isProviderEnabled(provider) {
-                    continue
-                }
-                // If provider is enabled but not in results, it likely failed to fetch.
-                // Don't mark as orphaned in this case.
-                if !providerResults.keys.contains(provider) {
-                    continue
-                }
-            } else {
-                // Unknown provider prefix: still treat it as orphaned if it contributes a cost.
-                // This lets users clean up stale subscription entries after provider renames/removals.
-                let plan = SubscriptionSettingsManager.shared.getPlan(forKey: key)
-                if plan.cost <= 0 {
-                    continue
-                }
-
-                orphaned.append(key)
-                total += plan.cost
-                continue
-            }
-
-            let plan = SubscriptionSettingsManager.shared.getPlan(forKey: key)
-            if plan.cost <= 0 {
-                continue
-            }
-
-            orphaned.append(key)
-            total += plan.cost
-        }
-
-        if orphaned.isEmpty {
-            debugLog("Orphaned subscriptions: none")
-        } else {
-            let formattedTotal = String(format: "%.2f", total)
-            let sanitizedKeys = orphaned.map { sanitizedSubscriptionKey($0) }.joined(separator: ", ")
-            debugLog("Orphaned subscriptions detected: \(orphaned.count) key(s), total=$\(formattedTotal), keys=[\(sanitizedKeys)]")
-        }
-
-        return (orphaned, total)
-    }
-
-      private func updateMultiProviderMenu() {
-          debugLog("updateMultiProviderMenu: started")
-          if isMainMenuTracking {
-              hasDeferredMenuRebuild = true
-              hasDeferredStatusBarRefresh = true
-              debugLog("updateMultiProviderMenu: deferred while menu is open")
-              return
-          }
-          hasDeferredMenuRebuild = false
-
-          guard let separatorIndex = menu.items.firstIndex(where: { $0.isSeparatorItem }) else {
-              debugLog("updateMultiProviderMenu: no separator found, returning")
-              return
-          }
-          debugLog("updateMultiProviderMenu: separatorIndex=\(separatorIndex)")
-
-          var itemsToRemove: [NSMenuItem] = []
-          let startIndex = separatorIndex + 1
-          if startIndex < menu.items.count {
-              for i in startIndex..<menu.items.count {
-                  let item = menu.items[i]
-                  if item.tag == 999 {
-                      itemsToRemove.append(item)
-                  }
-              }
-          }
-          debugLog("updateMultiProviderMenu: removing \(itemsToRemove.count) old items")
-          itemsToRemove.forEach { menu.removeItem($0) }
-
-          debugLog("updateMultiProviderMenu: providerResults.count=\(providerResults.count)")
-
-          if !providerResults.isEmpty {
-              let providerNames = providerResults.keys.map { $0.rawValue }.joined(separator: ", ")
-              debugLog("updateMultiProviderMenu: providers=[\(providerNames)]")
-          }
-
-          guard !providerResults.isEmpty else {
-              debugLog("updateMultiProviderMenu: no data, returning")
-              recentChangeCandidate = nil
-              updateStatusBarDisplayMenuState()
-              updateStatusBarText()
-              return
-          }
-
-        var insertIndex = separatorIndex + 1
-
-          let payAsYouGoTotal = calculatePayAsYouGoTotal(providerResults: providerResults, copilotUsage: currentUsage)
-          let subscriptionTotal = SubscriptionSettingsManager.shared.getTotalMonthlySubscriptionCost()
-
-         let payAsYouGoSectionStartIndex = insertIndex
-         let separator1 = NSMenuItem.separator()
-         separator1.tag = 999
-         menu.insertItem(separator1, at: insertIndex)
-         insertIndex += 1
-
-          let payAsYouGoHeader = NSMenuItem()
-          payAsYouGoHeader.view = createHeaderView(title: String(format: L("Pay-as-you-go: $%.2f"), payAsYouGoTotal))
-          payAsYouGoHeader.tag = 999
-          menu.insertItem(payAsYouGoHeader, at: insertIndex)
-          insertIndex += 1
-
-         var hasPayAsYouGo = false
-
-            let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCode]
-            for identifier in payAsYouGoOrder {
-                guard isProviderEnabled(identifier) else { continue }
-
-                let result = providerResults[identifier]
-                let errorMessage = lastProviderErrors[identifier]
-
-                if let errorMessage, shouldDisplayErrorStateEvenWithResult(errorMessage) {
-                    hasPayAsYouGo = true
-                    let item = createErrorMenuItem(identifier: identifier, errorMessage: errorMessage)
-                    if item.isEnabled {
-                        item.submenu = createErrorSubmenu(identifier: identifier, result: result, errorMessage: errorMessage)
-                    }
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                } else if let result {
-                    if case .payAsYouGo(_, let cost, _) = result.usage {
-                        hasPayAsYouGo = true
-                        let costValue = cost ?? 0.0
-                        let item = NSMenuItem(
-                            title: String(format: L("%@ ($%.2f)"), identifier.displayName, costValue),
-                            action: nil, keyEquivalent: ""
-                        )
-                        item.image = iconForProvider(identifier)
-                        item.tag = 999
-
-                        if let details = result.details, details.hasAnyValue {
-                            item.submenu = createDetailSubmenu(details, identifier: identifier)
-                        }
-
-                       menu.insertItem(item, at: insertIndex)
-                       insertIndex += 1
-                   }
-                } else if let errorMessage {
-                    guard shouldDisplayErrorMenuItem(errorMessage) else {
-                        debugLog("updateMultiProviderMenu: hiding \(identifier.displayName) pay-as-you-go row because credentials are unavailable")
-                        continue
-                    }
-                    hasPayAsYouGo = true
-                    let item = createErrorMenuItem(identifier: identifier, errorMessage: errorMessage)
-                    if item.isEnabled {
-                        item.submenu = createErrorSubmenu(identifier: identifier, result: nil, errorMessage: errorMessage)
-                    }
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                } else if loadingProviders.contains(identifier) {
-                    hasPayAsYouGo = true
-                    let item = NSMenuItem(title: String(format: L("%@ (Loading...)"), identifier.displayName), action: nil, keyEquivalent: "")
-                    item.image = iconForProvider(identifier)
-                    item.isEnabled = false
-                    item.tag = 999
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                }
-           }
-
-            // Copilot Add-on (always show, even when $0.00)
-            if isProviderEnabled(.copilot) && isCopilotAddOnEnabled {
-                if let copilotResult = providerResults[.copilot],
-                   let details = copilotResult.details,
-                   let overageCost = details.copilotOverageCost {
-                    hasPayAsYouGo = true
-                    let addOnItem = NSMenuItem(
-                        title: String(format: L("Copilot Add-on ($%.2f)"), overageCost),
-                        action: nil, keyEquivalent: ""
-                    )
-                    addOnItem.image = iconForProvider(.copilot)
-                    addOnItem.tag = 999
-
-                    let submenu = NSMenu()
-                    let overageRequests = details.copilotOverageRequests ?? 0
-                    let overageItem = NSMenuItem()
-                    overageItem.view = createDisabledLabelView(text: String(format: L("Overage Requests: %.0f"), overageRequests))
-                    submenu.addItem(overageItem)
-
-                    submenu.addItem(NSMenuItem.separator())
-                    let historyItem = NSMenuItem(title: L("Usage History"), action: nil, keyEquivalent: "")
-                    historyItem.image = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Usage History")
-                    debugLog("updateMultiProviderMenu: calling createCopilotHistorySubmenu")
-                    historyItem.submenu = createCopilotHistorySubmenu()
-                    debugLog("updateMultiProviderMenu: createCopilotHistorySubmenu completed")
-                    submenu.addItem(historyItem)
-
-                    submenu.addItem(NSMenuItem.separator())
-
-                    if let email = details.email {
-                        let emailItem = NSMenuItem()
-                        emailItem.view = createDisabledLabelView(
-                            text: String(format: L("Account: %@"), email),
-                            icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account"),
-                            multiline: false
-                        )
-                        submenu.addItem(emailItem)
-                    }
-
-                    if let authSource = details.authSource {
-                        let authItem = NSMenuItem()
-                        authItem.view = createDisabledLabelView(
-                            text: String(format: L("Token From: %@"), authSource),
-                            icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                            multiline: true
-                        )
-                        submenu.addItem(authItem)
-                    }
-
-                    addOnItem.submenu = submenu
-                    menu.insertItem(addOnItem, at: insertIndex)
-                    insertIndex += 1
-                    debugLog("updateMultiProviderMenu: Copilot Add-on inserted with cost $\(overageCost)")
-                } else if loadingProviders.contains(.copilot) {
-                    hasPayAsYouGo = true
-                    let item = NSMenuItem(title: L("Copilot Add-on (Loading...)"), action: nil, keyEquivalent: "")
-                    item.image = iconForProvider(.copilot)
-                    item.isEnabled = false
-                    item.tag = 999
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                }
-            }
-
-        if hasPayAsYouGo {
-            insertIndex = insertPredictedEOMSection(at: insertIndex)
-        } else {
-            debugLog("updateMultiProviderMenu: hiding pay-as-you-go section because no visible items were generated")
-            while insertIndex > payAsYouGoSectionStartIndex {
-                insertIndex -= 1
-                menu.removeItem(at: insertIndex)
-            }
-        }
-
-        let quotaSectionStartIndex = insertIndex
-        let separator2 = NSMenuItem.separator()
-        separator2.tag = 999
-        menu.insertItem(separator2, at: insertIndex)
-        insertIndex += 1
-
-         let quotaHeader = NSMenuItem()
-         let quotaTitle = subscriptionTotal > 0
-             ? String(format: L("Quota Status: $%.0f/m"), subscriptionTotal)
-             : L("Quota Status")
-         quotaHeader.view = createHeaderView(title: quotaTitle)
-         quotaHeader.tag = 999
-         menu.insertItem(quotaHeader, at: insertIndex)
-         insertIndex += 1
-
-         var hasQuota = false
-         var deferredUnavailableItems: [NSMenuItem] = []
-         var deferredUnavailableProviders: [ProviderIdentifier] = []
-
-         if isProviderEnabled(.copilot),
-            let copilotResult = providerResults[.copilot],
-            let accounts = copilotResult.accounts,
-            !accounts.isEmpty {
-             let copilotAuthLabels = Set(
-                    accounts.map { account in
-                        authSourceLabel(for: account.details?.authSource, provider: .copilot) ?? L("Unknown")
-                    }
-             )
-             let showCopilotAuthLabel = copilotAuthLabels.count > 1
-             let baseName = multiAccountBaseName(for: .copilot)
-             for account in accounts {
-                 hasQuota = true
-                    // Use accountId (login) when available, otherwise fall back to index
-                    let accountIdentifier: String
-                    if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines), !accountId.isEmpty {
-                        accountIdentifier = accountId
-                    } else {
-                        accountIdentifier = "#\(account.accountIndex + 1)"
-                    }
-                    var displayName = accounts.count > 1 ? "\(baseName) (\(accountIdentifier))" : baseName
-                    if accounts.count > 1, showCopilotAuthLabel {
-                        let sourceLabel = authSourceLabel(for: account.details?.authSource, provider: .copilot) ?? L("Unknown")
-                        displayName += " - \(sourceLabel)"
-                    }
-                    let unavailableLabel = unavailableUsageSuffix(for: account, identifier: .copilot)
-                    if let unavailableLabel {
-                        displayName += " (\(unavailableLabel))"
-                    }
-                    let isUnavailableRateLimited = unavailableLabel == L("Rate limited")
-                    let usedPercent = account.usage.usagePercentage
-                    let quotaItem = createNativeQuotaMenuItem(
-                        name: displayName,
-                        usedPercent: usedPercent,
-                        icon: iconForProvider(.copilot),
-                        isEnabled: !isUnavailableRateLimited
-                    )
-                    quotaItem.tag = 999
-
-                    if quotaItem.isEnabled,
-                       let details = account.details,
-                       details.hasAnyValue {
-                        quotaItem.submenu = createDetailSubmenu(details, identifier: .copilot, accountId: account.subscriptionId)
-                    }
-
-                    menu.insertItem(quotaItem, at: insertIndex)
-                    insertIndex += 1
-             }
-         } else if isProviderEnabled(.copilot), let copilotUsage = currentUsage {
-                hasQuota = true
-                let limit = copilotUsage.userPremiumRequestEntitlement
-                let used = copilotUsage.usedRequests
-                let usedPercent = limit > 0 ? (Double(used) / Double(limit)) * 100 : 0
-
-                let quotaItem = createNativeQuotaMenuItem(
-                    name: ProviderIdentifier.copilot.displayName,
-                    usedPercent: usedPercent,
-                    icon: iconForProvider(.copilot)
-                )
-                quotaItem.tag = 999
-
-                if let details = providerResults[.copilot]?.details, details.hasAnyValue {
-                    quotaItem.submenu = createDetailSubmenu(details, identifier: .copilot)
-                } else {
-                    let submenu = NSMenu()
-                    let filledBlocks = Int((Double(used) / Double(max(limit, 1))) * 10)
-                    let emptyBlocks = 10 - filledBlocks
-                    let progressBar = String(repeating: "═", count: filledBlocks) + String(repeating: "░", count: emptyBlocks)
-                    let progressItem = NSMenuItem()
-                    progressItem.view = createDisabledLabelView(text: "[\(progressBar)] \(used)/\(limit)")
-                    submenu.addItem(progressItem)
-
-                    let usagePercent = limit > 0 ? (Double(used) / Double(limit)) * 100 : 0
-                    let usedItem = NSMenuItem()
-                    usedItem.view = createDisabledLabelView(text: String(format: L("Monthly Usage: %.0f%%"), usagePercent))
-                    submenu.addItem(usedItem)
-
-                    if let resetDate = copilotUsage.quotaResetDateUTC {
-                        let formatter = DateFormatter()
-                        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                        formatter.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0)!
-                        let paceInfo = calculateMonthlyPace(usagePercent: usagePercent, resetDate: resetDate)
-                        let paceItem = NSMenuItem()
-                        paceItem.view = createPaceView(paceInfo: paceInfo)
-                        submenu.addItem(paceItem)
-
-                        let resetItem = NSMenuItem()
-                        resetItem.view = createDisabledLabelView(
-                            text: String(format: L("Resets: %@ UTC"), formatter.string(from: resetDate)),
-                            indent: 0,
-                            textColor: .secondaryLabelColor
-                        )
-                        submenu.addItem(resetItem)
-                        debugLog("updateMultiProviderMenu: reset row tone aligned with pace text for copilot fallback")
-                    }
-
-                    submenu.addItem(NSMenuItem.separator())
-
-                    if let planName = copilotUsage.planDisplayName {
-                        let planItem = NSMenuItem()
-                        planItem.view = createDisabledLabelView(
-                            text: String(format: L("Plan: %@"), planName),
-                            icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
-                        )
-                        submenu.addItem(planItem)
-                    }
-
-                    let freeItem = NSMenuItem()
-                    freeItem.view = createDisabledLabelView(text: String(format: L("Quota Limit: %@"), String(limit)))
-                    submenu.addItem(freeItem)
-
-                    submenu.addItem(NSMenuItem.separator())
-
-                    if let email = providerResults[.copilot]?.details?.email {
-                        let emailItem = NSMenuItem()
-                        emailItem.view = createDisabledLabelView(
-                            text: String(format: L("Email: %@"), email),
-                            icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email"),
-                            multiline: false
-                        )
-                        submenu.addItem(emailItem)
-                    }
-
-                    let authItem = NSMenuItem()
-                    authItem.view = createDisabledLabelView(
-                        text: String(format: L("Token From: %@"), "Browser Cookies (Chrome/Brave/Arc/Edge)"),
-                        icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                        multiline: true
-                    )
-                    submenu.addItem(authItem)
-
-                    quotaItem.submenu = submenu
-                }
-
-                menu.insertItem(quotaItem, at: insertIndex)
-                insertIndex += 1
-            }
-
-        let quotaOrder: [ProviderIdentifier] = [
-            .claude,
-            .kimi,
-            .minimaxCodingPlan,
-            .codex,
-            .zaiCodingPlan,
-            .nanoGpt,
-            .antigravity,
-            .chutes,
-            .synthetic
-        ]
-        for identifier in quotaOrder {
-            guard isProviderEnabled(identifier) else { continue }
-
-            let result = providerResults[identifier]
-            let errorMessage = lastProviderErrors[identifier]
-
-            if let errorMessage,
-               shouldDisplayErrorStateEvenWithResult(errorMessage, identifier: identifier, result: result) {
-                hasQuota = true
-                let item = createErrorMenuItem(identifier: identifier, errorMessage: errorMessage)
-                if item.isEnabled {
-                    item.submenu = createErrorSubmenu(identifier: identifier, result: result, errorMessage: errorMessage)
-                }
-                menu.insertItem(item, at: insertIndex)
-                insertIndex += 1
-            } else if let result {
-                if let accounts = result.accounts, !accounts.isEmpty {
-                    let authLabels = Set(
-                        accounts.map { account in
-                            authSourceLabel(for: account.details?.authSource, provider: identifier) ?? "Unknown"
-                        }
-                    )
-                    let showAuthLabel = authLabels.count > 1
-                    let baseName = multiAccountBaseName(for: identifier)
-                    let codexEmailByAccountId: [String: String]
-                    if identifier == .codex {
-                        codexEmailByAccountId = Dictionary(
-                            uniqueKeysWithValues: TokenManager.shared.getOpenAIAccounts().compactMap { account in
-                                guard let accountId = account.accountId?
-                                    .trimmingCharacters(in: .whitespacesAndNewlines),
-                                      !accountId.isEmpty,
-                                      let email = account.email?
-                                    .trimmingCharacters(in: .whitespacesAndNewlines),
-                                      !email.isEmpty else {
-                                    return nil
-                                }
-                                return (accountId, email)
-                            }
-                        )
-                    } else {
-                        codexEmailByAccountId = [:]
-                    }
-                    for account in accounts {
-                        hasQuota = true
-                        var displayName = accounts.count > 1 ? "\(baseName) #\(account.accountIndex + 1)" : baseName
-
-                        let detailsEmail = account.details?.email?
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        let accountEmail: String?
-                        if identifier == .claude,
-                           let detailsEmail,
-                           !detailsEmail.isEmpty {
-                            accountEmail = detailsEmail
-                        } else if identifier == .codex,
-                                  let detailsEmail,
-                                  !detailsEmail.isEmpty {
-                            accountEmail = detailsEmail
-                        } else if identifier == .codex,
-                                  let accountId = account.accountId?
-                            .trimmingCharacters(in: .whitespacesAndNewlines),
-                                  !accountId.isEmpty,
-                                  let mappedEmail = codexEmailByAccountId[accountId],
-                                  !mappedEmail.isEmpty {
-                            accountEmail = mappedEmail
-                        } else if identifier == .codex,
-                                  let fallbackEmail = codexEmailByAccountId.values.first,
-                                  accounts.count == 1 {
-                            // Single-account fallback for legacy cached results that may miss accountId.
-                            accountEmail = fallbackEmail
-                        } else {
-                            accountEmail = nil
-                        }
-
-                        if let accountEmail {
-                            if accounts.count > 1 {
-                                displayName += " (\(accountEmail))"
-                            } else {
-                                displayName = "\(baseName) (\(accountEmail))"
-                            }
-                        } else if accounts.count > 1, showAuthLabel {
-                            let sourceLabel = authSourceLabel(for: account.details?.authSource, provider: identifier) ?? "Unknown"
-                            displayName += " (\(sourceLabel))"
-                        }
-                        let unavailableLabel = unavailableUsageSuffix(for: account, identifier: identifier)
-                        if let unavailableLabel {
-                            displayName += " (\(unavailableLabel))"
-                        }
-                        let isUnavailableRateLimited = unavailableLabel == L("Rate limited")
-
-                        // Keep menu list rows in multi-window format (e.g., 5h, weekly, monthly together).
-                        let usedPercents: [Double]
-                        if identifier == .claude,
-                           let details = account.details,
-                           let fiveHour = details.fiveHourUsage,
-                           let sevenDay = details.sevenDayUsage {
-                            var percents: [Double] = [fiveHour, sevenDay]
-                            if let sonnetUsage = details.sonnetUsage {
-                                percents.append(sonnetUsage)
-                            }
-                            usedPercents = percents
-                        } else if identifier == .minimaxCodingPlan,
-                                  let fiveHour = account.details?.fiveHourUsage,
-                                  let sevenDay = account.details?.sevenDayUsage {
-                            usedPercents = [fiveHour, sevenDay]
-                        } else if identifier == .kimi,
-                                  let fiveHour = account.details?.fiveHourUsage,
-                                  let sevenDay = account.details?.sevenDayUsage {
-                            usedPercents = [fiveHour, sevenDay]
-                        } else if identifier == .codex {
-                            var percents = [account.usage.usagePercentage]
-                            if let secondary = account.details?.secondaryUsage {
-                                percents.append(secondary)
-                            }
-                            if let sparkPrimary = account.details?.sparkUsage {
-                                percents.append(sparkPrimary)
-                            }
-                            if let sparkSecondary = account.details?.sparkSecondaryUsage {
-                                percents.append(sparkSecondary)
-                            }
-                            usedPercents = percents
-                        } else if identifier == .zaiCodingPlan {
-                            let percents = [account.details?.tokenUsagePercent, account.details?.mcpUsagePercent].compactMap { $0 }
-                            usedPercents = percents.isEmpty ? [account.usage.usagePercentage] : percents
-                        } else if identifier == .chutes {
-                            let percents = [dailyPercentFromDetails(account.details), chutesMonthlyPercentFromDetails(account.details)].compactMap { $0 }
-                            usedPercents = percents.isEmpty ? [account.usage.usagePercentage] : percents
-                        } else if identifier == .nanoGpt {
-                            let percents = [
-                                account.details?.sevenDayUsage,
-                                account.details?.tokenUsagePercent,
-                                account.details?.mcpUsagePercent
-                            ].compactMap { $0 }
-                            usedPercents = percents.isEmpty ? [account.usage.usagePercentage] : percents
-                        } else {
-                            usedPercents = [account.usage.usagePercentage]
-                        }
-                        let item = createNativeQuotaMenuItem(
-                            name: displayName,
-                            usedPercents: usedPercents,
-                            icon: iconForProvider(identifier),
-                            isEnabled: !isUnavailableRateLimited
-                        )
-                        item.tag = 999
-
-                        if item.isEnabled,
-                           let details = account.details,
-                           details.hasAnyValue {
-                            item.submenu = createDetailSubmenu(details, identifier: identifier, accountId: account.subscriptionId)
-                        }
-
-                        menu.insertItem(item, at: insertIndex)
-                        insertIndex += 1
-                    }
-                } else if case .quotaBased(let remaining, let entitlement, _) = result.usage {
-                    hasQuota = true
-                    let singlePercent = entitlement > 0 ? (Double(entitlement - remaining) / Double(entitlement)) * 100 : 0
-
-                    let usedPercents: [Double]
-                    if identifier == .claude,
-                       let details = result.details,
-                       let fiveHour = details.fiveHourUsage,
-                       let sevenDay = details.sevenDayUsage {
-                        var percents: [Double] = [fiveHour, sevenDay]
-                        if let sonnetUsage = details.sonnetUsage {
-                            percents.append(sonnetUsage)
-                        }
-                        usedPercents = percents
-                    } else if identifier == .minimaxCodingPlan,
-                              let fiveHour = result.details?.fiveHourUsage,
-                              let sevenDay = result.details?.sevenDayUsage {
-                        usedPercents = [fiveHour, sevenDay]
-                    } else if identifier == .kimi,
-                              let fiveHour = result.details?.fiveHourUsage,
-                              let sevenDay = result.details?.sevenDayUsage {
-                        usedPercents = [fiveHour, sevenDay]
-                    } else if identifier == .codex {
-                        var percents = [singlePercent]
-                        if let secondary = result.details?.secondaryUsage {
-                            percents.append(secondary)
-                        }
-                        if let sparkPrimary = result.details?.sparkUsage {
-                            percents.append(sparkPrimary)
-                        }
-                        if let sparkSecondary = result.details?.sparkSecondaryUsage {
-                            percents.append(sparkSecondary)
-                        }
-                        usedPercents = percents
-                    } else if identifier == .zaiCodingPlan {
-                        let percents = [result.details?.tokenUsagePercent, result.details?.mcpUsagePercent].compactMap { $0 }
-                        usedPercents = percents.isEmpty ? [singlePercent] : percents
-                    } else if identifier == .chutes {
-                        let percents = [dailyPercentFromDetails(result.details), chutesMonthlyPercentFromDetails(result.details)].compactMap { $0 }
-                        usedPercents = percents.isEmpty ? [singlePercent] : percents
-                    } else if identifier == .nanoGpt {
-                        let percents = [
-                            result.details?.sevenDayUsage,
-                            result.details?.tokenUsagePercent,
-                            result.details?.mcpUsagePercent
-                        ].compactMap { $0 }
-                        usedPercents = percents.isEmpty ? [singlePercent] : percents
-                    } else {
-                        usedPercents = [singlePercent]
-                    }
-                    let item = createNativeQuotaMenuItem(name: identifier.displayName, usedPercents: usedPercents, icon: iconForProvider(identifier))
-                    item.tag = 999
-
-                    if let details = result.details, details.hasAnyValue {
-                        item.submenu = createDetailSubmenu(details, identifier: identifier)
-                    }
-
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                }
-            } else if let errorMessage {
-                guard shouldDisplayErrorMenuItem(errorMessage) else {
-                    debugLog("updateMultiProviderMenu: hiding \(identifier.displayName) quota row because credentials are unavailable")
-                    continue
-                }
-                hasQuota = true
-                let item = createErrorMenuItem(identifier: identifier, errorMessage: errorMessage)
-                if item.isEnabled {
-                    item.submenu = createErrorSubmenu(identifier: identifier, result: nil, errorMessage: errorMessage)
-                }
-                let status = errorMenuStatus(for: errorMessage)
-                if status.shouldDeferToBottom {
-                    deferredUnavailableItems.append(item)
-                    deferredUnavailableProviders.append(identifier)
-                    debugLog("updateMultiProviderMenu: deferred \(status.title) item for \(identifier.displayName)")
-                } else {
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                }
-            } else if loadingProviders.contains(identifier) {
-                hasQuota = true
-                let item = NSMenuItem(title: String(format: L("%@ (Loading...)"), identifier.displayName), action: nil, keyEquivalent: "")
-                item.image = iconForProvider(identifier)
-                item.isEnabled = false
-                item.tag = 999
-                menu.insertItem(item, at: insertIndex)
-                insertIndex += 1
-            }
-        }
-
-        if isProviderEnabled(.geminiCLI) {
-            let geminiResult = providerResults[.geminiCLI]
-            let geminiError = lastProviderErrors[.geminiCLI]
-
-            if let geminiError,
-               shouldDisplayErrorStateEvenWithResult(geminiError, identifier: .geminiCLI, result: geminiResult) {
-                hasQuota = true
-                let item = createErrorMenuItem(identifier: .geminiCLI, errorMessage: geminiError)
-                if item.isEnabled {
-                    item.submenu = createErrorSubmenu(identifier: .geminiCLI, result: geminiResult, errorMessage: geminiError)
-                }
-                menu.insertItem(item, at: insertIndex)
-                insertIndex += 1
-            } else if let result = geminiResult,
-               let details = result.details,
-               let geminiAccounts = details.geminiAccounts,
-               !geminiAccounts.isEmpty {
-                let geminiAuthLabels = Set(
-                    geminiAccounts.map { account in
-                        authSourceLabel(for: account.authSource, provider: .geminiCLI) ?? L("Unknown")
-                    }
-                )
-                let showGeminiAuthLabel = geminiAuthLabels.count > 1
-
-                for account in geminiAccounts {
-                    hasQuota = true
-                    let accountNumber = account.accountIndex + 1
-                    let usedPercent = normalizedUsagePercent(100.0 - account.remainingPercentage) ?? 0.0
-                    // Gemini account rows should represent Gemini quota only.
-                    // Antigravity has its own provider row and should not be duplicated here.
-                    let usedPercents: [Double] = [usedPercent]
-
-                    let normalizedEmail = account.email.trimmingCharacters(in: .whitespacesAndNewlines)
-                    var displayName = "Gemini CLI"
-
-                    if !normalizedEmail.isEmpty, normalizedEmail.lowercased() != "unknown" {
-                        displayName = "Gemini CLI (\(normalizedEmail))"
-                    } else if geminiAccounts.count > 1, showGeminiAuthLabel {
-                        displayName = "Gemini CLI #\(accountNumber)"
-                        let sourceLabel = authSourceLabel(for: account.authSource, provider: .geminiCLI) ?? L("Unknown")
-                        displayName += " (\(sourceLabel))"
-                    } else if geminiAccounts.count > 1 {
-                        displayName = "Gemini CLI #\(accountNumber)"
-                    }
-                    let item = createNativeQuotaMenuItem(
-                        name: displayName,
-                        usedPercents: usedPercents,
-                        icon: iconForProvider(.geminiCLI)
-                    )
-                    item.tag = 999
-
-                    item.submenu = createGeminiAccountSubmenu(account)
-
-                    menu.insertItem(item, at: insertIndex)
-                    insertIndex += 1
-                }
-            } else if let errorMessage = geminiError {
-                if shouldDisplayErrorMenuItem(errorMessage) {
-                    hasQuota = true
-                    let item = createErrorMenuItem(identifier: .geminiCLI, errorMessage: errorMessage)
-                    if item.isEnabled {
-                        item.submenu = createErrorSubmenu(identifier: .geminiCLI, result: nil, errorMessage: errorMessage)
-                    }
-                    let status = errorMenuStatus(for: errorMessage)
-                    if status.shouldDeferToBottom {
-                        deferredUnavailableItems.append(item)
-                        deferredUnavailableProviders.append(.geminiCLI)
-                        debugLog("updateMultiProviderMenu: deferred \(status.title) item for Gemini CLI")
-                    } else {
-                        menu.insertItem(item, at: insertIndex)
-                        insertIndex += 1
-                    }
-                } else {
-                    debugLog("updateMultiProviderMenu: hiding Gemini CLI row because credentials are unavailable")
-                }
-            } else if loadingProviders.contains(.geminiCLI) {
-                hasQuota = true
-                let item = NSMenuItem(title: String(format: L("%@ (Loading...)"), ProviderIdentifier.geminiCLI.displayName), action: nil, keyEquivalent: "")
-                item.image = iconForProvider(.geminiCLI)
-                item.isEnabled = false
-                item.tag = 999
-                menu.insertItem(item, at: insertIndex)
-                insertIndex += 1
-            }
-        }
-
-        if !deferredUnavailableItems.isEmpty {
-            let deferredNames = deferredUnavailableProviders.map { $0.displayName }.joined(separator: ", ")
-            debugLog(
-                "updateMultiProviderMenu: inserting \(deferredUnavailableItems.count) deferred unavailable item(s) after Gemini: [\(deferredNames)]"
-            )
-            for item in deferredUnavailableItems {
-                menu.insertItem(item, at: insertIndex)
-                insertIndex += 1
-            }
-        }
-
-        if !hasQuota {
-            debugLog("updateMultiProviderMenu: hiding quota section because no visible items were generated")
-            while insertIndex > quotaSectionStartIndex {
-                insertIndex -= 1
-                menu.removeItem(at: insertIndex)
-            }
-        }
-
-        let orphaned = calculateOrphanedSubscriptions(providerResults: providerResults)
-        orphanedSubscriptionKeys = orphaned.keys
-        orphanedSubscriptionTotal = orphaned.total
-        if orphaned.total > 0 {
-            let title = String(format: L("Orphaned ($%.2f)"), orphaned.total)
-            let orphanedItem = NSMenuItem(
-                title: title,
-                action: #selector(confirmResetOrphanedSubscriptions(_:)),
-                keyEquivalent: ""
-            )
-            orphanedItem.target = self
-            orphanedItem.attributedTitle = italicMenuTitle(title)
-            orphanedItem.image = orphanedIcon()
-            orphanedItem.tag = 999
-            menu.insertItem(orphanedItem, at: insertIndex)
-            insertIndex += 1
-        }
-
-        let hasDynamicMenuContent = insertIndex > separatorIndex + 1
-        if hasDynamicMenuContent {
-            let separator3 = NSMenuItem.separator()
-            separator3.tag = 999
-            menu.insertItem(separator3, at: insertIndex)
-        } else {
-            debugLog("updateMultiProviderMenu: skipping trailing dynamic separator because all dynamic sections are hidden")
-        }
-
-        let totalCost = calculateTotalWithSubscriptions(providerResults: providerResults, copilotUsage: currentUsage)
-        refreshRecentChangeCandidate()
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-        debugLog("updateMultiProviderMenu: completed successfully, totalCost=$\(totalCost)")
-        logMenuStructure()
-    }
-
-    private func logMenuStructure() {
-        let total = menu.items.count
-        let separators = menu.items.filter { $0.isSeparatorItem }.count
-        let withAction = menu.items.filter { !$0.isSeparatorItem && $0.action != nil }.count
-        let withSubmenu = menu.items.filter { $0.hasSubmenu }.count
-
-        logger.info("📋 [Menu] Items: \(total) (sep:\(separators), actions:\(withAction), submenus:\(withSubmenu))")
-
-        var output = "\n========== MENU STRUCTURE ==========\n"
-        for (index, item) in menu.items.enumerated() {
-            output += logMenuItem(item, depth: 0, index: index)
-        }
-        output += "====================================\n"
-        debugLog(output)
-    }
-
-    private func logMenuItem(_ item: NSMenuItem, depth: Int, index: Int) -> String {
-        let indent = String(repeating: "  ", count: depth)
-        var line = ""
-
-        if item.isSeparatorItem {
-            line = "\(indent)[\(index)] ─────────────\n"
-        } else if let view = item.view {
-            let viewType = String(describing: type(of: view))
-            if let label = view.subviews.compactMap({ $0 as? NSTextField }).first {
-                line = "\(indent)[\(index)] [VIEW:\(viewType)] \(label.stringValue)\n"
-            } else {
-                line = "\(indent)[\(index)] [VIEW:\(viewType)]\n"
-            }
-        } else {
-            line = "\(indent)[\(index)] \(item.title)\n"
-        }
-
-        if let submenu = item.submenu {
-            for (subIndex, subItem) in submenu.items.enumerated() {
-                line += logMenuItem(subItem, depth: depth + 1, index: subIndex)
-            }
-        }
-
-        return line
-    }
-
-    private func createPayAsYouGoMenuItem(identifier: ProviderIdentifier, utilization: Double) -> NSMenuItem {
-        let title = String(format: "%@    %.1f%%", identifier.displayName, utilization)
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.image = iconForProvider(identifier)
-        return item
-    }
-
-    private func multiAccountBaseName(for identifier: ProviderIdentifier) -> String {
-        switch identifier {
-        case .codex:
-            return "ChatGPT"
-        default:
-            return identifier.displayName
-        }
-    }
-
-    private func authSourceLabel(for authSource: String?, provider: ProviderIdentifier) -> String? {
-        guard let authSource, !authSource.isEmpty else { return nil }
-
-        func parseSingleSource(_ rawSource: String) -> String? {
-            let lowercased = rawSource.lowercased()
-
-            if lowercased.contains("opencode") {
-                return "OpenCode"
-            }
-
-            switch provider {
-            case .codex:
-                if lowercased.contains(".codex-lb") || lowercased.contains("/codex-lb/") || lowercased.contains("codex lb") {
-                    return "Codex LB"
-                }
-                if lowercased.contains(".codex") || lowercased.contains("/codex/") || lowercased == "codex" {
-                    return "Codex"
-                }
-            case .claude:
-                if lowercased.contains("claude code (keychain)") || lowercased.contains("keychain") {
-                    return "Claude Code (Keychain)"
-                }
-                if lowercased.contains("claude code (legacy)") || lowercased.contains(".credentials.json") || lowercased.contains(".claude") {
-                    return "Claude Code (Legacy)"
-                }
-                if lowercased.contains("claude-code") || lowercased.contains("claude code") {
-                    return "Claude Code"
-                }
-            case .copilot:
-                if lowercased.contains("browser cookies") {
-                    return "Browser Cookies"
-                }
-                if lowercased.contains("github-copilot") {
-                    if lowercased.contains("hosts.json") {
-                        return "VS Code (hosts.json)"
-                    }
-                    if lowercased.contains("apps.json") {
-                        return "VS Code (apps.json)"
-                    }
-                    return "VS Code"
-                }
-            case .geminiCLI:
-                if lowercased.contains("antigravity") {
-                    return "Antigravity"
-                }
-                if lowercased.contains(".gemini/oauth_creds.json")
-                    || lowercased.contains("/.gemini/oauth_creds.json")
-                    || lowercased.contains("oauth_creds.json") {
-                    return "Gemini CLI"
-                }
-            default:
-                break
-            }
-
-            if lowercased.contains("keychain") {
-                return "Keychain"
-            }
-
-            return nil
-        }
-
-        let parts = authSource
-            .components(separatedBy: CharacterSet(charactersIn: ",;|"))
-            .flatMap { segment in
-                segment.components(separatedBy: " + ")
-            }
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        let sourceParts = parts.isEmpty ? [authSource] : parts
-        var labels: [String] = []
-        for part in sourceParts {
-            guard let label = parseSingleSource(part), !labels.contains(label) else { continue }
-            labels.append(label)
-        }
-
-        if labels.isEmpty {
-            return parseSingleSource(authSource)
-        }
-        if labels.count == 1 {
-            return labels.first
-        }
-        return labels.joined(separator: " + ")
-    }
-
-    /// Color for remaining percentage: <= 10% → red, <= 30% → orange, > 30% → secondary
-    private func colorForRemainingPercent(_ remaining: Double) -> NSColor {
-        if remaining <= 10 {
-            return .systemRed
-        } else if remaining <= 30 {
-            return .systemOrange
-        } else {
-            return .secondaryLabelColor
-        }
-    }
-
-    /// Creates NSMenuItem for quota providers showing remaining percentages.
-    /// Color: <= 30% left → orange, <= 10% left → red, 0% left → red+bold
-    private func createNativeQuotaMenuItem(
-        name: String,
-        usedPercents: [Double],
-        icon: NSImage?,
-        isEnabled: Bool = true
-    ) -> NSMenuItem {
-        let attributed = NSMutableAttributedString()
-        let primaryColor = isEnabled ? NSColor.labelColor : NSColor.disabledControlTextColor
-        let secondaryColor = isEnabled ? NSColor.secondaryLabelColor : NSColor.disabledControlTextColor
-
-        attributed.append(NSAttributedString(
-            string: "\(name)",
-            attributes: [
-                .font: MenuDesignToken.Typography.defaultFont,
-                .foregroundColor: primaryColor
-            ]
-        ))
-
-        let defaultFontUsagePercent: NSFont = MenuDesignToken.Typography.monospacedFont
-
-        attributed.append(NSAttributedString(
-            string: ": ",
-            attributes: [
-                .font: defaultFontUsagePercent,
-                .foregroundColor: secondaryColor
-            ]
-        ))
-
-        for (index, usedPercent) in usedPercents.enumerated() {
-            let remainingPercent = max(0.0, 100.0 - usedPercent)
-            let percentText = UsagePercentDisplayFormatter.string(from: remainingPercent)
-            let percentColor = isEnabled ? colorForRemainingPercent(remainingPercent) : NSColor.disabledControlTextColor
-            let font: NSFont = isEnabled && usedPercent >= 100
-                ? MenuDesignToken.Typography.monospacedBoldFont
-                : defaultFontUsagePercent
-
-            attributed.append(NSAttributedString(
-                string: percentText,
-                attributes: [
-                    .font: font,
-                    .foregroundColor: percentColor
-                ]
-            ))
-
-            if index < usedPercents.count - 1 {
-                attributed.append(NSAttributedString(
-                    string: ", ",
-                    attributes: [
-                        .font: defaultFontUsagePercent,
-                        .foregroundColor: secondaryColor
-                    ]
-                ))
-            }
-        }
-
-        attributed.append(NSAttributedString(
-            string: L(" left"),
-            attributes: [
-                .font: defaultFontUsagePercent,
-                .foregroundColor: secondaryColor
-            ]
-        ))
-
-        let item = NSMenuItem()
-        item.attributedTitle = attributed
-        item.image = icon
-        item.isEnabled = isEnabled
-
-        if let icon {
-            if !isEnabled {
-                item.image = tintedImage(icon, color: .disabledControlTextColor)
-            } else {
-                let minRemaining = usedPercents.map { max(0.0, 100.0 - $0) }.min() ?? 100.0
-                if minRemaining <= 30 {
-                    let iconColor: NSColor = minRemaining <= 10 ? .systemRed : .systemOrange
-                    item.image = tintedImage(icon, color: iconColor)
-                }
-            }
-        }
-
-        return item
-    }
-    
-    private func createNativeQuotaMenuItem(
-        name: String,
-        usedPercent: Double,
-        icon: NSImage?,
-        isEnabled: Bool = true
-    ) -> NSMenuItem {
-        return createNativeQuotaMenuItem(name: name, usedPercents: [usedPercent], icon: icon, isEnabled: isEnabled)
-    }
-
-    private func unavailableUsageSuffix(for account: ProviderAccountResult, identifier: ProviderIdentifier) -> String? {
-        guard (account.usage.totalEntitlement ?? 0) == 0 else { return nil }
-
-        if identifier == .claude,
-           let authErrorMessage = account.details?.authErrorMessage?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-           !authErrorMessage.isEmpty,
-           authErrorMessage.lowercased().contains("token expired") {
-            return L("Token expired")
-        }
-
-        if identifier == .claude,
-           let authErrorMessage = account.details?.authErrorMessage?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-           !authErrorMessage.isEmpty,
-           authErrorMessage.lowercased().contains("rate limited") {
-            return L("Rate limited")
-        }
-
-        return L("No usage data")
-    }
-
-    // MARK: - Error State Helpers
-
-    /// Checks for keywords like "Authentication failed", "not found", "API key", etc.
-    private func isAuthenticationError(_ errorMessage: String) -> Bool {
-        let authPatterns = [
-            "Authentication failed",
-            "not found",
-            "not available",
-            "access token",
-            "API key",
-            "No Gemini accounts",
-            "credentials"
-        ]
-        let lowercased = errorMessage.lowercased()
-        return authPatterns.contains { lowercased.contains($0.lowercased()) }
-    }
-
-    private func isRateLimitError(_ errorMessage: String) -> Bool {
-        let lowercased = errorMessage.lowercased()
-        return lowercased.contains("rate limited")
-            || lowercased.contains("rate_limit_error")
-            || lowercased.contains("http 429")
-            || lowercased.contains("too many requests")
-    }
-
-    private enum ErrorMenuStatus {
-        case rateLimited
-        case noCredentials
-        case noSubscription
-        case error
-
-        var title: String {
-            switch self {
-            case .rateLimited:
-                return L("Rate limited")
-            case .noCredentials:
-                return L("No Credentials")
-            case .noSubscription:
-                return L("No Subscription")
-            case .error:
-                return L("Error")
-            }
-        }
-
-        var shouldDeferToBottom: Bool {
-            switch self {
-            case .rateLimited, .error:
-                return false
-            case .noCredentials, .noSubscription:
-                return true
-            }
-        }
-
-        var shouldDisplayInList: Bool {
-            switch self {
-            case .noCredentials:
-                return false
-            case .rateLimited, .noSubscription, .error:
-                return true
-            }
-        }
-
-        var shouldDisableListItem: Bool {
-            switch self {
-            case .rateLimited, .error:
-                return true
-            case .noCredentials, .noSubscription:
-                return false
-            }
-        }
-    }
-
-    private func errorMenuStatus(for errorMessage: String) -> ErrorMenuStatus {
-        let lowercased = errorMessage.lowercased()
-        if isRateLimitError(errorMessage) {
-            return .rateLimited
-        }
-        if lowercased.contains("subscription") {
-            return .noSubscription
-        }
-        if isAuthenticationError(errorMessage) {
-            return .noCredentials
-        }
-        return .error
-    }
-
-    private func shouldDisplayErrorStateEvenWithResult(_ errorMessage: String) -> Bool {
-        switch errorMenuStatus(for: errorMessage) {
-        case .rateLimited:
-            return true
-        case .noCredentials, .noSubscription, .error:
-            return false
-        }
-    }
-
-    private func shouldDisplayErrorMenuItem(_ errorMessage: String) -> Bool {
-        errorMenuStatus(for: errorMessage).shouldDisplayInList
-    }
-
-    private func shouldDisplayErrorStateEvenWithResult(
-        _ errorMessage: String,
-        identifier: ProviderIdentifier,
-        result: ProviderResult?
-    ) -> Bool {
-        guard shouldDisplayErrorStateEvenWithResult(errorMessage) else { return false }
-
-        if ProviderDisplayPolicy.shouldShowRateLimitedErrorRow(
-            identifier: identifier,
-            errorMessage: errorMessage,
-            result: result
-        ) {
-            return true
-        }
-
-        if ProviderDisplayPolicy.hasDisplayableAccountRows(identifier: identifier, result: result) {
-            debugLog(
-                "Preserving account rows for \(identifier.displayName) despite rate limit cooldown because account data is available"
-            )
-        }
-        return false
-    }
-
-    private func createErrorMenuItem(identifier: ProviderIdentifier, errorMessage: String) -> NSMenuItem {
-        let status = errorMenuStatus(for: errorMessage)
-        let statusText = status.title
-        let title = "\(identifier.displayName) (\(statusText))"
-
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        let iconColor: NSColor = status.shouldDisableListItem ? .disabledControlTextColor : .systemOrange
-        item.image = tintedImage(iconForProvider(identifier), color: iconColor)
-        item.isEnabled = !status.shouldDisableListItem
-        item.tag = 999
-        item.toolTip = errorMessage
-
-        return item
-    }
-
-    private func createErrorSubmenu(
-        identifier: ProviderIdentifier,
-        result: ProviderResult?,
-        errorMessage: String
-    ) -> NSMenu {
-        let submenu = NSMenu()
-
-        let statusItem = NSMenuItem()
-        statusItem.view = createDisabledLabelView(text: String(format: L("Status: %@"), errorMenuStatus(for: errorMessage).title))
-        submenu.addItem(statusItem)
-
-        let errorItem = NSMenuItem()
-        errorItem.view = createDisabledLabelView(text: String(format: L("Error: %@"), errorMessage), multiline: true)
-        submenu.addItem(errorItem)
-
-        if let result,
-           let details = result.details,
-           details.hasAnyValue {
-            submenu.addItem(NSMenuItem.separator())
-
-            let cachedItem = NSMenuItem(title: L("Cached Details"), action: nil, keyEquivalent: "")
-            cachedItem.image = NSImage(
-                systemSymbolName: "clock.arrow.circlepath",
-                accessibilityDescription: L("Cached Details")
-            )
-            cachedItem.submenu = createDetailSubmenu(details, identifier: identifier)
-            submenu.addItem(cachedItem)
-        }
-
-        return submenu
-    }
-
-    private func iconForProvider(_ identifier: ProviderIdentifier) -> NSImage? {
+    func iconForProvider(_ identifier: ProviderIdentifier) -> NSImage? {
         let image = identifier.menuIconAssetName.flatMap { NSImage(named: $0) }
             ?? NSImage(
                 systemSymbolName: identifier.menuIconSymbolName,
@@ -2881,7 +1069,7 @@ final class StatusBarController: NSObject {
          return image
      }
 
-     private func tintedImage(_ image: NSImage?, color: NSColor) -> NSImage? {
+     func tintedImage(_ image: NSImage?, color: NSColor) -> NSImage? {
          guard let image = image else { return nil }
          let tinted = image.copy() as! NSImage
          tinted.lockFocus()
@@ -3030,7 +1218,7 @@ final class StatusBarController: NSObject {
         NotificationCenter.default.post(name: Notification.Name("sessionExpired"), object: nil)
     }
 
-    @objc private func refreshClicked() {
+    @objc func refreshClicked() {
         logger.info("⌨️ [Keyboard] ⌘R Refresh triggered")
         debugLog("⌨️ refreshClicked: ⌘R shortcut activated")
         fetchUsage()
@@ -3040,14 +1228,14 @@ final class StatusBarController: NSObject {
         if let url = URL(string: "https://github.com/settings/billing/premium_requests_usage") { NSWorkspace.shared.open(url) }
     }
 
-    @objc private func openGitHub() {
+    @objc func openGitHub() {
         logger.info("Opening GitHub repository")
         if let url = URL(string: "https://github.com/SHLE1/usage-bar") {
             NSWorkspace.shared.open(url)
         }
     }
 
-    @objc private func shareUsageSnapshotClicked() {
+    @objc func shareUsageSnapshotClicked() {
         logger.info("Share Usage Snapshot triggered")
         debugLog("shareUsageSnapshotClicked: started")
         trackGrowthEvent(.shareSnapshotClicked)
@@ -3083,13 +1271,13 @@ final class StatusBarController: NSObject {
         }
     }
     
-    @objc private func viewErrorDetailsClicked() {
+    @objc func viewErrorDetailsClicked() {
         logger.info("⌨️ [Keyboard] ⌘E View Error Details triggered")
         debugLog("⌨️ viewErrorDetailsClicked: ⌘E shortcut activated")
         showErrorDetailsAlert()
     }
 
-    @objc private func confirmResetOrphanedSubscriptions(_ sender: NSMenuItem) {
+    @objc func confirmResetOrphanedSubscriptions(_ sender: NSMenuItem) {
         // Capture current orphaned state to avoid races while the modal alert is open
         // (auto-refresh can rebuild the menu and mutate orphanedSubscriptionKeys).
         let keysToReset = orphanedSubscriptionKeys
@@ -3389,98 +1577,19 @@ final class StatusBarController: NSObject {
         }
     }
 
-    @objc private func quitClicked() {
+    @objc func quitClicked() {
         logger.info("⌨️ [Keyboard] ⌘Q Quit triggered")
         debugLog("⌨️ quitClicked: ⌘Q shortcut activated")
         NSApp.terminate(nil)
     }
 
-    // MARK: - Settings notification handlers
-
-    @objc private func handleRefreshIntervalChange() {
-        debugLog("🔔 Settings: refreshInterval changed")
-        restartRefreshTimer()
-        updateRefreshIntervalMenu()
-    }
-
-    @objc private func handlePredictionPeriodChange() {
-        debugLog("🔔 Settings: predictionPeriod changed")
-        updatePredictionPeriodMenu()
-        updateHistorySubmenu()
-        updateMultiProviderMenu()
-    }
-
-    @objc private func handleDisplayModeChange() {
-        debugLog("🔔 Settings: displayMode changed")
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-    }
-
-    @objc private func handleEnabledProvidersChange() {
-        debugLog("🔔 Settings: enabledProviders changed")
-        updateEnabledProvidersMenu()
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-        refreshClicked()
-    }
-
-    @objc private func handleCriticalBadgeChange() {
-        debugLog("🔔 Settings: criticalBadge changed")
-        updateStatusBarText()
-    }
-
-    @objc private func handleShowProviderIconChange() {
-        debugLog("🔔 Settings: showProviderIcon changed")
-        updateStatusBarText()
-    }
-
-    @objc private func handleMultiProviderProvidersChange() {
-        debugLog("🔔 Settings: multiProviderProviders changed")
-        updateStatusBarDisplayMenuState()
-        updateStatusBarText()
-    }
-
-    @objc private func handleCodexStatusBarAccountChange() {
-        debugLog("🔔 Settings: codexStatusBarAccount changed")
-        updateStatusBarText()
-        updateMultiProviderMenu()
-    }
-
-    @objc private func handleCodexStatusBarWindowChange() {
-        debugLog("🔔 Settings: codexStatusBarWindow changed")
-        updateStatusBarText()
-        updateMultiProviderMenu()
-    }
-
-    @objc private func handleAppLanguageChange() {
-        debugLog("🔔 Settings: appLanguage changed")
-        setupMenu()
-        updateMultiProviderMenu()
-        updateStatusBarText()
-    }
-
-    @objc private func handleSubscriptionChange() {
-        debugLog("🔔 Settings: subscription changed")
-        updateMultiProviderMenu()
-    }
-
-    @objc private func handleCopilotAddOnChange() {
-        debugLog("🔔 Settings: Copilot Add-on toggled")
-        updateMultiProviderMenu()
-        updateStatusBarText()
-    }
-
-    @objc private func launchAtLoginClicked() {
+    @objc func launchAtLoginClicked() {
         let service = SMAppService.mainApp
         try? (service.status == .enabled ? service.unregister() : service.register())
         updateLaunchAtLoginState()
     }
 
-    private func updateLaunchAtLoginState() {
-        launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-    }
-
-    @objc private func installCLIClicked() {
+    @objc func installCLIClicked() {
         logger.info("⌨️ [Keyboard] Install CLI triggered")
         debugLog("⌨️ installCLIClicked: Install CLI menu item activated")
         
@@ -3528,7 +1637,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private func updateCLIInstallState() {
+    func updateCLIInstallState() {
         let installed = FileManager.default.fileExists(atPath: "/usr/local/bin/usagebar")
         
         if installed {
@@ -3583,7 +1692,7 @@ final class StatusBarController: NSObject {
             || calendar.component(.year, from: date) != calendar.component(.year, from: Date())
     }
 
-    private func loadCachedHistoryOnStartup() {
+    func loadCachedHistoryOnStartup() {
         guard let cached = loadHistoryCache() else {
             logger.info("No cache - skipping history load")
             return
@@ -3622,7 +1731,7 @@ final class StatusBarController: NSObject {
 
     // MARK: - Predicted EOM Section (Aggregated Pay-as-you-go)
 
-    private func insertPredictedEOMSection(at index: Int) -> Int {
+    func insertPredictedEOMSection(at index: Int) -> Int {
         var insertIndex = index
 
         // Collect daily cost data from all Pay-as-you-go providers
@@ -3655,7 +1764,7 @@ final class StatusBarController: NSObject {
         // 3. OpenRouter - only has current cost, no daily history
         // We'll include today's cost if available
         if let routerResult = providerResults[.openRouter],
-           case .payAsYouGo(_, let cost, _) = routerResult.usage,
+           case .payAsYouGo = routerResult.usage,
            let dailyCost = routerResult.details?.dailyUsage {
             let today = Calendar.current.startOfDay(for: Date())
             if aggregatedDailyCosts[today] == nil {
@@ -3821,7 +1930,7 @@ final class StatusBarController: NSObject {
         return insertIndex
     }
 
-    private func updateHistorySubmenu() {
+    func updateHistorySubmenu() {
         debugLog("updateHistorySubmenu: started")
         let state = getHistoryUIState()
         debugLog("updateHistorySubmenu: getHistoryUIState completed")

@@ -12,7 +12,6 @@ final class AppPreferences: ObservableObject {
 
     static let refreshIntervalDidChange = Notification.Name("AppPreferences.refreshIntervalDidChange")
     static let predictionPeriodDidChange = Notification.Name("AppPreferences.predictionPeriodDidChange")
-    static let displayModeDidChange = Notification.Name("AppPreferences.displayModeDidChange")
     static let enabledProvidersDidChange = Notification.Name("AppPreferences.enabledProvidersDidChange")
     static let criticalBadgeDidChange = Notification.Name("AppPreferences.criticalBadgeDidChange")
     static let showProviderIconDidChange = Notification.Name("AppPreferences.showProviderIconDidChange")
@@ -65,27 +64,6 @@ final class AppPreferences: ObservableObject {
     }
 
     // MARK: - Status Bar
-
-    @Published var menuBarDisplayMode: MenuBarDisplayMode {
-        didSet {
-            defaults.set(menuBarDisplayMode.rawValue, forKey: StatusBarDisplayPreferences.modeKey)
-            NotificationCenter.default.post(name: Self.displayModeDidChange, object: nil)
-        }
-    }
-
-    @Published var onlyShowMode: OnlyShowMode {
-        didSet {
-            defaults.set(onlyShowMode.rawValue, forKey: StatusBarDisplayPreferences.onlyShowModeKey)
-            NotificationCenter.default.post(name: Self.displayModeDidChange, object: nil)
-        }
-    }
-
-    @Published var pinnedProvider: ProviderIdentifier? {
-        didSet {
-            defaults.set(pinnedProvider?.rawValue, forKey: StatusBarDisplayPreferences.providerKey)
-            NotificationCenter.default.post(name: Self.displayModeDidChange, object: nil)
-        }
-    }
 
     @Published var criticalBadge: Bool {
         didSet {
@@ -165,23 +143,6 @@ final class AppPreferences: ObservableObject {
             self.appLanguageMode = appLanguageMode
         } else {
             self.appLanguageMode = .system
-        }
-
-        // Note: getter in StatusBarController is hardcoded to .multiProvider.
-        // We read the actual stored value so the Settings UI reflects reality.
-        let rawMode = UserDefaults.standard.integer(forKey: StatusBarDisplayPreferences.modeKey)
-        self.menuBarDisplayMode = MenuBarDisplayMode(rawValue: rawMode) ?? .defaultMode
-
-        if let rawOnly = UserDefaults.standard.object(forKey: StatusBarDisplayPreferences.onlyShowModeKey) as? Int {
-            self.onlyShowMode = OnlyShowMode(rawValue: rawOnly) ?? .defaultMode
-        } else {
-            self.onlyShowMode = .defaultMode
-        }
-
-        if let rawProvider = UserDefaults.standard.string(forKey: StatusBarDisplayPreferences.providerKey) {
-            self.pinnedProvider = ProviderIdentifier(rawValue: rawProvider)
-        } else {
-            self.pinnedProvider = nil
         }
 
         if UserDefaults.standard.object(forKey: StatusBarDisplayPreferences.criticalBadgeKey) != nil {

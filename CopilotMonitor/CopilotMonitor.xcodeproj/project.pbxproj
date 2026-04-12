@@ -115,6 +115,10 @@
 		SETCOD11111111111111111111 /* CodexSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR888888888888888888888 /* CodexSettingsView.swift */; };
 		SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR666666666666666666666 /* SubscriptionSettingsView.swift */; };
 		SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETFR777777777777777777777 /* SettingsScaffold.swift */; };
+		STATMENUBF11111111111111 /* StatusBarController+Menu.swift in Sources */ = {isa = PBXBuildFile; fileRef = STATMENUFR11111111111111 /* StatusBarController+Menu.swift */; };
+		STATSECBF11111111111111 /* StatusBarController+MenuSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = STATSECFR11111111111111 /* StatusBarController+MenuSections.swift */; };
+		STATRNDBF111111111111111 /* StatusBarController+Rendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = STATRNDFR111111111111111 /* StatusBarController+Rendering.swift */; };
+		STATSYNCBF11111111111111 /* StatusBarController+SettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = STATSYNCFR11111111111111 /* StatusBarController+SettingsSync.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -227,6 +231,10 @@
 		SETFR666666666666666666666 /* SubscriptionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSettingsView.swift; sourceTree = "<group>"; };
 		SETFR777777777777777777777 /* SettingsScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScaffold.swift; sourceTree = "<group>"; };
 		SETFR888888888888888888888 /* CodexSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexSettingsView.swift; sourceTree = "<group>"; };
+		STATMENUFR11111111111111 /* StatusBarController+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusBarController+Menu.swift"; sourceTree = "<group>"; };
+		STATSECFR11111111111111 /* StatusBarController+MenuSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusBarController+MenuSections.swift"; sourceTree = "<group>"; };
+		STATRNDFR111111111111111 /* StatusBarController+Rendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusBarController+Rendering.swift"; sourceTree = "<group>"; };
+		STATSYNCFR11111111111111 /* StatusBarController+SettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusBarController+SettingsSync.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -338,6 +346,10 @@
 				A44444444444444444444444 /* AppDelegate.swift */,
 				AM2222222222222222222222 /* AppMigrationHelper.swift */,
 				D22222222222222222222222 /* StatusBarController.swift */,
+				STATMENUFR11111111111111 /* StatusBarController+Menu.swift */,
+				STATSECFR11111111111111 /* StatusBarController+MenuSections.swift */,
+				STATRNDFR111111111111111 /* StatusBarController+Rendering.swift */,
+				STATSYNCFR11111111111111 /* StatusBarController+SettingsSync.swift */,
 				6279E48B0F50E99C3B23C4F3 /* ModernApp.swift */,
 				SETGRP11111111111111111111 /* Settings */,
 			);
@@ -705,6 +717,10 @@
 				SETCOD11111111111111111111 /* CodexSettingsView.swift in Sources */,
 				SETSUB11111111111111111111 /* SubscriptionSettingsView.swift in Sources */,
 				SETSCA1111111111111111111 /* SettingsScaffold.swift in Sources */,
+				STATMENUBF11111111111111 /* StatusBarController+Menu.swift in Sources */,
+				STATSECBF11111111111111 /* StatusBarController+MenuSections.swift in Sources */,
+				STATRNDBF111111111111111 /* StatusBarController+Rendering.swift in Sources */,
+				STATSYNCBF11111111111111 /* StatusBarController+SettingsSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

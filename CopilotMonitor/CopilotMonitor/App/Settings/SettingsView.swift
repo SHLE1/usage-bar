@@ -24,8 +24,8 @@ struct SettingsView: View {
                     GeneralSettingsView()
                 case .statusBar:
                     StatusBarSettingsView()
-                case .codex:
-                    CodexSettingsView()
+                case .advancedProviders:
+                    AdvancedProviderSettingsView()
                 case .subscriptions:
                     SubscriptionSettingsView()
                 }
@@ -75,7 +75,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case statusBar
     case subscriptions
-    case codex
+    case advancedProviders
 
     var id: String { rawValue }
 
@@ -85,8 +85,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return L("General")
         case .statusBar:
             return L("Status Bar")
-        case .codex:
-            return L("Codex")
+        case .advancedProviders:
+            return L("Advanced Providers")
         case .subscriptions:
             return L("Subscriptions")
         }
@@ -98,8 +98,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return L("Refresh, startup, and command line tool")
         case .statusBar:
             return L("Choose which providers appear in UsageBar")
-        case .codex:
-            return L("Choose the Codex account and limit window shown in the status bar")
+        case .advancedProviders:
+            return L("Provider-specific account and window overrides")
         case .subscriptions:
             return L("Manage monthly plans and custom costs")
         }
@@ -111,8 +111,8 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return "gearshape"
         case .statusBar:
             return "menubar.rectangle"
-        case .codex:
-            return "person.text.rectangle"
+        case .advancedProviders:
+            return "slider.horizontal.3"
         case .subscriptions:
             return "creditcard"
         }

@@ -157,10 +157,13 @@
 "Status Bar" = "状态栏";
 "Subscriptions" = "订阅";
 "Codex" = "Codex";
+"Advanced Providers" = "高级 Provider";
 "Refresh, startup, and command line tool" = "刷新、启动与命令行工具";
 "Choose which providers appear in UsageBar" = "选择哪些 Provider 显示在 UsageBar 中";
 "Manage monthly plans and custom costs" = "管理月费套餐与自定义费用";
 "Choose the Codex account and limit window shown in the status bar" = "选择显示在状态栏中的 Codex 账号和限额窗口";
+"Provider-specific account and window overrides" = "Provider 专属账号与窗口覆盖设置";
+"Manage provider-specific overrides that do not belong in the main status bar settings." = "管理不适合放在主状态栏设置中的 Provider 专属覆盖项。";
 "Control refresh timing, startup behavior, and command line access." = "管理刷新频率、启动方式和命令行访问。";
 "Usage Updates" = "用量更新";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "设置 UsageBar 的刷新频率，以及月末费用预测的计算方式。";
@@ -203,6 +206,7 @@
 "GitHub Copilot Add-on" = "GitHub Copilot Add-on";
 "Subscription Providers" = "订阅制 Provider";
 "Quota-based providers shown in the quota section and the status bar summary." = "这些按配额计费的 Provider 会显示在配额区块和状态栏摘要中。";
+"Quota-based providers shown in the quota section and the top status bar summary." = "这些按配额计费的 Provider 会显示在配额区块和顶部状态栏摘要中。";
 "Set monthly plan costs for quota-based providers and any detected accounts." = "为按配额计费的 Provider 和已检测到的账号设置月费。";
 "This total is used for the quota subscription summary." = "这个总额会用于配额订阅汇总。";
 "Configured subscription cost" = "已配置订阅费用";
@@ -216,6 +220,7 @@
 "/m" = "/月";
 "Apply" = "应用";
 "Manage which Codex account and limit window UsageBar shows in the status bar." = "管理 UsageBar 在状态栏中显示哪个 Codex 账号与限额窗口。";
+"Choose which Codex account and limit window UsageBar follows in the status bar." = "选择 UsageBar 在状态栏中跟随哪个 Codex 账号与限额窗口。";
 "Status Bar Account" = "状态栏账号";
 "Choose which detected Codex account the status bar should follow." = "选择状态栏跟随哪个已检测到的 Codex 账号。";
 "No Codex accounts detected yet." = "尚未检测到 Codex 账号。";
@@ -227,6 +232,10 @@
 "Choose which Codex limit window stays visible in the status bar." = "选择哪个 Codex 限额窗口保持显示在状态栏中。";
 "Display Mode" = "显示模式";
 "Single-provider mode shows percentages. Multi-provider mode uses a compact Codex format." = "单 Provider 模式显示百分比，多 Provider 模式使用紧凑的 Codex 格式。";
+"How this appears" = "显示说明";
+"The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section." = "顶部状态栏只显示配额型 Provider。按量计费 Provider 仍会显示在下拉菜单的费用区块中。";
+"Use Advanced Providers for provider-specific overrides such as the Codex account and limit window." = "像 Codex 账号和限额窗口这样的 Provider 专属覆盖项，请在“高级 Provider”中设置。";
+"—% left" = "—% 剩余";
 "5h Only" = "仅 5 小时";
 "Weekly Only" = "仅每周";
 "5h + Weekly" = "5 小时 + 每周";

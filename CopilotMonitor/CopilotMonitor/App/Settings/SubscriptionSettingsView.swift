@@ -124,7 +124,7 @@ struct SubscriptionSettingsView: View {
             let bEnabled = b.provider.map { prefs.isProviderEnabled($0) } ?? false
             if aEnabled != bEnabled { return aEnabled }
 
-            return false // preserve business order within same group
+            return a.displayName.localizedStandardCompare(b.displayName) == .orderedAscending
         })
 
         recalculate()
@@ -136,7 +136,11 @@ struct SubscriptionSettingsView: View {
         let manager = SubscriptionSettingsManager.shared
         var sum: Double = 0
         for row in rows {
-            manager.setPlan(row.plan, forKey: row.key)
+            if row.plan.isSet {
+                manager.setPlan(row.plan, forKey: row.key)
+            } else {
+                manager.removePlan(forKey: row.key)
+            }
             sum += row.plan.cost
         }
         totalCost = sum
