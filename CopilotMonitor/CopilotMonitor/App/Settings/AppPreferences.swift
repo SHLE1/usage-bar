@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Combine
 import ServiceManagement
@@ -5,6 +6,34 @@ import ServiceManagement
 /// Lightweight ObservableObject bridge over UserDefaults.
 /// Both SwiftUI Settings views and StatusBarController read/write through this singleton
 /// so that changes propagate immediately.
+enum AppAppearanceMode: String, CaseIterable {
+    case system
+    case dark
+    case light
+
+    var title: String {
+        switch self {
+        case .system:
+            return L("Follow System")
+        case .dark:
+            return L("Dark")
+        case .light:
+            return L("Light")
+        }
+    }
+
+    var applicationAppearance: NSAppearance? {
+        switch self {
+        case .system:
+            return nil
+        case .dark:
+            return NSAppearance(named: .darkAqua)
+        case .light:
+            return NSAppearance(named: .aqua)
+        }
+    }
+}
+
 final class AppPreferences: ObservableObject {
     static let shared = AppPreferences()
 
@@ -36,6 +65,7 @@ final class AppPreferences: ObservableObject {
     static let codexStatusBarAccountDidChange = Notification.Name("AppPreferences.codexStatusBarAccountDidChange")
     static let codexStatusBarWindowDidChange = Notification.Name("AppPreferences.codexStatusBarWindowDidChange")
     static let appLanguageDidChange = Notification.Name("AppPreferences.appLanguageDidChange")
+    static let appAppearanceDidChange = Notification.Name("AppPreferences.appAppearanceDidChange")
     static let subscriptionDidChange = Notification.Name("AppPreferences.subscriptionDidChange")
     static let copilotAddOnDidChange = Notification.Name("AppPreferences.copilotAddOnDidChange")
 
@@ -77,6 +107,13 @@ final class AppPreferences: ObservableObject {
         didSet {
             defaults.set(appLanguageMode.rawValue, forKey: "app.languageMode")
             NotificationCenter.default.post(name: Self.appLanguageDidChange, object: nil)
+        }
+    }
+
+    @Published var appAppearanceMode: AppAppearanceMode {
+        didSet {
+            defaults.set(appAppearanceMode.rawValue, forKey: "app.appearanceMode")
+            NotificationCenter.default.post(name: Self.appAppearanceDidChange, object: nil)
         }
     }
 
@@ -296,6 +333,13 @@ final class AppPreferences: ObservableObject {
             self.appLanguageMode = appLanguageMode
         } else {
             self.appLanguageMode = .system
+        }
+
+        if let rawAppearanceMode = UserDefaults.standard.string(forKey: "app.appearanceMode"),
+           let appAppearanceMode = AppAppearanceMode(rawValue: rawAppearanceMode) {
+            self.appAppearanceMode = appAppearanceMode
+        } else {
+            self.appAppearanceMode = .system
         }
 
         if UserDefaults.standard.object(forKey: StatusBarDisplayPreferences.criticalBadgeKey) != nil {

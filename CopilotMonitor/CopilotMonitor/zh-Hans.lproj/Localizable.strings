@@ -164,7 +164,7 @@
 "Choose the Codex account and limit window shown in the status bar" = "选择显示在状态栏中的 Codex 账号和限额窗口";
 "Provider-specific account and window overrides" = "Provider 专属账号与窗口覆盖设置";
 "Manage provider-specific overrides that do not belong in the main status bar settings." = "管理不适合放在主状态栏设置中的 Provider 专属覆盖项。";
-"Control refresh timing, startup behavior, and command line access." = "管理刷新频率、启动方式和命令行访问。";
+"Control refresh timing, appearance, startup behavior, and command line access." = "管理刷新频率、外观、启动方式和命令行访问。";
 "Usage Updates" = "用量更新";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "设置 UsageBar 的刷新频率，以及月末费用预测的计算方式。";
 "Auto Refresh Period" = "自动刷新间隔";
@@ -175,6 +175,10 @@
 "App Language" = "应用语言";
 "Choose which language UsageBar uses. The default follows macOS." = "选择 UsageBar 使用的语言。默认跟随 macOS。";
 "Follow System" = "跟随系统";
+"Appearance" = "外观";
+"Choose whether UsageBar follows macOS appearance or stays in a fixed mode." = "选择 UsageBar 跟随 macOS 外观，或固定使用某一种外观。";
+"Dark" = "深色";
+"Light" = "浅色";
 "App Behavior" = "应用行为";
 "Decide how UsageBar behaves after launch." = "设置 UsageBar 启动后的行为方式。";
 "Open UsageBar automatically when you sign in to macOS." = "在您登录 macOS 时自动启动 UsageBar。";

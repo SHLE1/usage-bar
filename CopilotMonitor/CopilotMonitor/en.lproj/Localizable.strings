@@ -164,7 +164,7 @@
 "Choose the Codex account and limit window shown in the status bar" = "Choose the Codex account and limit window shown in the status bar";
 "Provider-specific account and window overrides" = "Provider-specific account and window overrides";
 "Manage provider-specific overrides that do not belong in the main status bar settings." = "Manage provider-specific overrides that do not belong in the main status bar settings.";
-"Control refresh timing, startup behavior, and command line access." = "Control refresh timing, startup behavior, and command line access.";
+"Control refresh timing, appearance, startup behavior, and command line access." = "Control refresh timing, appearance, startup behavior, and command line access.";
 "Usage Updates" = "Usage Updates";
 "Choose how often UsageBar refreshes and how it estimates end-of-month cost." = "Choose how often UsageBar refreshes and how it estimates end-of-month cost.";
 "Auto Refresh Period" = "Auto Refresh Period";
@@ -175,6 +175,10 @@
 "App Language" = "App Language";
 "Choose which language UsageBar uses. The default follows macOS." = "Choose which language UsageBar uses. The default follows macOS.";
 "Follow System" = "Follow System";
+"Appearance" = "Appearance";
+"Choose whether UsageBar follows macOS appearance or stays in a fixed mode." = "Choose whether UsageBar follows macOS appearance or stays in a fixed mode.";
+"Dark" = "Dark";
+"Light" = "Light";
 "App Behavior" = "App Behavior";
 "Decide how UsageBar behaves after launch." = "Decide how UsageBar behaves after launch.";
 "Open UsageBar automatically when you sign in to macOS." = "Open UsageBar automatically when you sign in to macOS.";

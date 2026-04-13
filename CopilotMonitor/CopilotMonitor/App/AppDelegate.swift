@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     private(set) var updaterController: SPUStandardUpdaterController!
     private var settingsWindow: NSWindow?
     private var localizationObserver: NSObjectProtocol?
+    private var appearanceObserver: NSObjectProtocol?
 
     @objc func checkForUpdates() {
         logger.info("⌨️ [Keyboard] ⌘U Check for Updates triggered")
@@ -32,6 +33,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         let window = NSWindow(contentViewController: hostingController)
         window.identifier = settingsWindowIdentifier
         window.title = L("Settings")
+        window.appearance = AppPreferences.shared.appAppearanceMode.applicationAppearance
         window.setContentSize(NSSize(width: 840, height: 560))
         window.minSize = NSSize(width: 760, height: 520)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
@@ -69,10 +71,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.settingsWindow?.title = L("Settings")
+            Task { @MainActor [weak self] in
+                self?.settingsWindow?.title = L("Settings")
+            }
+        }
+
+        appearanceObserver = NotificationCenter.default.addObserver(
+            forName: AppPreferences.appAppearanceDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.applyAppAppearance()
+            }
         }
         
         configureAutomaticUpdates()
+        applyAppAppearance()
         statusBarController = StatusBarController()
         closeAllWindows()
     }
@@ -99,6 +114,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         for window in NSApp.windows where window.identifier == settingsWindowIdentifier {
             window.close()
         }
+    }
+
+    private func applyAppAppearance() {
+        let appearance = AppPreferences.shared.appAppearanceMode.applicationAppearance
+        NSApp.appearance = appearance
+        settingsWindow?.appearance = appearance
+        settingsWindow?.contentView?.needsLayout = true
+        logger.info("Applied app appearance mode \(AppPreferences.shared.appAppearanceMode.rawValue, privacy: .public)")
     }
 
     // MARK: - SPUUpdaterDelegate

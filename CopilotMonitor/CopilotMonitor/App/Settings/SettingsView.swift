@@ -10,6 +10,16 @@ struct SettingsView: View {
     private var minimumSidebarWidth: CGFloat {
         SettingsSidebarMetrics.minimumWidth(for: SettingsTab.allCases)
     }
+    private var preferredColorScheme: ColorScheme? {
+        switch prefs.appAppearanceMode {
+        case .system:
+            return nil
+        case .dark:
+            return .dark
+        case .light:
+            return .light
+        }
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -41,7 +51,8 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 760, idealWidth: 840, minHeight: 520, idealHeight: 560)
-        .id(prefs.appLanguageMode.rawValue)
+        .preferredColorScheme(preferredColorScheme)
+        .id("\(prefs.appLanguageMode.rawValue)-\(prefs.appAppearanceMode.rawValue)")
         .onAppear {
             if selectedTab == nil {
                 selectedTab = .general

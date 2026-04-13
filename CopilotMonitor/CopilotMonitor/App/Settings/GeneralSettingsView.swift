@@ -13,7 +13,7 @@ struct GeneralSettingsView: View {
     var body: some View {
         SettingsPage(
             title: L("General"),
-            subtitle: L("Control refresh timing, startup behavior, and command line access.")
+            subtitle: L("Control refresh timing, appearance, startup behavior, and command line access.")
         ) {
             SettingsSectionCard(
                 title: L("Usage Updates"),
@@ -79,6 +79,27 @@ struct GeneralSettingsView: View {
                             }
                         } label: {
                             CompactSettingsMenuLabel(title: prefs.appLanguageMode.title)
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                    }
+
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsRow(
+                        title: L("Appearance"),
+                        description: L("Choose whether UsageBar follows macOS appearance or stays in a fixed mode.")
+                    ) {
+                        Menu {
+                            ForEach(AppAppearanceMode.allCases, id: \.self) { mode in
+                                Button(mode.title) {
+                                    prefs.appAppearanceMode = mode
+                                    generalSettingsLogger.debug("Selected app appearance \(mode.rawValue, privacy: .public)")
+                                }
+                            }
+                        } label: {
+                            CompactSettingsMenuLabel(title: prefs.appAppearanceMode.title)
                         }
                         .buttonStyle(.plain)
                         .fixedSize()

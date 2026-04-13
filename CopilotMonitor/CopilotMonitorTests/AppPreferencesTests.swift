@@ -2,6 +2,26 @@ import XCTest
 @testable import UsageBar
 
 final class AppPreferencesTests: XCTestCase {
+    func testAppAppearanceModeMapsToExpectedAppearanceNames() {
+        XCTAssertNil(AppAppearanceMode.system.applicationAppearance)
+        XCTAssertEqual(AppAppearanceMode.dark.applicationAppearance?.name, .darkAqua)
+        XCTAssertEqual(AppAppearanceMode.light.applicationAppearance?.name, .aqua)
+    }
+
+    func testChangingAppAppearancePostsNotificationAndPersistsSelection() {
+        let prefs = AppPreferences.shared
+        let originalMode = prefs.appAppearanceMode
+        let targetMode: AppAppearanceMode = originalMode == .dark ? .light : .dark
+
+        let expectation = expectation(forNotification: AppPreferences.appAppearanceDidChange, object: nil)
+
+        prefs.appAppearanceMode = targetMode
+
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "app.appearanceMode"), targetMode.rawValue)
+
+        prefs.appAppearanceMode = originalMode
+    }
 
     func testRememberedStatusBarOrderMovesDisabledProviderToTopOfDisabledGroup() {
         let providers: [ProviderIdentifier] = [.copilot, .claude, .kimi, .codex]
