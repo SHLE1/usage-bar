@@ -250,7 +250,7 @@ jobs:
           git add CopilotMonitor/CopilotMonitor/Info.plist README.md README.zh-CN.md
           git commit -m "chore: bump version to ${{ steps.release_version.outputs.version_number }}"
           git tag "${{ steps.release_version.outputs.version_tag }}"
-          git push origin HEAD:main --follow-tags
+          git push origin HEAD:main "${{ steps.release_version.outputs.version_tag }}"
 
       - name: Publish GitHub Release
         env:
