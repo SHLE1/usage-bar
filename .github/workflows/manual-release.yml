@@ -3,6 +3,10 @@ name: Manual Unsigned Release
 on:
   workflow_dispatch:
     inputs:
+      release_version:
+        description: 'Exact version number to publish (for example 0.0.8). Leave empty to bump automatically.'
+        required: false
+        type: string
       version_bump:
         description: 'Version bump type'
         required: true
@@ -38,34 +42,55 @@ jobs:
           echo "latest_tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
           echo "Latest tag: $LATEST_TAG"
 
-      - name: Calculate New Version
-        id: new_version
+      - name: Resolve Release Version
+        id: release_version
         run: |
+          INPUT_VERSION="${{ inputs.release_version }}"
           LATEST="${{ steps.get_tag.outputs.latest_tag }}"
-          VERSION="${LATEST#v}"
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION_NUMBER="${INPUT_VERSION#v}"
+            VERSION_TAG="v${VERSION_NUMBER}"
+          else
+            VERSION="${LATEST#v}"
 
-          case "${{ inputs.version_bump }}" in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
-          esac
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-          VERSION_NUMBER="${MAJOR}.${MINOR}.${PATCH}"
-          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+            case "${{ inputs.version_bump }}" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            VERSION_NUMBER="${MAJOR}.${MINOR}.${PATCH}"
+            VERSION_TAG="v${VERSION_NUMBER}"
+          fi
+
+          if git rev-parse "${VERSION_TAG}" >/dev/null 2>&1; then
+            TAG_EXISTS=true
+          else
+            TAG_EXISTS=false
+          fi
+
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -Fxv "${VERSION_TAG}" | head -n 1 || true)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG="$LATEST"
+          fi
+
+          echo "new_version=$VERSION_TAG" >> "$GITHUB_OUTPUT"
           echo "version_number=$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "New version: $NEW_VERSION"
+          echo "tag_exists=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: $VERSION_TAG"
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -74,7 +99,7 @@ jobs:
 
       - name: Update Version Files
         run: |
-          VERSION="${{ steps.new_version.outputs.version_number }}"
+          VERSION="${{ steps.release_version.outputs.version_number }}"
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" CopilotMonitor/CopilotMonitor/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" CopilotMonitor/CopilotMonitor/Info.plist
           perl -0pi -e 's/UsageBar v\d+\.\d+\.\d+/UsageBar v'"$VERSION"'/g' README.md README.zh-CN.md
@@ -133,7 +158,7 @@ jobs:
       - name: Create Unsigned ZIP and DMG
         id: package
         run: |
-          VERSION_TAG="${{ steps.new_version.outputs.new_version }}"
+          VERSION_TAG="${{ steps.release_version.outputs.new_version }}"
           DIST_DIR="$RUNNER_TEMP/release-dist"
           APP_PATH="CopilotMonitor/build/export/UsageBar.app"
           ZIP_NAME="UsageBar-${VERSION_TAG}-unsigned.zip"
@@ -165,17 +190,25 @@ jobs:
 
       - name: Create Release Notes File
         run: |
-          VERSION_TAG="${{ steps.new_version.outputs.new_version }}"
-          VERSION_NUMBER="${{ steps.new_version.outputs.version_number }}"
+          VERSION_TAG="${{ steps.release_version.outputs.new_version }}"
+          VERSION_NUMBER="${{ steps.release_version.outputs.version_number }}"
+          TAG_EXISTS="${{ steps.release_version.outputs.tag_exists }}"
+          PREVIOUS_TAG="${{ steps.release_version.outputs.previous_tag }}"
           ZIP_NAME="${{ steps.package.outputs.zip_name }}"
           DMG_NAME="${{ steps.package.outputs.dmg_name }}"
           ZIP_SHA="${{ steps.package.outputs.zip_sha }}"
           DMG_SHA="${{ steps.package.outputs.dmg_sha }}"
 
+          if [ "$TAG_EXISTS" = "true" ]; then
+            VERSION_LINE="- Rebuild release artifacts for \`$VERSION_NUMBER\` with GitHub Actions."
+          else
+            VERSION_LINE="- Bump app version to \`$VERSION_NUMBER\`."
+          fi
+
           printf '%s\n' \
             '## Release Notes' \
             '' \
-            "- Bump app version to \`$VERSION_NUMBER\`." \
+            "$VERSION_LINE" \
             '- Publish unsigned `zip` and `dmg` artifacts.' \
             '- Update the Homebrew tap to the same version.' \
             '' \
@@ -194,40 +227,51 @@ jobs:
             'xattr -cr "/Applications/UsageBar.app"' \
             '```' \
             '' \
-            "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${{ steps.get_tag.outputs.latest_tag }}...$VERSION_TAG" \
+            "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${PREVIOUS_TAG}...$VERSION_TAG" \
             > "$RUNNER_TEMP/release-notes.md"
 
           cat "$RUNNER_TEMP/release-notes.md"
 
       - name: Commit Version Bump and Create Tag
+        if: steps.release_version.outputs.tag_exists != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CopilotMonitor/CopilotMonitor/Info.plist README.md README.zh-CN.md
-          git commit -m "chore: bump version to ${{ steps.new_version.outputs.version_number }}"
-          git tag "${{ steps.new_version.outputs.new_version }}"
+          git commit -m "chore: bump version to ${{ steps.release_version.outputs.version_number }}"
+          git tag "${{ steps.release_version.outputs.new_version }}"
           git push origin HEAD:main --follow-tags
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.new_version.outputs.new_version }}
-          name: UsageBar ${{ steps.new_version.outputs.new_version }}
-          draft: false
-          prerelease: ${{ inputs.prerelease }}
-          files: |
-            ${{ runner.temp }}/release-dist/*.dmg
-            ${{ runner.temp }}/release-dist/*.zip
-          body_path: ${{ runner.temp }}/release-notes.md
+      - name: Publish GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION_TAG="${{ steps.release_version.outputs.new_version }}"
+          ZIP_PATH="${{ runner.temp }}/release-dist/${{ steps.package.outputs.zip_name }}"
+          DMG_PATH="${{ runner.temp }}/release-dist/${{ steps.package.outputs.dmg_name }}"
+          RELEASE_NAME="UsageBar ${VERSION_TAG}"
+          NOTES_FILE="${{ runner.temp }}/release-notes.md"
+
+          if gh release view "$VERSION_TAG" >/dev/null 2>&1; then
+            gh release upload "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" --clobber
+            gh release edit "$VERSION_TAG" --title "$RELEASE_NAME" --notes-file "$NOTES_FILE"
+          else
+            CREATE_ARGS=()
+            if [ "${{ inputs.prerelease }}" = "true" ]; then
+              CREATE_ARGS+=(--prerelease)
+            fi
+            gh release create "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" \
+              --title "$RELEASE_NAME" \
+              --notes-file "$NOTES_FILE" \
+              "${CREATE_ARGS[@]}"
+          fi
 
       - name: Update Homebrew Tap
         env:
           TAP_REPO_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
         run: |
-          VERSION_TAG="${{ steps.new_version.outputs.new_version }}"
-          VERSION_NUMBER="${{ steps.new_version.outputs.version_number }}"
+          VERSION_TAG="${{ steps.release_version.outputs.new_version }}"
+          VERSION_NUMBER="${{ steps.release_version.outputs.version_number }}"
           DMG_NAME="${{ steps.package.outputs.dmg_name }}"
           DMG_SHA="${{ steps.package.outputs.dmg_sha }}"
 
@@ -255,13 +299,17 @@ jobs:
           git -C tap-repo config user.name "github-actions[bot]"
           git -C tap-repo config user.email "github-actions[bot]@users.noreply.github.com"
           git -C tap-repo add Casks/usage-bar.rb
+          if git -C tap-repo diff --cached --quiet; then
+            echo "Homebrew tap is already up to date."
+            exit 0
+          fi
           git -C tap-repo commit -m "chore: update UsageBar cask to v${VERSION_NUMBER}"
           git -C tap-repo push origin HEAD
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: UsageBar-${{ steps.new_version.outputs.new_version }}-unsigned
+          name: UsageBar-${{ steps.release_version.outputs.new_version }}-unsigned
           path: |
             ${{ runner.temp }}/release-dist/*.zip
             ${{ runner.temp }}/release-dist/*.dmg
