@@ -90,7 +90,7 @@ private struct SettingsSidebarSplitViewBridge: NSViewRepresentable {
                 splitViewController.splitView.setPosition(minimumSidebarWidth, ofDividerAt: 0)
             }
 
-            settingsViewLogger.info("Settings sidebar minimum width set to \(Int(minimumSidebarWidth))pt")
+            settingsViewLogger.debug("Settings sidebar minimum width set to \(Int(minimumSidebarWidth))pt")
         }
     }
 

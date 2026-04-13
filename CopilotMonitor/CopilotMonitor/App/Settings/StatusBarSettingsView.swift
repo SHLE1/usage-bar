@@ -185,32 +185,10 @@ struct StatusBarSettingsView: View {
                 if shouldShowQuotaPreview {
                     previewHeader(title: L("Quota Status"))
                         .transition(.opacity)
-                    if enabledSubscription.contains(.copilot) {
-                        previewRow(
-                            provider: .copilot,
-                            text: ProviderIdentifier.copilot.displayName,
-                            trailingText: L("—% left")
-                        )
-                        .transition(.opacity)
-                    }
-
-                    let quotaOrder: [ProviderIdentifier] = [
-                        .claude, .kimi, .minimaxCodingPlan, .codex,
-                        .zaiCodingPlan, .nanoGpt, .antigravity, .chutes, .synthetic
-                    ]
-                    ForEach(quotaOrder.filter { enabledSubscription.contains($0) }, id: \.self) { provider in
+                    ForEach(enabledSubscription, id: \.self) { provider in
                         previewRow(
                             provider: provider,
                             text: provider.displayName,
-                            trailingText: L("—% left")
-                        )
-                        .transition(.opacity)
-                    }
-
-                    if enabledSubscription.contains(.geminiCLI) {
-                        previewRow(
-                            provider: .geminiCLI,
-                            text: ProviderIdentifier.geminiCLI.displayName,
                             trailingText: L("—% left")
                         )
                         .transition(.opacity)
@@ -220,22 +198,22 @@ struct StatusBarSettingsView: View {
             .padding(12)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .background(
-                RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color(nsColor: .windowBackgroundColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
             )
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
     }

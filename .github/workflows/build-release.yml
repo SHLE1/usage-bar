@@ -8,6 +8,14 @@ on:
 jobs:
   build:
     runs-on: macos-26
+    env:
+      XCODE_VERSION: '26.4'
+      PROJECT_FILE: CopilotMonitor.xcodeproj
+      SCHEME: CopilotMonitor
+      APP_BUNDLE_NAME: UsageBar.app
+    defaults:
+      run:
+        working-directory: CopilotMonitor
 
     steps:
       - name: Checkout
@@ -16,20 +24,19 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.4'
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Read Version
         id: version
         run: |
-          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' CopilotMonitor/CopilotMonitor/Info.plist)
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' CopilotMonitor/Info.plist)
           echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_number=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Build Unsigned Archive
         run: |
-          cd CopilotMonitor
-          xcodebuild -project CopilotMonitor.xcodeproj \
-            -scheme CopilotMonitor \
+          xcodebuild -project "$PROJECT_FILE" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -destination "generic/platform=macOS" \
             -archivePath build/CopilotMonitor.xcarchive \
@@ -42,12 +49,12 @@ jobs:
 
       - name: Export App
         run: |
-          mkdir -p CopilotMonitor/build/export
-          cp -R "CopilotMonitor/build/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" CopilotMonitor/build/export/
+          mkdir -p build/export
+          cp -R "build/CopilotMonitor.xcarchive/Products/Applications/${APP_BUNDLE_NAME}" build/export/
 
       - name: Verify Universal Binary
         run: |
-          APP_PATH="CopilotMonitor/build/export/UsageBar.app"
+          APP_PATH="build/export/${APP_BUNDLE_NAME}"
           MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
           CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
 
@@ -80,7 +87,7 @@ jobs:
         run: |
           VERSION_TAG="${{ steps.version.outputs.version }}"
           DIST_DIR="$RUNNER_TEMP/release-dist"
-          APP_PATH="CopilotMonitor/build/export/UsageBar.app"
+          APP_PATH="build/export/${APP_BUNDLE_NAME}"
           ZIP_NAME="UsageBar-${VERSION_TAG}-unsigned.zip"
           DMG_NAME="UsageBar-${VERSION_TAG}-unsigned.dmg"
           DMG_STAGING="$RUNNER_TEMP/dmg_staging"
