@@ -104,6 +104,7 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
   - Clear cache and compile the binary
   - Kill the existing process, and run the new app.
   - Confirm if it works through **logs**.
+- Exception: if the change only touches README files, other documentation, or screenshot/image assets, you do not need to run a separate compile/build/run cycle.
 
 ## Release Policy
 - **Workflow**: STRICTLY follow `docs/RELEASE_WORKFLOW.md` for versioning, building, signing, and notarizing.

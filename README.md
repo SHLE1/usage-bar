@@ -3,11 +3,13 @@
 </p>
 
 <p align="center">
-  <img src="docs/intro-menu.jpg" alt="UsageBar menu screenshot" width="40%">
-  <img src="docs/intro-settings.jpg" alt="UsageBar settings screenshot" width="40%">
+  <img src="docs/readme-screenshot-1.jpg" alt="UsageBar overview screenshot" width="78%">
 </p>
 
-<!-- TODO: Refresh screenshots after README text is finalized and UI is stable. -->
+<p align="center">
+  <img src="docs/readme-screenshot-2.jpg" alt="UsageBar provider details screenshot" width="39%">
+  <img src="docs/readme-screenshot-3.jpg" alt="UsageBar settings screenshot" width="39%">
+</p>
 
 <p align="center">
   <strong>Monitor all your AI provider usage in real-time from the macOS menu bar.</strong>
@@ -99,7 +101,7 @@ The primary credential source. UsageBar searches for `auth.json` in:
 ## Features
 
 ### Multi-Provider Status Bar
-The status bar shows a compact horizontal view of selected providers with their usage metrics. Each provider displays its icon alongside a usage percentage or cost value. Provider selection is configured in **Settings > Status Bar**.
+The top status bar shows a compact horizontal view of selected **quota-based** providers with their icons and remaining percentages. Pay-as-you-go providers are still managed in the dropdown cost section. **Settings > Status Bar** now includes a live menu preview so you can see which items stay visible before closing settings.
 
 ### Automatic Provider Detection
 - **Zero Configuration**: Reads your OpenCode `auth.json` automatically
@@ -122,6 +124,12 @@ Quota-based providers support subscription cost configuration:
 - **Per-Provider Plans**: Set your subscription tier with preset or custom monthly costs
 - **Monthly Total**: Header shows the combined `$XXX/m` subscription cost
 - **Orphaned Plan Cleanup**: Detects stale subscription entries that no longer match active accounts
+
+### Settings & Personalization
+- **Sidebar Settings Window**: Separate areas for General, Status Bar, Advanced Providers, and Subscriptions
+- **App Language**: Follow macOS, or switch the app to English or Simplified Chinese
+- **Codex Status Bar Override**: Choose which Codex account and which limit window (5h, weekly, or both) drives the status bar
+- **Live Menu Preview**: Preview visible menu groups and rows while changing provider toggles
 
 ### Convenience
 - **Launch at Login**: Start automatically with macOS
@@ -151,7 +159,7 @@ Check for Updates... (⌘U)
 Settings... (⌘,)
 Share Usage Snapshot...
 ─────────────────────────────
-UsageBar v2.9.2
+UsageBar v0.0.6
 Quit (⌘Q)
 ```
 
@@ -171,13 +179,16 @@ Quit (⌘Q)
 
 ## Settings
 
-UsageBar has three settings tabs:
+UsageBar now uses a sidebar-based settings window with four tabs:
 
 | Tab | Contents |
 |-----|----------|
-| **General** | Auto Refresh Period, Prediction Period, Launch at Login, Critical Badge, CLI Install/Uninstall |
-| **Status Bar** | Toggle visibility for each provider in the multi-provider status bar, and enable/disable GitHub Copilot Add-on |
+| **General** | Auto Refresh Period, Prediction Period, App Language, Launch at Login, Critical Badge, CLI Install/Uninstall |
+| **Status Bar** | Live menu preview, visibility toggles for pay-as-you-go and quota-based providers, and GitHub Copilot Add-on visibility |
+| **Advanced Providers** | Provider-specific overrides such as the Codex account selection and status bar window mode |
 | **Subscriptions** | Configure monthly subscription costs for quota-based providers (preset tiers or custom amounts) |
+
+> **Note**: The top status bar summary only shows quota-based providers. Pay-as-you-go providers still remain visible in the dropdown cost section.
 
 ### CLI Installation
 

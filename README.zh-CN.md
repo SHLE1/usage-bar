@@ -3,11 +3,13 @@
 </p>
 
 <p align="center">
-  <img src="docs/intro-menu.jpg" alt="UsageBar 菜单截图" width="40%">
-  <img src="docs/intro-settings.jpg" alt="UsageBar 设置截图" width="40%">
+  <img src="docs/readme-screenshot-1.jpg" alt="UsageBar 概览截图" width="78%">
 </p>
 
-<!-- TODO: 待 README 文字定稿且 UI 样式稳定后，更新截图。 -->
+<p align="center">
+  <img src="docs/readme-screenshot-2.jpg" alt="UsageBar 服务商详情截图" width="39%">
+  <img src="docs/readme-screenshot-3.jpg" alt="UsageBar 设置截图" width="39%">
+</p>
 
 <p align="center">
   <strong>在 macOS 菜单栏中实时监控你所有 AI 服务商的用量。</strong>
@@ -100,7 +102,7 @@ UsageBar 从多个来源发现凭证，并自动对账号去重。
 ## 功能
 
 ### 多服务商状态栏
-状态栏以紧凑的横向列表展示所选服务商的用量指标，每个服务商图标旁显示使用百分比或费用。可在 **设置 > 状态栏** 中选择要显示的服务商。
+顶部状态栏会以紧凑的横向列表展示所选的**配额制**服务商，显示其图标与剩余百分比。按量付费服务商仍在下拉菜单的费用区块中管理。现在 **设置 > 状态栏** 还提供实时菜单预览，方便你在关闭设置前确认哪些项目会显示。
 
 ### 自动服务商发现
 - **零配置**：自动读取 OpenCode 的 `auth.json`
@@ -123,6 +125,12 @@ UsageBar 从多个来源发现凭证，并自动对账号去重。
 - **按服务商配置套餐**：可选预设档位或输入自定义月费
 - **月度合计**：标题行显示合并后的 `$XXX/m` 订阅总费用
 - **孤立条目清理**：自动检测不再匹配活跃账号的过期订阅记录
+
+### 设置与个性化
+- **侧边栏设置窗口**：分为 General、Status Bar、Advanced Providers、Subscriptions 四个区域
+- **应用语言**：可跟随 macOS，或手动切换为 English / 简体中文
+- **Codex 状态栏覆盖设置**：可指定由哪个 Codex 账号、哪个限额窗口（5h、weekly 或同时）驱动状态栏显示
+- **实时菜单预览**：切换服务商显示项时，可立即预览菜单中会保留哪些分组和行
 
 ### 便利功能
 - **登录时启动**：随 macOS 自动启动
@@ -152,7 +160,7 @@ Check for Updates... (⌘U)
 Settings... (⌘,)
 Share Usage Snapshot...
 ─────────────────────────────
-UsageBar v2.9.2
+UsageBar v0.0.6
 Quit (⌘Q)
 ```
 
@@ -172,13 +180,16 @@ Quit (⌘Q)
 
 ## 设置
 
-UsageBar 包含三个设置选项卡：
+UsageBar 现在使用基于侧边栏的设置窗口，共有四个选项卡：
 
 | 选项卡 | 内容 |
 |--------|------|
-| **General（通用）** | 自动刷新周期、预测周期、登录时启动、紧急徽章、CLI 安装/卸载 |
-| **Status Bar（状态栏）** | 切换各服务商在多服务商状态栏中的可见性，以及启用/禁用 GitHub Copilot Add-on |
+| **General（通用）** | 自动刷新周期、预测周期、应用语言、登录时启动、紧急徽章、CLI 安装/卸载 |
+| **Status Bar（状态栏）** | 实时菜单预览、按量付费/配额制服务商显示开关，以及 GitHub Copilot Add-on 可见性 |
+| **Advanced Providers（高级 Provider）** | Provider 专属覆盖设置，例如 Codex 账号选择与状态栏窗口模式 |
 | **Subscriptions（订阅）** | 为配额制服务商配置月度订阅费用（预设档位或自定义金额） |
+
+> **注意**：顶部状态栏摘要只显示配额制服务商；按量付费服务商仍显示在下拉菜单的费用区块中。
 
 ### CLI 安装
 
