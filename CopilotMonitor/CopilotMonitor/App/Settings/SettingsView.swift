@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import os.log
 
@@ -6,17 +7,24 @@ private let settingsViewLogger = Logger(subsystem: "com.opencodeproviders", cate
 struct SettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
     @State private var selectedTab: SettingsTab? = .general
+    private var minimumSidebarWidth: CGFloat {
+        SettingsSidebarMetrics.minimumWidth(for: SettingsTab.allCases)
+    }
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedTab) {
                 ForEach(SettingsTab.allCases) { tab in
-                    SettingsSidebarItem(tab: tab)
+                    Label(tab.title, systemImage: tab.systemImage)
                         .tag(tab)
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220)
+            .navigationSplitViewColumnWidth(
+                min: minimumSidebarWidth,
+                ideal: SettingsSidebarMetrics.idealWidth
+            )
+            .background(SettingsSidebarSplitViewBridge(minimumSidebarWidth: minimumSidebarWidth))
         } detail: {
             Group {
                 switch selectedTab ?? .general {
@@ -38,7 +46,7 @@ struct SettingsView: View {
             if selectedTab == nil {
                 selectedTab = .general
             }
-            settingsViewLogger.debug("Settings view appeared with sidebar layout")
+            settingsViewLogger.debug("Settings view appeared with native sidebar layout")
         }
         .onChange(of: selectedTab) { newValue in
             let title = newValue?.title ?? SettingsTab.general.title
@@ -47,27 +55,103 @@ struct SettingsView: View {
     }
 }
 
-private struct SettingsSidebarItem: View {
-    let tab: SettingsTab
+private struct SettingsSidebarSplitViewBridge: NSViewRepresentable {
+    let minimumSidebarWidth: CGFloat
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: tab.systemImage)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 18, alignment: .center)
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        configure(for: view)
+        return view
+    }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(tab.title)
-                    .lineLimit(1)
+    func updateNSView(_ nsView: NSView, context: Context) {
+        configure(for: nsView)
+    }
 
-                Text(tab.summary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+    private func configure(for view: NSView) {
+        DispatchQueue.main.async {
+            guard let splitViewController = splitViewController(from: view),
+                  splitViewController.splitViewItems.count > 1 else {
+                return
+            }
+
+            let sidebarItem = splitViewController.splitViewItems[0]
+
+            sidebarItem.canCollapse = false
+            sidebarItem.minimumThickness = minimumSidebarWidth
+            sidebarItem.maximumThickness = .greatestFiniteMagnitude
+
+            if sidebarItem.isCollapsed {
+                sidebarItem.isCollapsed = false
+            }
+
+            if let sidebarView = splitViewController.splitView.subviews.first,
+               sidebarView.frame.width < minimumSidebarWidth {
+                splitViewController.splitView.setPosition(minimumSidebarWidth, ofDividerAt: 0)
+            }
+
+            settingsViewLogger.info("Settings sidebar minimum width set to \(Int(minimumSidebarWidth))pt")
+        }
+    }
+
+    private func splitViewController(from view: NSView) -> NSSplitViewController? {
+        if let controller = enclosingSplitView(for: view)?.delegate as? NSSplitViewController {
+            return controller
+        }
+
+        var responder: NSResponder? = view
+        while let current = responder {
+            if let controller = current as? NSSplitViewController {
+                return controller
+            }
+            responder = current.nextResponder
+        }
+
+        return findSplitViewController(in: view.window?.contentViewController)
+    }
+
+    private func enclosingSplitView(for view: NSView) -> NSSplitView? {
+        var currentView: NSView? = view
+        while let current = currentView {
+            if let splitView = current as? NSSplitView {
+                return splitView
+            }
+            currentView = current.superview
+        }
+        return nil
+    }
+
+    private func findSplitViewController(in controller: NSViewController?) -> NSSplitViewController? {
+        guard let controller else { return nil }
+        if let splitViewController = controller as? NSSplitViewController {
+            return splitViewController
+        }
+
+        for child in controller.children {
+            if let splitViewController = findSplitViewController(in: child) {
+                return splitViewController
             }
         }
-        .padding(.vertical, 4)
+
+        return nil
+    }
+}
+
+private enum SettingsSidebarMetrics {
+    static let idealWidth: CGFloat = 220
+    private static let minimumWidthFloor: CGFloat = 150
+    private static let rowFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+    private static let iconWidth: CGFloat = 16
+    private static let iconSpacing: CGFloat = 10
+    private static let rowInsets: CGFloat = 34
+
+    static func minimumWidth(for tabs: [SettingsTab]) -> CGFloat {
+        let widestTitleWidth = tabs
+            .map { ($0.title as NSString).size(withAttributes: [.font: rowFont]).width }
+            .max() ?? 0
+
+        let contentWidth = widestTitleWidth + iconWidth + iconSpacing + rowInsets
+        return max(minimumWidthFloor, ceil(contentWidth))
     }
 }
 
@@ -89,19 +173,6 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return L("Advanced Providers")
         case .subscriptions:
             return L("Subscriptions")
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .general:
-            return L("Refresh, startup, and command line tool")
-        case .statusBar:
-            return L("Choose which providers appear in UsageBar")
-        case .advancedProviders:
-            return L("Provider-specific account and window overrides")
-        case .subscriptions:
-            return L("Manage monthly plans and custom costs")
         }
     }
 

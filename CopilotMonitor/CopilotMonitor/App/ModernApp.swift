@@ -13,9 +13,13 @@ struct ModernApp: App {
             Image(systemName: "gauge.medium")
         }
         .menuBarExtraStyle(.menu)
-        
-        Settings {
-            SettingsView()
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button(L("Settings...")) {
+                    appDelegate.openSettingsWindow()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }

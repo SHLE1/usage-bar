@@ -7,6 +7,7 @@ private let logger = Logger(subsystem: "com.opencodeproviders", category: "AppDe
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
+    private let settingsWindowIdentifier = NSUserInterfaceItemIdentifier("UsageBarSettingsWindow")
     var statusBarController: StatusBarController!
     private(set) var updaterController: SPUStandardUpdaterController!
     private var settingsWindow: NSWindow?
@@ -29,15 +30,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
         let hostingController = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: hostingController)
+        window.identifier = settingsWindowIdentifier
         window.title = L("Settings")
         window.setContentSize(NSSize(width: 840, height: 560))
         window.minSize = NSSize(width: 760, height: 520)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.toolbarStyle = .preference
+        window.toolbarStyle = .unified
+        window.titleVisibility = .visible
+        window.titlebarAppearsTransparent = false
+        window.titlebarSeparatorStyle = .automatic
+        window.isMovableByWindowBackground = false
         window.isReleasedWhenClosed = false
         window.center()
         window.makeKeyAndOrderFront(nil)
 
+        logger.info("Applied standard settings window chrome with centered title")
         logger.debug("Opened settings window at \(Int(window.frame.width))x\(Int(window.frame.height))")
 
         settingsWindow = window
@@ -89,7 +96,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     private func closeAllWindows() {
-        for window in NSApp.windows where window.title.contains("Settings") {
+        for window in NSApp.windows where window.identifier == settingsWindowIdentifier {
             window.close()
         }
     }

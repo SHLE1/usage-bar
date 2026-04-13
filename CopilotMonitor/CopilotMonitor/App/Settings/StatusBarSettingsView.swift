@@ -220,22 +220,22 @@ struct StatusBarSettingsView: View {
             .padding(12)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                     .fill(Color(nsColor: .windowBackgroundColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
             )
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
     }

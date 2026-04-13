@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum SettingsSurfaceMetrics {
+    static let cardCornerRadius: CGFloat = 16
+    static let controlCornerRadius: CGFloat = 10
+}
+
 struct SettingsPage<Content: View>: View {
     let title: String
     let subtitle: String
@@ -17,12 +22,13 @@ struct SettingsPage<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.system(size: 24, weight: .semibold))
 
                     Text(subtitle)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -30,7 +36,9 @@ struct SettingsPage<Content: View>: View {
                 content
             }
             .frame(maxWidth: 720, alignment: .leading)
-            .padding(28)
+            .padding(.horizontal, 28)
+            .padding(.top, 18)
+            .padding(.bottom, 28)
         }
         .scrollIndicators(.automatic)
     }
@@ -70,11 +78,11 @@ struct SettingsSectionCard<Content: View>: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
     }
@@ -151,11 +159,11 @@ struct SettingsSecondaryCard<Content: View>: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.cardCornerRadius, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 1)
         )
     }
@@ -177,13 +185,13 @@ struct CompactSettingsMenuLabel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.controlCornerRadius, style: .continuous)
                 .fill(Color(nsColor: .textBackgroundColor).opacity(0.78))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.controlCornerRadius, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.55), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: SettingsSurfaceMetrics.controlCornerRadius, style: .continuous))
     }
 }
