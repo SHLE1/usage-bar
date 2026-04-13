@@ -11,8 +11,10 @@
   <img src="docs/readme-screenshot-3.jpg" alt="UsageBar settings screenshot" width="39%">
 </p>
 
+<h1 align="center">UsageBar</h1>
+
 <p align="center">
-  <strong>Monitor all your AI provider usage in real-time from the macOS menu bar.</strong>
+  <strong>Track every AI subscription, quota, and cost — right from your macOS menu bar.</strong>
 </p>
 
 <p align="center">
@@ -28,9 +30,11 @@
 
 ---
 
+**UsageBar** is a lightweight macOS menu bar app that aggregates usage data from 13+ AI providers into a single dashboard. It auto-discovers credentials from [OpenCode](https://opencode.ai), standalone CLI tools, macOS Keychain, editor configs, and browser cookies — zero manual setup required.
+
 ## Installation
 
-### Homebrew
+### Homebrew (Recommended)
 
 ```bash
 brew install --cask SHLE1/tap/usage-bar
@@ -40,104 +44,11 @@ brew install --cask SHLE1/tap/usage-bar
 
 Download the latest `.dmg` from the [**Releases**](https://github.com/SHLE1/usage-bar/releases/latest) page, open it, and drag **UsageBar** to your Applications folder.
 
-## Overview
-
-**UsageBar** is a macOS menu bar app that automatically detects and monitors AI provider usage. It primarily reads credentials from your [OpenCode](https://opencode.ai) configuration, but also auto-detects accounts from standalone tools, system keychains, editor config files, and browser cookies — no manual setup required.
-
-## Supported Providers
-
-### Pay-as-you-go
-
-| Provider | Key Metrics |
-|----------|-------------|
-| **OpenRouter** | Credits balance, daily/weekly/monthly cost |
-| **OpenCode** | Current stats-based cost summary |
-
-**GitHub Copilot Add-on** is a special billable row that appears when Copilot overage billing is enabled. It tracks usage-based charges that exceed the included Copilot quota.
-
-### Quota-based
-
-| Provider | Key Metrics |
-|----------|-------------|
-| **GitHub Copilot** | Multi-account, daily history, overage tracking, auth source labels |
-| **Claude** | 5h/7d usage windows, Sonnet/Opus breakdown |
-| **ChatGPT** | Primary/Secondary quotas, plan type |
-| **Kimi for Coding** | Usage limits, membership level, reset time |
-| **Gemini CLI** | Per-model quotas, multi-account support with email labels |
-| **Antigravity** | Local cache reverse parsing (`state.vscdb`), no localhost dependency |
-| **MiniMax Coding Plan** | 5h/weekly quotas, dual-window submenu |
-| **Z.AI Coding Plan** | Token/MCP quotas, model usage, tool usage (24h) |
-| **Nano-GPT** | Weekly input tokens quota, USD/NANO balance |
-| **Chutes AI** | Daily quota limits, credits balance |
-| **Synthetic** | 5h usage limit, request limits, reset time |
-
-> **Note**: The raw provider ID for ChatGPT is `codex`. CLI commands use this ID (e.g., `usagebar provider codex`).
-
-## Credential Detection
-
-UsageBar discovers credentials from multiple sources and automatically deduplicates accounts.
-
-### OpenCode Auth
-
-The primary credential source. UsageBar searches for `auth.json` in:
-1. `$XDG_DATA_HOME/opencode/auth.json` (if set)
-2. `~/.local/share/opencode/auth.json` (default)
-3. `~/Library/Application Support/opencode/auth.json` (macOS fallback)
-
-### OpenCode Plugins
-
-- **ChatGPT**: [`ndycode/oc-chatgpt-multi-auth`](https://github.com/ndycode/oc-chatgpt-multi-auth) — reads `~/.opencode/openai-codex-accounts.json` and per-project account files
-- **Antigravity/Gemini**: [`NoeFabris/opencode-antigravity-auth`](https://github.com/NoeFabris/opencode-antigravity-auth), [`jenslys/opencode-gemini-auth`](https://github.com/jenslys/opencode-gemini-auth) — Gemini CLI OAuth creds from `~/.gemini/oauth_creds.json` are merged with Antigravity accounts
-- **Claude**: [`anomalyco/opencode-anthropic-auth`](https://github.com/anomalyco/opencode-anthropic-auth)
-
-### Standalone Tools
-
-| Provider | Source |
-|----------|--------|
-| **ChatGPT** | `~/.codex/auth.json` (Codex CLI / Codex for Mac), `~/.codex-lb/` ([codex-lb](https://github.com/Soju06/codex-lb)) |
-| **Claude** | macOS Keychain (Claude Code CLI) |
-| **GitHub Copilot** | macOS Keychain (`github.com`), `~/.config/github-copilot/hosts.json` and `apps.json` (VS Code / Cursor), browser cookies (Chrome, Brave, Arc, Edge) |
-
 ## Features
 
-### Multi-Provider Status Bar
-The top status bar shows a compact horizontal view of selected **quota-based** providers with their icons and remaining percentages. Pay-as-you-go providers are still managed in the dropdown cost section. **Settings > Status Bar** now includes a live menu preview so you can see which items stay visible before closing settings.
+### 🔍 Unified Dashboard
 
-### Automatic Provider Detection
-- **Zero Configuration**: Reads your OpenCode `auth.json` automatically
-- **Multi-Source Discovery**: Finds and merges accounts from OpenCode, standalone tools, keychains, editor configs, and browser cookies
-- **Smart Categorization**: Pay-as-you-go and quota-based providers are displayed in separate groups
-
-### Real-time Monitoring
-- **Menu Bar Dashboard**: View all provider usage at a glance
-- **Color-Coded Progress**: Visual indicators from green to red based on usage level
-- **Detailed Submenus**: Click any provider row for in-depth metrics
-- **Auth Source Labels**: Each account shows where its token was detected (OpenCode, VS Code, Keychain, etc.)
-
-### Usage Predictions
-- **Pace Indicator**: Shows whether your current usage pace is on track, slightly fast, or too fast
-- **Predicted EOM**: Estimates total end-of-month costs using weighted averages
-- **Wait Time**: When quota is exhausted, shows how long until the next reset
-
-### Subscription Tracking
-Quota-based providers support subscription cost configuration:
-- **Per-Provider Plans**: Set your subscription tier with preset or custom monthly costs
-- **Monthly Total**: Header shows the combined `$XXX/m` subscription cost
-- **Orphaned Plan Cleanup**: Detects stale subscription entries that no longer match active accounts
-
-### Settings & Personalization
-- **Sidebar Settings Window**: Separate areas for General, Status Bar, Advanced Providers, and Subscriptions
-- **App Language**: Follow macOS, or switch the app to English or Simplified Chinese
-- **Codex Status Bar Override**: Choose which Codex account and which limit window (5h, weekly, or both) drives the status bar
-- **Live Menu Preview**: Preview visible menu groups and rows while changing provider toggles
-
-### Convenience
-- **Launch at Login**: Start automatically with macOS
-- **Parallel Fetching**: All providers fetch simultaneously
-- **Auto Updates**: Background updates via Sparkle framework (6-hour check interval)
-- **Share Usage Snapshot**: Export a snapshot of your current provider usage
-
-## Menu Structure
+All your AI providers in one menu bar dropdown — pay-as-you-go costs and quota-based remaining percentages at a glance.
 
 ```
 ─────────────────────────────
@@ -163,62 +74,83 @@ UsageBar v0.0.7
 Quit (⌘Q)
 ```
 
-### Menu Group Titles
+### 🔌 Zero-Config Provider Discovery
 
-| Group | Format | Description |
-|-------|--------|-------------|
-| **Pay-as-you-go** | `Pay-as-you-go: $XX.XX` | Sum of all pay-as-you-go provider costs |
-| **Quota Status** | `Quota Status: $XXX/m` | Monthly subscription total (or just `Quota Status` if no subscriptions are set) |
-| **Predicted EOM** | `Predicted EOM: $XXX` | Estimated end-of-month total across all providers |
+UsageBar automatically finds and authenticates with your AI providers:
 
-### Quota Display
+- **OpenCode auth** — Primary source (`auth.json` with XDG multi-path fallback)
+- **Standalone tools** — Codex CLI, Claude Code CLI, GitHub Copilot CLI
+- **macOS Keychain** — Claude, GitHub Copilot OAuth tokens
+- **Editor configs** — VS Code / Cursor Copilot settings
+- **Browser cookies** — Chrome, Brave, Arc, Edge (GitHub Copilot only)
+- **OpenCode plugins** — Multi-account support for ChatGPT, Antigravity, Gemini, Claude
 
-- **Dropdown rows** show multi-window percentages when available (e.g., `Claude: 0%, 100%` for 5h and 7d windows).
-- **Status bar** shows a single percentage per provider, chosen by priority: Weekly → Monthly → Daily → Hourly → fallback aggregate.
-- Quota-based providers display **remaining** percentage in the dropdown (e.g., `25% left`), with color thresholds inverted so red/orange means low remaining.
+Multi-source accounts are automatically deduplicated by email.
 
-## Settings
+### 📊 13 Supported Providers
 
-UsageBar now uses a sidebar-based settings window with four tabs:
+#### Pay-as-you-go
+
+| Provider | Key Metrics |
+|----------|-------------|
+| **OpenRouter** | Credits balance, daily/weekly/monthly cost |
+| **OpenCode** | Session-based cost summary |
+| **GitHub Copilot Add-on** | Overage charges beyond included Copilot quota |
+
+#### Quota-based
+
+| Provider | Key Metrics |
+|----------|-------------|
+| **GitHub Copilot** | Multi-account, daily history, overage tracking |
+| **Claude** | 5h / 7d windows, Sonnet / Opus breakdown |
+| **ChatGPT** | Primary / Secondary quotas, plan type |
+| **Kimi for Coding** | 5h / 7d windows, membership level |
+| **Gemini CLI** | Per-model quotas, multi-account with email labels |
+| **Antigravity** | Offline cache parsing (`state.vscdb`) |
+| **MiniMax Coding Plan** | 5h / weekly dual-window quotas |
+| **Z.AI Coding Plan** | Token / MCP quotas, tool usage (24h) |
+| **Nano-GPT** | Weekly input token quota, USD / NANO balance |
+| **Chutes AI** | Daily quota limits, credits balance |
+| **Synthetic** | 5h usage limit, request limits |
+
+> **Note**: ChatGPT uses the raw provider ID `codex` in CLI commands (e.g., `usagebar provider codex`).
+
+### 📈 Usage Predictions & Pace
+
+- **Pace indicator** — On track, slightly fast, or too fast
+- **Predicted EOM** — Weighted-average estimate of end-of-month cost
+- **Wait time** — Countdown until quota resets when exhausted (format: `1d 5h`, `3h`, or `45m`)
+
+### 💰 Subscription Tracking
+
+Set your subscription tier per provider (preset or custom monthly cost). The `Quota Status` header shows the combined monthly total, and stale entries are automatically cleaned up.
+
+### ⚙️ Settings
 
 | Tab | Contents |
 |-----|----------|
-| **General** | Auto Refresh Period, Prediction Period, App Language, Launch at Login, Critical Badge, CLI Install/Uninstall |
-| **Status Bar** | Live menu preview, visibility toggles for pay-as-you-go and quota-based providers, and GitHub Copilot Add-on visibility |
-| **Advanced Providers** | Provider-specific overrides such as the Codex account selection and status bar window mode |
-| **Subscriptions** | Configure monthly subscription costs for quota-based providers (preset tiers or custom amounts) |
+| **General** | Auto Refresh (1 min – 1 hr), Prediction Period (7 / 14 / 21 days), App Language (System / EN / 中文), Launch at Login, Critical Badge, CLI Install |
+| **Status Bar** | Live menu preview, per-provider visibility toggles, Copilot Add-on toggle |
+| **Advanced Providers** | ChatGPT account selection, status bar window mode (5h / weekly / both) |
+| **Subscriptions** | Monthly cost per quota-based provider |
 
-> **Note**: The top status bar summary only shows quota-based providers. Pay-as-you-go providers still remain visible in the dropdown cost section.
+### 🖥️ Multi-Provider Status Bar
 
-### CLI Installation
+The macOS status bar can display a compact row of quota-based provider icons with remaining percentages. Configure which providers appear via **Settings > Status Bar**.
 
-Install the CLI from **Settings > General > Command Line Tool**:
-- Click **Install** to copy the CLI binary to `/usr/local/bin/usagebar`
-- Requires administrator privileges (prompted via system dialog)
-- Alternatively, run `bash scripts/install-cli.sh` manually
+### ⌨️ CLI
 
-## Command Line Interface
+A bundled command-line tool for scripting and automation:
 
 ```bash
-# Show all providers and their usage (default command)
-usagebar status
-
-# List all configured providers
-usagebar list
-
-# Get detailed info for a specific provider (use raw provider IDs)
-usagebar provider claude
-usagebar provider codex          # ChatGPT
-usagebar provider gemini_cli
-usagebar provider copilot
-
-# JSON output for scripting
-usagebar status --json
-usagebar provider claude --json
-usagebar list --json
+usagebar status              # All providers (table)
+usagebar status --json       # All providers (JSON)
+usagebar list                # List configured providers
+usagebar provider claude     # Detailed info for one provider
 ```
 
-### Table Output Example
+<details>
+<summary>Table output example</summary>
 
 ```
 $ usagebar status
@@ -235,7 +167,10 @@ OpenCode              Pay-as-you-go    -           $0.19 spent
 OpenRouter            Pay-as-you-go    -           $37.42 spent
 ```
 
-### JSON Output Example
+</details>
+
+<details>
+<summary>JSON output example</summary>
 
 ```json
 {
@@ -271,61 +206,66 @@ OpenRouter            Pay-as-you-go    -           $37.42 spent
 }
 ```
 
-### Exit Codes
+</details>
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error (no data available) |
-| 2 | Authentication failed |
-| 3 | Network error |
-| 4 | Invalid arguments |
+**Exit Codes**: `0` Success · `1` General error · `2` Auth failed · `3` Network error · `4` Invalid arguments
+
+Install the CLI from **Settings > General > Command Line Tool**, or run `bash scripts/install-cli.sh` manually.
 
 ## How It Works
 
-1. **Token Discovery**: Reads authentication tokens from OpenCode's `auth.json` (with multi-path XDG fallback), plus plugin-managed metadata
-2. **Multi-Source Account Discovery**: For providers like ChatGPT and GitHub Copilot, discovers accounts from multiple sources and deduplicates them by stable account metadata (email-first key strategy)
-3. **Parallel Fetching**: Queries all provider APIs simultaneously using Swift TaskGroup with configurable timeouts
-4. **Smart Caching**: Falls back to cached data on network errors; daily history uses a hybrid cache strategy (fresh data for recent days, cached for older days)
-5. **Graceful Degradation**: Shows available providers even if some fail; partial success for multi-account providers
+1. **Token Discovery** — Reads auth tokens from OpenCode `auth.json` (XDG multi-path), Keychain, editor configs, browser cookies, and plugin metadata
+2. **Account Deduplication** — Merges multi-source accounts using a stable email-first key strategy
+3. **Parallel Fetching** — Queries all provider APIs simultaneously via Swift `TaskGroup` with configurable timeouts (default 30s)
+4. **Smart Caching** — Falls back to cached data on network errors; daily history uses hybrid cache (fresh for recent days, cached for older)
+5. **Graceful Degradation** — Shows available providers even when some fail; multi-account providers support partial success
 
-### Privacy & Security
+## Privacy & Security
 
-- **Local Only**: All data stays on your machine — no third-party servers
-- **Read-only Access**: Uses existing tokens from OpenCode and other sources (no additional permissions requested)
-- **Direct API Communication**: Queries provider APIs directly without intermediaries
-- **Browser Cookie Access**: GitHub Copilot optionally reads session cookies from supported browsers (read-only, no passwords stored)
+- **100% Local** — No data leaves your machine, no third-party analytics
+- **Read-only** — Uses existing tokens only, requests no additional permissions
+- **Direct API** — Queries provider APIs without intermediaries
+- **Browser cookies** — GitHub Copilot optionally reads session cookies (read-only, never stored)
 
 ## Troubleshooting
 
-### "No providers found"
+<details>
+<summary>"No providers found"</summary>
 
-Verify that OpenCode is installed and authenticated. The app searches for `auth.json` in:
+Verify OpenCode is installed and authenticated. The app searches for `auth.json` in:
 1. `$XDG_DATA_HOME/opencode/auth.json` (if `XDG_DATA_HOME` is set)
 2. `~/.local/share/opencode/auth.json` (default)
 3. `~/Library/Application Support/opencode/auth.json` (macOS fallback)
 
-For ChatGPT multi-account setups, the app also searches:
+For ChatGPT multi-account setups, the app also checks:
 - `~/.opencode/auth/openai.json`
 - `~/.opencode/openai-codex-accounts.json`
 - `~/.opencode/projects/*/openai-codex-accounts.json`
 
-### GitHub Copilot not showing
+</details>
 
-Copilot accounts are discovered from multiple sources (in priority order):
+<details>
+<summary>GitHub Copilot not showing</summary>
+
+Copilot accounts are discovered from (in priority order):
 1. **OpenCode auth** — `copilot` entry in `auth.json`
 2. **Copilot CLI Keychain** — macOS Keychain entries for `github.com`
 3. **VS Code / Cursor** — `~/.config/github-copilot/hosts.json` and `apps.json`
 4. **Browser Cookies** — Chrome, Brave, Arc, Edge session cookies
 
-Accounts from different sources with the same login are automatically merged. Use `usagebar provider copilot` to verify which sources are detected.
+Accounts with the same login are automatically merged. Run `usagebar provider copilot` to verify detected sources.
 
-### OpenCode binary not found
+</details>
 
-The app dynamically searches for the `opencode` binary using multiple strategies:
+<details>
+<summary>OpenCode binary not found</summary>
+
+The app dynamically searches for the `opencode` binary:
 1. Current PATH (`which opencode`)
 2. Login shell PATH
 3. Common install locations: `~/.opencode/bin/opencode`, Homebrew paths, `/usr/local/bin/opencode`
+
+</details>
 
 ## Development
 
@@ -339,14 +279,8 @@ The app dynamically searches for the `opencode` binary using multiple strategies
 ```bash
 git clone https://github.com/SHLE1/usage-bar.git
 cd usage-bar
-
-# Configure git hooks (required before first commit)
-make setup
+make setup    # Configure git hooks (SwiftLint + action-validator)
 ```
-
-Git hooks include:
-- **SwiftLint**: Validates Swift code style on staged `.swift` files
-- **action-validator**: Validates GitHub Actions workflow YAML files
 
 ### Build & Run
 
@@ -378,24 +312,18 @@ Contributions are welcome! Please submit a Pull Request.
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Run `make setup` (once, after clone)
-4. Make your changes
-5. Commit (`git commit -m 'Add amazing feature'`) — pre-commit hooks will run automatically
-6. Push (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+4. Make your changes and commit — pre-commit hooks run automatically
+5. Push and open a Pull Request
 
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
-## Related
-
-- [OpenCode](https://opencode.ai) — The AI coding tool that powers provider detection
-- [GitHub Copilot](https://github.com/features/copilot)
-
 ## Credits
 
 - [OP.GG](https://op.gg)
 - [Sangrak Choi](https://kargn.as)
+- [OpenCode](https://opencode.ai) — The AI coding tool that powers provider detection
 
 ---
 
