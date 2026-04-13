@@ -13,9 +13,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.0.6</string>
+	<string>0.0.7</string>
 	<key>CFBundleVersion</key>
-	<string>0.0.6</string>
+	<string>0.0.7</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>MACOSX_DEPLOYMENT_TARGET</key>
@@ -28,8 +28,8 @@
 	<true/>
 	<key>SUFeedURL</key>
 	<string>https://github.com/SHLE1/usage-bar/releases/latest/download/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>JQiO2QIXS2jv5+jn3ICE2Ng3suWrBUHpZSlx7DgYQrY=</string>
+	<key>SUPublicEDKey</key>
+	<string>JQiO2QIXS2jv5+jn3ICE2Ng3suWrBUHpZSlx7DgYQrY=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>21600</integer>
 </dict>
