@@ -85,10 +85,12 @@ jobs:
             PREVIOUS_TAG="$LATEST_TAG"
           fi
 
-          echo "version_tag=$VERSION_TAG" >> "$GITHUB_OUTPUT"
-          echo "version_number=$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "tag_exists=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
-          echo "previous_tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "version_tag=$VERSION_TAG"
+            echo "version_number=$VERSION_NUMBER"
+            echo "tag_exists=$TAG_EXISTS"
+            echo "previous_tag=$PREVIOUS_TAG"
+          } >> "$GITHUB_OUTPUT"
           echo "Resolved release version: $VERSION_TAG"
 
       - name: Checkout Existing Release Source
@@ -188,10 +190,12 @@ jobs:
           ZIP_SHA=$(shasum -a 256 "$DIST_DIR/$ZIP_NAME" | awk '{print $1}')
           DMG_SHA=$(shasum -a 256 "$DIST_DIR/$DMG_NAME" | awk '{print $1}')
 
-          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
-          echo "dmg_name=$DMG_NAME" >> "$GITHUB_OUTPUT"
-          echo "zip_sha=$ZIP_SHA" >> "$GITHUB_OUTPUT"
-          echo "dmg_sha=$DMG_SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "zip_name=$ZIP_NAME"
+            echo "dmg_name=$DMG_NAME"
+            echo "zip_sha=$ZIP_SHA"
+            echo "dmg_sha=$DMG_SHA"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create Release Notes File
         run: |
@@ -210,30 +214,31 @@ jobs:
             VERSION_LINE="- Bump app version to \`$VERSION_NUMBER\`."
           fi
 
-          printf '%s\n' \
-            '## Release Notes' \
-            '' \
-            "$VERSION_LINE" \
-            '- Publish unsigned `zip` and `dmg` artifacts.' \
-            '- Update the Homebrew tap to the same version.' \
-            '' \
-            '## Artifacts' \
-            "- \`$ZIP_NAME\`" \
-            "  - SHA256: \`$ZIP_SHA\`" \
-            "- \`$DMG_NAME\`" \
-            "  - SHA256: \`$DMG_SHA\`" \
-            '' \
-            '## Notice' \
-            'These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening.' \
-            '' \
-            'After moving the app to Applications, run:' \
-            '' \
-            '```bash' \
-            'xattr -cr "/Applications/UsageBar.app"' \
-            '```' \
-            '' \
-            "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${PREVIOUS_TAG}...$VERSION_TAG" \
-            > "$RUNNER_TEMP/release-notes.md"
+          {
+            printf '%s\n' \
+              "## Release Notes" \
+              "" \
+              "$VERSION_LINE" \
+              "- Publish unsigned \`zip\` and \`dmg\` artifacts." \
+              "- Update the Homebrew tap to the same version." \
+              "" \
+              "## Artifacts" \
+              "- \`$ZIP_NAME\`" \
+              "  - SHA256: \`$ZIP_SHA\`" \
+              "- \`$DMG_NAME\`" \
+              "  - SHA256: \`$DMG_SHA\`" \
+              "" \
+              "## Notice" \
+              "These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening." \
+              "" \
+              "After moving the app to Applications, run:" \
+              "" \
+              '```bash' \
+              'xattr -cr "/Applications/UsageBar.app"' \
+              '```' \
+              "" \
+              "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${PREVIOUS_TAG}...$VERSION_TAG"
+          } > "$RUNNER_TEMP/release-notes.md"
 
           cat "$RUNNER_TEMP/release-notes.md"
 
