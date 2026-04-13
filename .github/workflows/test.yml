@@ -1,22 +1,6 @@
 name: Test
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - '**.swift'
-      - '**.xcodeproj/**'
-      - '.github/workflows/test.yml'
-  pull_request:
-    branches:
-      - main
-      - develop
-    paths:
-      - '**.swift'
-      - '**.xcodeproj/**'
-      - '.github/workflows/test.yml'
   workflow_dispatch:
 
 jobs:

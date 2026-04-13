@@ -1,8 +1,6 @@
 name: Build Unsigned Artifacts
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:
