@@ -1,7 +1,38 @@
 import SwiftUI
+import os.log
 
 struct StatusBarSettingsView: View {
+    private enum PayAsYouGoSettingsItem: Hashable {
+        case provider(ProviderIdentifier)
+        case copilotAddOn
+
+        init?(storageKey: String) {
+            if storageKey == "copilot_add_on" {
+                self = .copilotAddOn
+                return
+            }
+
+            guard let identifier = ProviderIdentifier(rawValue: storageKey) else {
+                return nil
+            }
+
+            self = .provider(identifier)
+        }
+
+        var storageKey: String {
+            switch self {
+            case let .provider(identifier):
+                return identifier.rawValue
+            case .copilotAddOn:
+                return "copilot_add_on"
+            }
+        }
+    }
+
     @ObservedObject private var prefs = AppPreferences.shared
+    @State private var payAsYouGoItemsOrder: [PayAsYouGoSettingsItem]
+    @State private var subscriptionOrder: [ProviderIdentifier]
+    private let logger = Logger(subsystem: "com.opencodeproviders", category: "StatusBarSettingsView")
 
     /// Pay-as-you-go providers in stable display order.
     private static let payAsYouGoProviders: [ProviderIdentifier] = [
@@ -22,22 +53,47 @@ struct StatusBarSettingsView: View {
         Self.subscriptionProviders.filter { prefs.isProviderEnabled($0) }
     }
 
-    private var totalEnabledCount: Int {
-        enabledPayAsYouGo.count + enabledSubscription.count
+    private var shouldShowCopilotAddOnPreview: Bool {
+        prefs.copilotAddOnEnabled && prefs.isProviderEnabled(.copilot)
+    }
+
+    private var visiblePreviewItemCount: Int {
+        enabledPayAsYouGo.count + enabledSubscription.count + (shouldShowCopilotAddOnPreview ? 1 : 0)
     }
 
     private var shouldShowPayAsYouGoPreview: Bool {
-        !enabledPayAsYouGo.isEmpty || (prefs.copilotAddOnEnabled && prefs.isProviderEnabled(.copilot))
+        !enabledPayAsYouGo.isEmpty || shouldShowCopilotAddOnPreview
     }
 
     private var shouldShowQuotaPreview: Bool {
         !enabledSubscription.isEmpty
     }
 
+    private var previewAnimationKey: String {
+        let payAsYouGo = enabledPayAsYouGo.map(\.rawValue).joined(separator: ",")
+        let subscription = enabledSubscription.map(\.rawValue).joined(separator: ",")
+        return "\(payAsYouGo)|copilotAddOn:\(shouldShowCopilotAddOnPreview)|\(subscription)"
+    }
+
+    init() {
+        let prefs = AppPreferences.shared
+        _payAsYouGoItemsOrder = State(
+            initialValue: prefs.payAsYouGoSettingsItemOrder(providers: Self.payAsYouGoProviders).compactMap {
+                PayAsYouGoSettingsItem(storageKey: $0)
+            }
+        )
+        _subscriptionOrder = State(
+            initialValue: prefs.statusBarSettingsOrder(
+                for: .subscription,
+                providers: Self.subscriptionProviders
+            )
+        )
+    }
+
     var body: some View {
         SettingsPage(
             title: L("Status Bar"),
-            subtitle: L("Choose which providers appear in UsageBar and which extra billing items stay visible.")
+            subtitle: L("Choose which providers appear in UsageBar.")
         ) {
             // MARK: - Live Preview
             previewSection
@@ -47,7 +103,7 @@ struct StatusBarSettingsView: View {
                 title: L("Pay-as-you-go Providers"),
                 subtitle: L("These providers appear in the usage-based cost section.")
             ) {
-                providerGrid(for: sortedProviders(Self.payAsYouGoProviders))
+                payAsYouGoGrid
             }
 
             // MARK: - Subscription Providers
@@ -55,16 +111,7 @@ struct StatusBarSettingsView: View {
                 title: L("Subscription Providers"),
                 subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
             ) {
-                providerGrid(for: sortedProviders(Self.subscriptionProviders))
-            }
-
-            // MARK: - Additional Cost Items (de-emphasized)
-            SettingsSecondaryCard(
-                title: L("Additional Cost Items"),
-                subtitle: L("Billing items that can be shown separately from the main provider list.")
-            ) {
-                Toggle(L("GitHub Copilot Add-on"), isOn: $prefs.copilotAddOnEnabled)
-                    .toggleStyle(.checkbox)
+                providerGrid(for: subscriptionOrder, section: .subscription)
             }
 
             SettingsSecondaryCard(
@@ -76,6 +123,13 @@ struct StatusBarSettingsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+
+        .onAppear {
+            payAsYouGoItemsOrder = prefs.payAsYouGoSettingsItemOrder(providers: Self.payAsYouGoProviders).compactMap {
+                PayAsYouGoSettingsItem(storageKey: $0)
+            }
+            subscriptionOrder = prefs.statusBarSettingsOrder(for: .subscription, providers: Self.subscriptionProviders)
         }
     }
 
@@ -95,7 +149,7 @@ struct StatusBarSettingsView: View {
 
                 Spacer()
 
-                Text(String(format: L("Showing %d provider(s)"), totalEnabledCount))
+                Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -103,35 +157,41 @@ struct StatusBarSettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if shouldShowPayAsYouGoPreview {
                     previewHeader(title: L("Pay-as-you-go"))
+                        .transition(.opacity)
                     ForEach(enabledPayAsYouGo, id: \.self) { provider in
                         previewRow(
                             provider: provider,
                             text: provider.displayName,
                             trailingText: "$—"
                         )
+                        .transition(.opacity)
                     }
-                    if prefs.copilotAddOnEnabled && prefs.isProviderEnabled(.copilot) {
+                    if shouldShowCopilotAddOnPreview {
                         previewRow(
                             provider: .copilot,
                             text: L("Copilot Add-on"),
                             trailingText: "$—"
                         )
+                        .transition(.opacity)
                     }
                 }
 
                 if shouldShowPayAsYouGoPreview && shouldShowQuotaPreview {
                     Divider()
                         .padding(.vertical, 4)
+                        .transition(.opacity)
                 }
 
                 if shouldShowQuotaPreview {
                     previewHeader(title: L("Quota Status"))
+                        .transition(.opacity)
                     if enabledSubscription.contains(.copilot) {
                         previewRow(
                             provider: .copilot,
                             text: ProviderIdentifier.copilot.displayName,
                             trailingText: L("—% left")
                         )
+                        .transition(.opacity)
                     }
 
                     let quotaOrder: [ProviderIdentifier] = [
@@ -144,6 +204,7 @@ struct StatusBarSettingsView: View {
                             text: provider.displayName,
                             trailingText: L("—% left")
                         )
+                        .transition(.opacity)
                     }
 
                     if enabledSubscription.contains(.geminiCLI) {
@@ -152,10 +213,12 @@ struct StatusBarSettingsView: View {
                             text: ProviderIdentifier.geminiCLI.displayName,
                             trailingText: L("—% left")
                         )
+                        .transition(.opacity)
                     }
                 }
             }
             .padding(12)
+            .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color(nsColor: .windowBackgroundColor))
@@ -175,6 +238,23 @@ struct StatusBarSettingsView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private var payAsYouGoGrid: some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(minimum: 180), alignment: .leading),
+                GridItem(.flexible(minimum: 180), alignment: .leading)
+            ],
+            alignment: .leading,
+            spacing: 12
+        ) {
+            ForEach(payAsYouGoItemsOrder, id: \.self) { item in
+                payAsYouGoToggle(for: item)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: payAsYouGoItemsOrder)
     }
 
     @ViewBuilder
@@ -227,7 +307,24 @@ struct StatusBarSettingsView: View {
     }
 
     @ViewBuilder
-    private func providerGrid(for providers: [ProviderIdentifier]) -> some View {
+    private func payAsYouGoToggle(for item: PayAsYouGoSettingsItem) -> some View {
+        switch item {
+        case let .provider(identifier):
+            Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier, section: .payAsYouGo))
+                .toggleStyle(.checkbox)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .copilotAddOn:
+            Toggle(L("GitHub Copilot Add-on"), isOn: copilotAddOnBinding)
+                .toggleStyle(.checkbox)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private func providerGrid(
+        for providers: [ProviderIdentifier],
+        section: AppPreferences.StatusBarSettingsSection
+    ) -> some View {
         LazyVGrid(
             columns: [
                 GridItem(.flexible(minimum: 180), alignment: .leading),
@@ -237,35 +334,110 @@ struct StatusBarSettingsView: View {
             spacing: 12
         ) {
             ForEach(providers, id: \.self) { identifier in
-                Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier))
+                Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier, section: section))
                     .toggleStyle(.checkbox)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-    }
-
-    // MARK: - Sorting (enabled first, then disabled; stable order within each group)
-
-    private func sortedProviders(_ providers: [ProviderIdentifier]) -> [ProviderIdentifier] {
-        let enabled = providers.filter { prefs.isProviderEnabled($0) }
-        let disabled = providers.filter { !prefs.isProviderEnabled($0) }
-        return enabled + disabled
+        .animation(.easeInOut(duration: 0.18), value: providers)
     }
 
     // MARK: - Unified toggle binding
 
     /// A single toggle that controls both the enabled state and multi-provider membership.
-    private func statusBarBinding(for identifier: ProviderIdentifier) -> Binding<Bool> {
+    private func statusBarBinding(
+        for identifier: ProviderIdentifier,
+        section: AppPreferences.StatusBarSettingsSection
+    ) -> Binding<Bool> {
         Binding(
             get: { prefs.isProviderEnabled(identifier) },
             set: { newValue in
-                prefs.setProviderEnabled(identifier, enabled: newValue)
-                if newValue {
-                    prefs.multiProviderProviders.insert(identifier)
-                } else {
-                    prefs.multiProviderProviders.remove(identifier)
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    prefs.setProviderEnabled(identifier, enabled: newValue)
+                    if newValue {
+                        prefs.multiProviderProviders.insert(identifier)
+                    } else {
+                        prefs.multiProviderProviders.remove(identifier)
+                    }
                 }
+
+                updateRememberedOrder(for: identifier, enabled: newValue, section: section)
+                logger.debug(
+                    "Status bar provider visibility changed: \(identifier.rawValue, privacy: .public)=\(newValue, privacy: .public)"
+                )
             }
         )
+    }
+
+    private var copilotAddOnBinding: Binding<Bool> {
+        Binding(
+            get: { prefs.copilotAddOnEnabled },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    prefs.copilotAddOnEnabled = newValue
+                }
+                payAsYouGoItemsOrder = AppPreferences.rememberedItemOrder(
+                    from: payAsYouGoItemsOrder,
+                    toggled: .copilotAddOn,
+                    enabled: newValue,
+                    isEnabled: isEnabled
+                )
+                prefs.setPayAsYouGoSettingsItemOrder(payAsYouGoItemsOrder.map(\.storageKey))
+                logger.debug("Status bar provider visibility changed: copilot_add_on=\(newValue, privacy: .public)")
+            }
+        )
+    }
+
+    private func isEnabled(_ item: PayAsYouGoSettingsItem) -> Bool {
+        switch item {
+        case let .provider(identifier):
+            return prefs.isProviderEnabled(identifier)
+        case .copilotAddOn:
+            return prefs.copilotAddOnEnabled
+        }
+    }
+
+    private func updateRememberedOrder(
+        for identifier: ProviderIdentifier,
+        enabled: Bool,
+        section: AppPreferences.StatusBarSettingsSection
+    ) {
+        switch section {
+        case .payAsYouGo:
+            payAsYouGoItemsOrder = AppPreferences.rememberedItemOrder(
+                from: payAsYouGoItemsOrder,
+                toggled: .provider(identifier),
+                enabled: enabled,
+                isEnabled: isEnabled
+            )
+            prefs.setPayAsYouGoSettingsItemOrder(payAsYouGoItemsOrder.map(\.storageKey))
+        case .subscription:
+            subscriptionOrder = updatedRememberedOrder(
+                from: subscriptionOrder,
+                toggled: identifier,
+                enabled: enabled,
+                section: section,
+                allProviders: Self.subscriptionProviders
+            )
+        }
+    }
+
+    private func updatedRememberedOrder(
+        from currentOrder: [ProviderIdentifier],
+        toggled identifier: ProviderIdentifier,
+        enabled: Bool,
+        section: AppPreferences.StatusBarSettingsSection,
+        allProviders: [ProviderIdentifier]
+    ) -> [ProviderIdentifier] {
+        let order = AppPreferences.rememberedStatusBarOrder(
+            from: currentOrder,
+            toggled: identifier,
+            enabled: enabled,
+            allProviders: allProviders,
+            isEnabled: { prefs.isProviderEnabled($0) }
+        )
+
+        prefs.setStatusBarSettingsOrder(order, for: section)
+        return order
     }
 }

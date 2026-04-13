@@ -195,9 +195,11 @@
 "installed" = "installed";
 "uninstalled" = "uninstalled";
 "Monthly Total" = "Monthly Total";
+"Choose which providers appear in UsageBar." = "Choose which providers appear in UsageBar.";
 "Choose which providers appear in UsageBar and which extra billing items stay visible." = "Choose which providers appear in UsageBar and which extra billing items stay visible.";
 "Menu Preview" = "Menu Preview";
 "Showing %d provider(s)" = "Showing %d provider(s)";
+"Showing %d item(s)" = "Showing %d item(s)";
 "Pay-as-you-go" = "Pay-as-you-go";
 "Pay-as-you-go Providers" = "Pay-as-you-go Providers";
 "These providers appear in the usage-based cost section." = "These providers appear in the usage-based cost section.";

@@ -195,9 +195,11 @@
 "installed" = "已安装";
 "uninstalled" = "已卸载";
 "Monthly Total" = "每月总计";
+"Choose which providers appear in UsageBar." = "选择哪些 Provider 显示在 UsageBar 中。";
 "Choose which providers appear in UsageBar and which extra billing items stay visible." = "选择哪些 Provider 显示在 UsageBar 中，以及哪些额外计费项继续显示。";
 "Menu Preview" = "菜单预览";
 "Showing %d provider(s)" = "已开启 %d 个";
+"Showing %d item(s)" = "显示 %d 项";
 "Pay-as-you-go" = "按量计费";
 "Pay-as-you-go Providers" = "按量计费 Provider";
 "These providers appear in the usage-based cost section." = "这些 Provider 会显示在按量计费区块中。";

@@ -8,6 +8,23 @@ import ServiceManagement
 final class AppPreferences: ObservableObject {
     static let shared = AppPreferences()
 
+    enum StatusBarSettingsSection {
+        case payAsYouGo
+        case subscription
+
+        fileprivate var orderStorageKey: String {
+            switch self {
+            case .payAsYouGo:
+                return "statusBarSettings.payAsYouGo.order"
+            case .subscription:
+                return "statusBarSettings.subscription.order"
+            }
+        }
+    }
+
+    private static let payAsYouGoItemsOrderStorageKey = "statusBarSettings.payAsYouGo.itemsOrder"
+    private static let copilotAddOnStorageKey = "copilot_add_on"
+
     // MARK: - Notification names (StatusBarController listens for these)
 
     static let refreshIntervalDidChange = Notification.Name("AppPreferences.refreshIntervalDidChange")
@@ -125,6 +142,142 @@ final class AppPreferences: ObservableObject {
         defaults.set(enabled, forKey: key)
         objectWillChange.send()
         NotificationCenter.default.post(name: Self.enabledProvidersDidChange, object: nil)
+    }
+
+    func statusBarSettingsOrder(
+        for section: StatusBarSettingsSection,
+        providers: [ProviderIdentifier]
+    ) -> [ProviderIdentifier] {
+        let storedRawValues = defaults.array(forKey: section.orderStorageKey) as? [String] ?? []
+        let storedProviders = storedRawValues.compactMap(ProviderIdentifier.init(rawValue:))
+
+        let baseline: [ProviderIdentifier]
+        if storedProviders.isEmpty {
+            let enabled = providers.filter { isProviderEnabled($0) }
+            let disabled = providers.filter { !isProviderEnabled($0) }
+            baseline = enabled + disabled
+        } else {
+            baseline = storedProviders
+        }
+
+        var sanitized: [ProviderIdentifier] = []
+        for provider in baseline where providers.contains(provider) && !sanitized.contains(provider) {
+            sanitized.append(provider)
+        }
+
+        for provider in providers where !sanitized.contains(provider) {
+            sanitized.append(provider)
+        }
+
+        let enabled = sanitized.filter { isProviderEnabled($0) }
+        let disabled = sanitized.filter { !isProviderEnabled($0) }
+        return enabled + disabled
+    }
+
+    func setStatusBarSettingsOrder(
+        _ providers: [ProviderIdentifier],
+        for section: StatusBarSettingsSection
+    ) {
+        defaults.set(providers.map(\.rawValue), forKey: section.orderStorageKey)
+    }
+
+    func payAsYouGoSettingsItemOrder(providers: [ProviderIdentifier]) -> [String] {
+        let allowed = providers.map(\.rawValue) + [Self.copilotAddOnStorageKey]
+        let storedRawValues = defaults.array(forKey: Self.payAsYouGoItemsOrderStorageKey) as? [String] ?? []
+
+        let baseline: [String]
+        if storedRawValues.isEmpty {
+            let enabledProviders = providers.filter { isProviderEnabled($0) }.map(\.rawValue)
+            let disabledProviders = providers.filter { !isProviderEnabled($0) }.map(\.rawValue)
+            let copilotItem = [Self.copilotAddOnStorageKey]
+            baseline = copilotAddOnEnabled
+                ? enabledProviders + copilotItem + disabledProviders
+                : enabledProviders + disabledProviders + copilotItem
+        } else {
+            baseline = storedRawValues
+        }
+
+        return Self.sanitizedRawOrder(baseline, allowed: allowed)
+    }
+
+    func setPayAsYouGoSettingsItemOrder(_ items: [String]) {
+        defaults.set(items, forKey: Self.payAsYouGoItemsOrderStorageKey)
+    }
+
+    static func rememberedStatusBarOrder(
+        from currentOrder: [ProviderIdentifier],
+        toggled identifier: ProviderIdentifier,
+        enabled: Bool,
+        allProviders: [ProviderIdentifier],
+        isEnabled: (ProviderIdentifier) -> Bool
+    ) -> [ProviderIdentifier] {
+        let order = sanitizedStatusBarOrder(currentOrder, allProviders: allProviders)
+        let currentEnabled = order.filter { isEnabled($0) && $0 != identifier }
+        let currentDisabled = order.filter { !isEnabled($0) && $0 != identifier }
+
+        if enabled {
+            return currentEnabled + [identifier] + currentDisabled
+        }
+
+        return currentEnabled + [identifier] + currentDisabled
+    }
+
+    static func rememberedItemOrder<Item: Hashable>(
+        from currentOrder: [Item],
+        toggled item: Item,
+        enabled: Bool,
+        isEnabled: (Item) -> Bool
+    ) -> [Item] {
+        var uniqueOrder: [Item] = []
+        for current in currentOrder where !uniqueOrder.contains(current) {
+            uniqueOrder.append(current)
+        }
+
+        if enabled {
+            let withoutItem = uniqueOrder.filter { $0 != item }
+            let insertIndex = withoutItem.firstIndex(where: { !isEnabled($0) }) ?? withoutItem.endIndex
+
+            var updated = withoutItem
+            updated.insert(item, at: insertIndex)
+            return updated
+        }
+
+        if uniqueOrder.contains(item) {
+            return uniqueOrder
+        }
+
+        return uniqueOrder + [item]
+    }
+
+    static func sanitizedStatusBarOrder(
+        _ order: [ProviderIdentifier],
+        allProviders: [ProviderIdentifier]
+    ) -> [ProviderIdentifier] {
+        var sanitized: [ProviderIdentifier] = []
+
+        for provider in order where allProviders.contains(provider) && !sanitized.contains(provider) {
+            sanitized.append(provider)
+        }
+
+        for provider in allProviders where !sanitized.contains(provider) {
+            sanitized.append(provider)
+        }
+
+        return sanitized
+    }
+
+    private static func sanitizedRawOrder(_ order: [String], allowed: [String]) -> [String] {
+        var sanitized: [String] = []
+
+        for item in order where allowed.contains(item) && !sanitized.contains(item) {
+            sanitized.append(item)
+        }
+
+        for item in allowed where !sanitized.contains(item) {
+            sanitized.append(item)
+        }
+
+        return sanitized
     }
 
     // MARK: - Init (read current values from UserDefaults)

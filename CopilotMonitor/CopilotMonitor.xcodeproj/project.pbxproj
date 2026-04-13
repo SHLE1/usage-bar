@@ -30,6 +30,7 @@
 		8EA90F9E26F29FC7938D2924 /* ViewModels/ProviderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDA856BBC854D3FF310EA51 /* ViewModels/ProviderViewModel.swift */; };
 		A14AF9AC6A646726B7C94978 /* MenuResultBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F6CE62C58ECA852F25FEF30 /* MenuResultBuilder.swift */; };
 		A1BED4A5CA1FEC2DADC461C2 /* MenuDesignTokenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */; };
+		APPPREFTESTBF11111111111 /* AppPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = APPPREFTESTFR11111111111 /* AppPreferencesTests.swift */; };
 		A33333333333333333333333 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44444444444444444444444 /* AppDelegate.swift */; };
 		A454D8C22F30544900E355E3 /* MenuBarExtraAccess in Frameworks */ = {isa = PBXBuildFile; productRef = MBA2222222222222222222222 /* MenuBarExtraAccess */; };
 		A454D8C42F30548900E355E3 /* ZaiCodingPlanProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A454D8C32F30548900E355E3 /* ZaiCodingPlanProvider.swift */; };
@@ -189,6 +190,7 @@
 		BE39D5663A7ABADC7E54B91D /* ProviderProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProviderProtocol.swift; sourceTree = "<group>"; };
 		C1C7C9FDB4600114F02B2915 /* MenuDesignToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignToken.swift; sourceTree = "<group>"; };
 		C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignTokenTests.swift; sourceTree = "<group>"; };
+		APPPREFTESTFR11111111111 /* AppPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferencesTests.swift; sourceTree = "<group>"; };
 		CLI2222222222222222222222 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		CLI5555555555555555555555 /* usagebar-cli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "usagebar-cli"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CLICOPILOT22222222222222 /* CopilotCLIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotCLIProvider.swift; sourceTree = "<group>"; };
@@ -465,6 +467,7 @@
 				OR3333333333333333333333 /* OpenRouterProviderTests.swift */,
 				2D2B4000E33060BA5E00351B /* DependencyTests.swift */,
 				C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */,
+				APPPREFTESTFR11111111111 /* AppPreferencesTests.swift */,
 				54353FD130DDE0500F6B367F /* MenuResultBuilderTests.swift */,
 				SYNTHTEST1111111111111111 /* SyntheticProviderTests.swift */,
 				NANOGPTTESTFR1111111111 /* NanoGptProviderTests.swift */,
@@ -734,12 +737,13 @@
 				OR4444444444444444444444 /* OpenRouterProviderTests.swift in Sources */,
 				668B6906C95903D51823808A /* DependencyTests.swift in Sources */,
 				A1BED4A5CA1FEC2DADC461C2 /* MenuDesignTokenTests.swift in Sources */,
-			B58BAD3BFD97973070A2A892 /* MenuResultBuilderTests.swift in Sources */,
-			SYNTHTEST2222222222222222 /* SyntheticProviderTests.swift in Sources */,
-			NANOGPTTESTBF1111111111 /* NanoGptProviderTests.swift in Sources */,
-			MINIMAXTESTBF11111111111 /* MiniMaxProviderTests.swift in Sources */,
-			TOKENTESTBF1111111111111 /* TokenManagerTests.swift in Sources */,
-		);
+				APPPREFTESTBF11111111111 /* AppPreferencesTests.swift in Sources */,
+				B58BAD3BFD97973070A2A892 /* MenuResultBuilderTests.swift in Sources */,
+				SYNTHTEST2222222222222222 /* SyntheticProviderTests.swift in Sources */,
+				NANOGPTTESTBF1111111111 /* NanoGptProviderTests.swift in Sources */,
+				MINIMAXTESTBF11111111111 /* MiniMaxProviderTests.swift in Sources */,
+				TOKENTESTBF1111111111111 /* TokenManagerTests.swift in Sources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
