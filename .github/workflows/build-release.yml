@@ -1,53 +1,31 @@
-name: Build and Release
+name: Build Unsigned Artifacts
 
 on:
   push:
-  pull_request: 
+  pull_request:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v2.0.3). Leave empty for unsigned build.'
-        required: false
-        type: string
 
 jobs:
   build:
     runs-on: macos-14
-    env:
-      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '') }}
-      VERSION_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '15.4'
-      
-      - name: Import Developer ID Certificate
-        if: env.IS_RELEASE == 'true'
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Read Version
+        id: version
         run: |
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-          
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      
-      - name: Build App (Unsigned - for branch push)
-        if: ${{ env.IS_RELEASE != 'true' }}
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' CopilotMonitor/CopilotMonitor/Info.plist)
+          echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_number=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Unsigned Archive
         run: |
           cd CopilotMonitor
           xcodebuild -project CopilotMonitor.xcodeproj \
@@ -61,78 +39,19 @@ jobs:
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      
-      - name: Build App (Signed - for tag or manual release)
-        if: env.IS_RELEASE == 'true'
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd CopilotMonitor
-          xcodebuild archive \
-            -project CopilotMonitor.xcodeproj \
-            -scheme CopilotMonitor \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            -archivePath "$RUNNER_TEMP/CopilotMonitor.xcarchive" \
-            ARCHS="arm64 x86_64" \
-            ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Manual
-      
-      - name: Export App (Unsigned)
-        if: ${{ env.IS_RELEASE != 'true' }}
+
+      - name: Export App
         run: |
           mkdir -p CopilotMonitor/build/export
           cp -R "CopilotMonitor/build/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" CopilotMonitor/build/export/
 
-      - name: Verify Universal Binary (Unsigned)
-        if: ${{ env.IS_RELEASE != 'true' }}
+      - name: Verify Universal Binary
         run: |
           APP_PATH="CopilotMonitor/build/export/UsageBar.app"
           MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
-          MAIN_ARCHS=$(lipo -archs "$MAIN_BIN")
-          echo "Main binary architectures: $MAIN_ARCHS"
-          if ! lipo -archs "$MAIN_BIN" | grep -q "x86_64"; then
-            echo "Missing x86_64 slice in main binary"
-            exit 1
-          fi
-          if ! lipo -archs "$MAIN_BIN" | grep -q "arm64"; then
-            echo "Missing arm64 slice in main binary"
-            exit 1
-          fi
           CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
-          if [ -f "$CLI_BIN" ]; then
-            CLI_ARCHS=$(lipo -archs "$CLI_BIN")
-            echo "CLI binary architectures: $CLI_ARCHS"
-            if ! lipo -archs "$CLI_BIN" | grep -q "x86_64"; then
-              echo "Missing x86_64 slice in CLI binary"
-              exit 1
-            fi
-            if ! lipo -archs "$CLI_BIN" | grep -q "arm64"; then
-              echo "Missing arm64 slice in CLI binary"
-              exit 1
-            fi
-          else
-            echo "CLI binary not found at $CLI_BIN"
-            exit 1
-          fi
-      
-      - name: Export App (Signed)
-        if: env.IS_RELEASE == 'true'
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/CopilotMonitor.xcarchive" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist ExportOptions.plist
 
-      - name: Verify Universal Binary (Signed)
-        if: env.IS_RELEASE == 'true'
-        run: |
-          APP_PATH="$RUNNER_TEMP/export/UsageBar.app"
-          MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
-          MAIN_ARCHS=$(lipo -archs "$MAIN_BIN")
-          echo "Main binary architectures: $MAIN_ARCHS"
+          echo "Main binary architectures: $(lipo -archs "$MAIN_BIN")"
           if ! lipo -archs "$MAIN_BIN" | grep -q "x86_64"; then
             echo "Missing x86_64 slice in main binary"
             exit 1
@@ -141,250 +60,51 @@ jobs:
             echo "Missing arm64 slice in main binary"
             exit 1
           fi
-          CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
-          if [ -f "$CLI_BIN" ]; then
-            CLI_ARCHS=$(lipo -archs "$CLI_BIN")
-            echo "CLI binary architectures: $CLI_ARCHS"
-            if ! lipo -archs "$CLI_BIN" | grep -q "x86_64"; then
-              echo "Missing x86_64 slice in CLI binary"
-              exit 1
-            fi
-            if ! lipo -archs "$CLI_BIN" | grep -q "arm64"; then
-              echo "Missing arm64 slice in CLI binary"
-              exit 1
-            fi
-          else
+
+          if [ ! -f "$CLI_BIN" ]; then
             echo "CLI binary not found at $CLI_BIN"
+            exit 1
           fi
-      
-      - name: Verify Code Signing
-        if: env.IS_RELEASE == 'true'
+
+          echo "CLI binary architectures: $(lipo -archs "$CLI_BIN")"
+          if ! lipo -archs "$CLI_BIN" | grep -q "x86_64"; then
+            echo "Missing x86_64 slice in CLI binary"
+            exit 1
+          fi
+          if ! lipo -archs "$CLI_BIN" | grep -q "arm64"; then
+            echo "Missing arm64 slice in CLI binary"
+            exit 1
+          fi
+
+      - name: Create Unsigned ZIP and DMG
         run: |
-          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/UsageBar.app"
-          codesign -dv --verbose=4 "$RUNNER_TEMP/export/UsageBar.app" 2>&1 | grep "Authority"
-      
-      - name: Notarize App
-        if: env.IS_RELEASE == 'true'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd "$RUNNER_TEMP/export"
-          ditto -c -k --keepParent "UsageBar.app" "UsageBar.zip"
-          
-          xcrun notarytool submit "UsageBar.zip" \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait \
-            --timeout 30m
-          
-          xcrun stapler staple "UsageBar.app"
-      
-      - name: Install create-dmg
-        if: env.IS_RELEASE == 'true'
-        run: brew install create-dmg
-      
-      - name: Create DMG (Unsigned)
-        if: ${{ env.IS_RELEASE != 'true' }}
-        run: |
-          mkdir -p dmg_temp
-          cp -R "CopilotMonitor/build/export/UsageBar.app" dmg_temp/
-          ln -s /Applications dmg_temp/Applications
-          
-           hdiutil create -volname "UsageBar" \
-             -srcfolder dmg_temp \
-             -ov -format UDZO \
-             UsageBar.dmg
-          
-          rm -rf dmg_temp
-      
-      - name: Create and Sign DMG
-        if: env.IS_RELEASE == 'true'
-        run: |
-          VERSION="${{ env.VERSION_INPUT }}"
-          DMG_NAME="UsageBar-${VERSION}.dmg"
-          
-          # Create clean staging directory with ONLY the app and Applications symlink
-          # This prevents extra files (Packaging.log, DistributionSummary.plist, etc.) from being included
+          VERSION_TAG="${{ steps.version.outputs.version }}"
+          DIST_DIR="$RUNNER_TEMP/release-dist"
+          APP_PATH="CopilotMonitor/build/export/UsageBar.app"
+          ZIP_NAME="UsageBar-${VERSION_TAG}-unsigned.zip"
+          DMG_NAME="UsageBar-${VERSION_TAG}-unsigned.dmg"
           DMG_STAGING="$RUNNER_TEMP/dmg_staging"
-          mkdir -p "$DMG_STAGING"
-          cp -R "$RUNNER_TEMP/export/UsageBar.app" "$DMG_STAGING/"
-          ln -s /Applications "$DMG_STAGING/Applications"
-          
-           create-dmg \
-             --volname "UsageBar" \
-             --window-pos 200 120 \
-            --window-size 600 400 \
-            --icon-size 100 \
-            --icon "UsageBar.app" 150 200 \
-            --app-drop-link 450 200 \
-            --hide-extension "UsageBar.app" \
-            "$DMG_NAME" \
-            "$DMG_STAGING" || true
-          
-           if [ ! -f "$DMG_NAME" ]; then
-             hdiutil create -volname "UsageBar ${VERSION}" \
-               -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_NAME"
-          fi
-          
-          codesign --force --sign "Developer ID Application" "$DMG_NAME"
-          
-          # Cleanup staging directory
+
+          mkdir -p "$DIST_DIR"
+          ditto -c -k --keepParent "$APP_PATH" "$DIST_DIR/$ZIP_NAME"
+
           rm -rf "$DMG_STAGING"
-      
-      - name: Notarize DMG
-        if: env.IS_RELEASE == 'true'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          VERSION="${{ env.VERSION_INPUT }}"
-          DMG_NAME="UsageBar-${VERSION}.dmg"
-          
-          xcrun notarytool submit "$DMG_NAME" \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait \
-            --timeout 30m
-          
-          xcrun stapler staple "$DMG_NAME"
-      
-      - name: Download Sparkle Tools
-        if: env.IS_RELEASE == 'true'
-        run: |
-          curl -L -o sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/2.9.1/Sparkle-2.9.1.tar.xz
-          mkdir -p sparkle
-          tar -xf sparkle.tar.xz -C sparkle
-          chmod +x sparkle/bin/*
-      
-      - name: Generate Sparkle Signature and Appcast
-        if: env.IS_RELEASE == 'true'
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          VERSION="${{ env.VERSION_INPUT }}"
-          DMG_NAME="UsageBar-${VERSION}.dmg"
-          DOWNLOAD_URL="https://github.com/SHLE1/usage-bar/releases/download/${VERSION}/${DMG_NAME}"
-          
-          echo "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
-          # Extract just the signature string from the output
-          # Output format: sparkle:edSignature="<SIG>" length="<LEN>"
-          FULL_OUTPUT=$(./sparkle/bin/sign_update "$DMG_NAME" --ed-key-file "$RUNNER_TEMP/sparkle_key")
-          SIGNATURE=$(echo "$FULL_OUTPUT" | awk -F '"' '{print $2}')
-          DMG_SIZE=$(stat -f%z "$DMG_NAME")
-          
-          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
-            '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">' \
-            '  <channel>' \
-            '    <title>UsageBar Updates</title>' \
-            '    <link>https://github.com/SHLE1/usage-bar/releases/latest/download/appcast.xml</link>' \
-            '    <description>Most recent changes with links to updates.</description>' \
-            '    <language>en</language>' \
-            '    <item>' \
-            "      <title>Version ${VERSION#v}</title>" \
-            "      <pubDate>$(date -R)</pubDate>" \
-            "      <sparkle:version>${VERSION#v}</sparkle:version>" \
-            "      <sparkle:shortVersionString>${VERSION#v}</sparkle:shortVersionString>" \
-            '      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>' \
-            "      <enclosure url=\"${DOWNLOAD_URL}\"" \
-            "                 sparkle:edSignature=\"${SIGNATURE}\"" \
-            "                 length=\"${DMG_SIZE}\"" \
-            '                 type="application/octet-stream"/>' \
-            '    </item>' \
-            '  </channel>' \
-            '</rss>' > appcast.xml
-          
-          rm -f "$RUNNER_TEMP/sparkle_key"
-      
-      - name: Cleanup Keychain
-        if: always() && (env.IS_RELEASE == 'true')
-        run: |
-          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
-      
-      - name: Upload Artifact (Branch Build)
-        if: ${{ env.IS_RELEASE != 'true' }}
+          mkdir -p "$DMG_STAGING"
+          cp -R "$APP_PATH" "$DMG_STAGING/"
+          ln -s /Applications "$DMG_STAGING/Applications"
+
+          hdiutil create -volname "UsageBar" \
+            -srcfolder "$DMG_STAGING" \
+            -ov -format UDZO \
+            "$DIST_DIR/$DMG_NAME"
+
+          rm -rf "$DMG_STAGING"
+          ls -lh "$DIST_DIR"
+
+      - name: Upload Unsigned Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: UsageBar
-          path: UsageBar.dmg
-      
-      - name: Upload Artifact (Release Build)
-        if: env.IS_RELEASE == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: UsageBar-Release
+          name: UsageBar-${{ steps.version.outputs.version }}-unsigned-${{ github.run_number }}
           path: |
-            UsageBar-*.dmg
-            appcast.xml
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
-    
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: UsageBar-Release
-      
-      - name: Get Version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-          fi
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: UsageBar ${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
-          files: |
-            UsageBar-${{ steps.version.outputs.version }}.dmg
-            appcast.xml
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update Homebrew Tap
-        env:
-          TAP_REPO_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          DMG_NAME="UsageBar-${VERSION}.dmg"
-
-          if [ -z "$TAP_REPO_TOKEN" ]; then
-            echo "HOMEBREW_TAP_GITHUB_TOKEN is not set. Skipping tap update."
-            exit 0
-          fi
-
-          SHA256=$(shasum -a 256 "$DMG_NAME" | awk '{print $1}')
-
-          git clone "https://x-access-token:${TAP_REPO_TOKEN}@github.com/SHLE1/homebrew-tap.git" tap-repo
-          ruby -e '
-            file = "tap-repo/Casks/usage-bar.rb"
-            content = File.read(file)
-            version = ENV.fetch("VERSION").sub(/^v/, "")
-            sha = ENV.fetch("SHA256")
-            content.gsub!(/version ".*"/, "version \"#{version}\"")
-            content.gsub!(/sha256 ".*"/, "sha256 \"#{sha}\"")
-            File.write(file, content)
-          '
-
-          git -C tap-repo config user.name "github-actions[bot]"
-          git -C tap-repo config user.email "github-actions[bot]@users.noreply.github.com"
-          git -C tap-repo add Casks/usage-bar.rb
-          git -C tap-repo commit -m "chore: update UsageBar cask to ${VERSION}" || exit 0
-          git -C tap-repo push origin HEAD
+            ${{ runner.temp }}/release-dist/*.zip
+            ${{ runner.temp }}/release-dist/*.dmg

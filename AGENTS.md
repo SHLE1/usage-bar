@@ -111,6 +111,12 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
 - **Signing Availability**: There is currently no Apple signing certificate available for this project.
 - **Distribution Constraint**: Until a valid Apple signing certificate is provided, release packaging can only publish unsigned `.zip` and unsigned `.dmg` artifacts.
 - **Gatekeeper Expectation**: Unsigned release artifacts will not pass macOS Gatekeeper without manual user override.
+- **Release Notes Requirement**: Every new version release MUST include release notes.
+- **Unsigned App Notice Requirement**: Every unsigned release MUST include a clear notice that macOS Gatekeeper may block the app and should provide the manual quarantine removal command:
+  ```bash
+  xattr -cr "/Applications/UsageBar.app"
+  ```
+- **Homebrew Tap Requirement**: Every new version release MUST also update the `SHLE1/homebrew-tap` cask to the same version, with the correct artifact URL and SHA256.
 - **Documentation**: Update `README.md` and screenshots if UI changes significantly before release.
 
 ### CI Universal Binary

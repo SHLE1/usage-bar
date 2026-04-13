@@ -1,116 +1,230 @@
 # Release Workflow Guide
 
-This document describes the process for building, signing, notarizing, and releasing **UsageBar** for macOS.
+This document describes the current **unsigned release** workflow for **UsageBar**.
+
+> **Current Policy**
+>
+> - There is currently **no Apple signing certificate** available for this project.
+> - Releases must publish **unsigned `.zip`** and **unsigned `.dmg`** artifacts only.
+> - Every release must include **release notes**.
+> - Every unsigned release must include a **Gatekeeper / `xattr` notice**.
+> - Every release must also update the **`SHLE1/homebrew-tap`** cask to the same version.
 
 ## Prerequisites
 
 - **Xcode Command Line Tools**
-- **Apple Developer Account** (Enrolled in Apple Developer Program)
-- **Developer ID Application Certificate** installed in Keychain
 - **GitHub CLI (`gh`)** installed and authenticated
-- **App-Specific Password** generated from [appleid.apple.com](https://appleid.apple.com)
+- Push access to `SHLE1/usage-bar`
+- Push access to `SHLE1/homebrew-tap`
+- `HOMEBREW_TAP_GITHUB_TOKEN` available for workflow-based releases
 
-## 1. Version Bump
+## Release Outputs
 
-Update the marketing version and build number.
+Each release should publish:
+
+- `UsageBar-v<VERSION>-unsigned.zip`
+- `UsageBar-v<VERSION>-unsigned.dmg`
+
+Both artifacts must be built as **universal binaries**:
+
+- Main app binary: `arm64` + `x86_64`
+- Embedded CLI binary: `arm64` + `x86_64`
+
+## Recommended Workflow
+
+## 1. Bump Version
+
+Update these files to the new version:
+
+- `CopilotMonitor/CopilotMonitor/Info.plist`
+  - `CFBundleShortVersionString`
+  - `CFBundleVersion`
+- `README.md`
+- `README.zh-CN.md`
+
+Example:
+
+```bash
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.0.7" CopilotMonitor/CopilotMonitor/Info.plist
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion 0.0.7" CopilotMonitor/CopilotMonitor/Info.plist
+```
+
+## 2. Build Unsigned Release Archive
 
 ```bash
 cd CopilotMonitor
-agvtool new-marketing-version <NEW_VERSION>  # e.g. 1.2
-agvtool next-version -all                    # Increments build number
+xcodebuild -project CopilotMonitor.xcodeproj \
+  -scheme CopilotMonitor \
+  -configuration Release \
+  -destination "generic/platform=macOS" \
+  -archivePath build/CopilotMonitor.xcarchive \
+  archive \
+  ARCHS="arm64 x86_64" \
+  ONLY_ACTIVE_ARCH=NO \
+  CODE_SIGN_IDENTITY="-" \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGNING_ALLOWED=NO
 ```
 
-Commit the version bump:
+## 3. Export App Bundle
+
+```bash
+mkdir -p build/export
+cp -R "build/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" build/export/
+```
+
+## 4. Verify Universal Binary Slices
+
+```bash
+APP_PATH="build/export/UsageBar.app"
+MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
+CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
+
+lipo -archs "$MAIN_BIN"
+lipo -archs "$CLI_BIN"
+```
+
+Expected output for both binaries must contain:
+
+- `arm64`
+- `x86_64`
+
+## 5. Package Unsigned ZIP and DMG
+
+```bash
+VERSION_TAG="v0.0.7"
+APP_PATH="build/export/UsageBar.app"
+ZIP_NAME="UsageBar-${VERSION_TAG}-unsigned.zip"
+DMG_NAME="UsageBar-${VERSION_TAG}-unsigned.dmg"
+
+mkdir -p ../dist/${VERSION_TAG}
+ditto -c -k --keepParent "$APP_PATH" "../dist/${VERSION_TAG}/${ZIP_NAME}"
+
+mkdir -p /tmp/usagebar-dmg-staging
+rm -rf /tmp/usagebar-dmg-staging/*
+cp -R "$APP_PATH" /tmp/usagebar-dmg-staging/
+ln -s /Applications /tmp/usagebar-dmg-staging/Applications
+
+hdiutil create -volname "UsageBar" \
+  -srcfolder /tmp/usagebar-dmg-staging \
+  -ov -format UDZO \
+  "../dist/${VERSION_TAG}/${DMG_NAME}"
+```
+
+## 6. Generate SHA256
+
+```bash
+shasum -a 256 ../dist/${VERSION_TAG}/${ZIP_NAME}
+shasum -a 256 ../dist/${VERSION_TAG}/${DMG_NAME}
+```
+
+## 7. Create Git Tag and Release
+
+Every release must include release notes.
+
+Release notes must also include:
+
+- a note that the artifacts are **unsigned**
+- the **`xattr` workaround** for Gatekeeper
+- artifact names
+- SHA256 values
+
+Example notice:
+
+```md
+## Notice
+These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening.
+
+After moving the app to Applications, run:
+
+```bash
+xattr -cr "/Applications/UsageBar.app"
+```
+```
+
+Example release command:
 
 ```bash
 git add .
-git commit -m "chore: bump version to <NEW_VERSION>"
-git push origin main
+git commit -m "chore: bump version to 0.0.7"
+git tag v0.0.7
+git push origin main --follow-tags
+
+gh release create v0.0.7 \
+  ../dist/v0.0.7/UsageBar-v0.0.7-unsigned.dmg \
+  ../dist/v0.0.7/UsageBar-v0.0.7-unsigned.zip \
+  --title "UsageBar v0.0.7" \
+  --notes-file /path/to/release-notes.md
 ```
 
-## 2. Build Release Archive
+## 8. Update Homebrew Tap
 
-Build the app in Release configuration.
+Every release must update `SHLE1/homebrew-tap`.
 
-```bash
-# Clean build
-xcodebuild -scheme CopilotMonitor -configuration Release clean build
+Update:
+
+- `version`
+- `sha256`
+- `url`
+
+Example cask target:
+
+```ruby
+cask "usage-bar" do
+  version "0.0.7"
+  sha256 "<DMG_SHA256>"
+
+  url "https://github.com/SHLE1/usage-bar/releases/download/v#{version}/UsageBar-v#{version}-unsigned.dmg"
+  name "UsageBar"
+  desc "Menu bar app for AI provider usage monitoring"
+  homepage "https://github.com/SHLE1/usage-bar"
+
+  auto_updates true
+  depends_on macos: ">= :ventura"
+
+  app "UsageBar.app"
+end
 ```
 
-## 3. Code Signing (Manual)
+## GitHub Actions Workflows
 
-Sign the app bundle with your **Developer ID Application** certificate.
+Current workflows are aligned to the unsigned-only process:
 
-> **Note**: Replace `<TEAM_ID>` with your Team ID (e.g., `6YQH3QFFK8`).
+- `.github/workflows/build-release.yml`
+  - Builds unsigned artifacts for validation on push / PR / manual run
+  - Verifies universal binaries
+  - Uploads unsigned ZIP and DMG artifacts
 
-```bash
-# Define paths
-APP_PATH="$HOME/Library/Developer/Xcode/DerivedData/CopilotMonitor-*/Build/Products/Release/UsageBar.app"
-CERT_ID="Developer ID Application: SANG RAK CHOI (<TEAM_ID>)"
-
-# Sign the app
-codesign --force --verify --verbose --sign "$CERT_ID" --options runtime "$APP_PATH"
-```
-
-## 4. Package as DMG
-
-Create a DMG disk image for distribution.
-
-```bash
-mkdir -p dist
-cp -r "$APP_PATH" dist/
-hdiutil create -volname "UsageBar" -srcfolder dist -ov -format UDZO UsageBar.dmg
-```
-
-Sign the DMG file itself:
-
-```bash
-codesign --force --sign "$CERT_ID" UsageBar.dmg
-```
-
-## 5. Notarization (Crucial for Gatekeeper)
-
-Submit the DMG to Apple's notarization service.
-
-> **Requirement**: Create an App-Specific Password at [appleid.apple.com](https://appleid.apple.com).
-
-```bash
-# Submit for notarization
-xcrun notarytool submit UsageBar.dmg \
-  --apple-id "<YOUR_APPLE_ID>" \
-  --password "<APP_SPECIFIC_PASSWORD>" \
-  --team-id "<TEAM_ID>" \
-  --wait
-```
-
-If successful (`Accepted`), staple the ticket to the DMG:
-
-```bash
-xcrun stapler staple UsageBar.dmg
-```
-
-## 6. GitHub Release
-
-Create a release and upload the notarized DMG.
-
-```bash
-# Create tag and release
-gh release create v<NEW_VERSION> --title "v<NEW_VERSION>: Release Title" --notes "Release notes here..."
-
-# Upload the signed & notarized DMG
-gh release upload v<NEW_VERSION> UsageBar.dmg --clobber
-```
+- `.github/workflows/manual-release.yml`
+  - Calculates the next version from the latest tag
+  - Updates version files
+  - Builds unsigned artifacts
+  - Verifies universal binaries
+  - Generates release notes including the `xattr` notice
+  - Creates the GitHub Release
+  - Updates `SHLE1/homebrew-tap`
 
 ## Troubleshooting
 
-### "App is damaged" Error
-If notarization was skipped or failed, users can bypass Gatekeeper:
+### Gatekeeper blocks the app
+
+Run:
+
 ```bash
 xattr -cr "/Applications/UsageBar.app"
 ```
 
-### Keychain Access
-If `codesign` fails with authentication errors, unlock the keychain:
+### Workflow fails because tap update cannot run
+
+Ensure `HOMEBREW_TAP_GITHUB_TOKEN` is configured and has push access to:
+
+- `SHLE1/homebrew-tap`
+
+### Universal binary verification fails
+
+Check:
+
 ```bash
-security unlock-keychain
+lipo -archs "build/export/UsageBar.app/Contents/MacOS/UsageBar"
+lipo -archs "build/export/UsageBar.app/Contents/MacOS/usagebar-cli"
 ```
