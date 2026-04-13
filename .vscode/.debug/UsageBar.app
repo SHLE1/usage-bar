@@ -1,0 +1,1 @@
+/Users/hypered/Library/Developer/Xcode/DerivedData/CopilotMonitor-dgshlcravqjtlsdnahyisndngtlu/Build/Products/Debug/UsageBar.app
