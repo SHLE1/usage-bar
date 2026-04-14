@@ -51,8 +51,17 @@ final class AppPreferences: ObservableObject {
         }
     }
 
+    static let statusBarPayAsYouGoProviders: [ProviderIdentifier] = [
+        .openRouter, .openCode
+    ]
+
+    static let statusBarSubscriptionProviders: [ProviderIdentifier] = [
+        .copilot, .claude, .kimi, .minimaxCodingPlan, .codex,
+        .zaiCodingPlan, .nanoGpt, .antigravity, .chutes, .synthetic, .geminiCLI
+    ]
+
     private static let payAsYouGoItemsOrderStorageKey = "statusBarSettings.payAsYouGo.itemsOrder"
-    private static let copilotAddOnStorageKey = "copilot_add_on"
+    static let copilotAddOnStorageKey = "copilot_add_on"
 
     // MARK: - Notification names (StatusBarController listens for these)
 
@@ -68,6 +77,8 @@ final class AppPreferences: ObservableObject {
     static let appAppearanceDidChange = Notification.Name("AppPreferences.appAppearanceDidChange")
     static let subscriptionDidChange = Notification.Name("AppPreferences.subscriptionDidChange")
     static let copilotAddOnDidChange = Notification.Name("AppPreferences.copilotAddOnDidChange")
+    static let statusBarOrderDidChange = Notification.Name("AppPreferences.statusBarOrderDidChange")
+    static let payAsYouGoOrderDidChange = Notification.Name("AppPreferences.payAsYouGoOrderDidChange")
 
     private let defaults = UserDefaults.standard
 
@@ -187,58 +198,36 @@ final class AppPreferences: ObservableObject {
     ) -> [ProviderIdentifier] {
         let storedRawValues = defaults.array(forKey: section.orderStorageKey) as? [String] ?? []
         let storedProviders = storedRawValues.compactMap(ProviderIdentifier.init(rawValue:))
-
-        let baseline: [ProviderIdentifier]
-        if storedProviders.isEmpty {
-            let enabled = providers.filter { isProviderEnabled($0) }
-            let disabled = providers.filter { !isProviderEnabled($0) }
-            baseline = enabled + disabled
-        } else {
-            baseline = storedProviders
-        }
-
-        var sanitized: [ProviderIdentifier] = []
-        for provider in baseline where providers.contains(provider) && !sanitized.contains(provider) {
-            sanitized.append(provider)
-        }
-
-        for provider in providers where !sanitized.contains(provider) {
-            sanitized.append(provider)
-        }
-
-        let enabled = sanitized.filter { isProviderEnabled($0) }
-        let disabled = sanitized.filter { !isProviderEnabled($0) }
-        return enabled + disabled
+        let baseline = storedProviders.isEmpty ? providers : storedProviders
+        return normalizedStatusBarOrder(baseline, allProviders: providers)
     }
 
     func setStatusBarSettingsOrder(
         _ providers: [ProviderIdentifier],
         for section: StatusBarSettingsSection
     ) {
-        defaults.set(providers.map(\.rawValue), forKey: section.orderStorageKey)
+        let normalized = normalizedStatusBarOrder(providers, allProviders: providersForStatusBarSection(section))
+        defaults.set(normalized.map(\.rawValue), forKey: section.orderStorageKey)
+        NotificationCenter.default.post(name: Self.statusBarOrderDidChange, object: nil)
     }
 
     func payAsYouGoSettingsItemOrder(providers: [ProviderIdentifier]) -> [String] {
-        let allowed = providers.map(\.rawValue) + [Self.copilotAddOnStorageKey]
         let storedRawValues = defaults.array(forKey: Self.payAsYouGoItemsOrderStorageKey) as? [String] ?? []
 
         let baseline: [String]
         if storedRawValues.isEmpty {
-            let enabledProviders = providers.filter { isProviderEnabled($0) }.map(\.rawValue)
-            let disabledProviders = providers.filter { !isProviderEnabled($0) }.map(\.rawValue)
-            let copilotItem = [Self.copilotAddOnStorageKey]
-            baseline = copilotAddOnEnabled
-                ? enabledProviders + copilotItem + disabledProviders
-                : enabledProviders + disabledProviders + copilotItem
+            baseline = providers.map(\.rawValue) + [Self.copilotAddOnStorageKey]
         } else {
             baseline = storedRawValues
         }
 
-        return Self.sanitizedRawOrder(baseline, allowed: allowed)
+        return normalizedPayAsYouGoSettingsItemOrder(baseline, providers: providers)
     }
 
     func setPayAsYouGoSettingsItemOrder(_ items: [String]) {
-        defaults.set(items, forKey: Self.payAsYouGoItemsOrderStorageKey)
+        let normalized = normalizedPayAsYouGoSettingsItemOrder(items, providers: Self.statusBarPayAsYouGoProviders)
+        defaults.set(normalized, forKey: Self.payAsYouGoItemsOrderStorageKey)
+        NotificationCenter.default.post(name: Self.payAsYouGoOrderDidChange, object: nil)
     }
 
     static func rememberedStatusBarOrder(
@@ -256,7 +245,7 @@ final class AppPreferences: ObservableObject {
             return currentEnabled + [identifier] + currentDisabled
         }
 
-        return currentEnabled + [identifier] + currentDisabled
+        return currentEnabled + currentDisabled + [identifier]
     }
 
     static func rememberedItemOrder<Item: Hashable>(
@@ -270,20 +259,16 @@ final class AppPreferences: ObservableObject {
             uniqueOrder.append(current)
         }
 
-        if enabled {
-            let withoutItem = uniqueOrder.filter { $0 != item }
-            let insertIndex = withoutItem.firstIndex(where: { !isEnabled($0) }) ?? withoutItem.endIndex
+        let withoutItem = uniqueOrder.filter { $0 != item }
 
+        if enabled {
+            let insertIndex = withoutItem.firstIndex(where: { !isEnabled($0) }) ?? withoutItem.endIndex
             var updated = withoutItem
             updated.insert(item, at: insertIndex)
             return updated
         }
 
-        if uniqueOrder.contains(item) {
-            return uniqueOrder
-        }
-
-        return uniqueOrder + [item]
+        return withoutItem + [item]
     }
 
     static func sanitizedStatusBarOrder(
@@ -301,6 +286,48 @@ final class AppPreferences: ObservableObject {
         }
 
         return sanitized
+    }
+
+    func normalizedStatusBarOrder(
+        _ order: [ProviderIdentifier],
+        allProviders: [ProviderIdentifier]
+    ) -> [ProviderIdentifier] {
+        let sanitized = Self.sanitizedStatusBarOrder(order, allProviders: allProviders)
+        let enabled = sanitized.filter { isProviderEnabled($0) }
+        let disabled = sanitized.filter { !isProviderEnabled($0) }
+        return enabled + disabled
+    }
+
+    func normalizedPayAsYouGoSettingsItemOrder(
+        _ order: [String],
+        providers: [ProviderIdentifier]
+    ) -> [String] {
+        let allowed = providers.map(\.rawValue) + [Self.copilotAddOnStorageKey]
+        let sanitized = Self.sanitizedRawOrder(order, allowed: allowed)
+        let enabled = sanitized.filter { isPayAsYouGoSettingsItemEnabled(storageKey: $0) }
+        let disabled = sanitized.filter { !isPayAsYouGoSettingsItemEnabled(storageKey: $0) }
+        return enabled + disabled
+    }
+
+    func isPayAsYouGoSettingsItemEnabled(storageKey: String) -> Bool {
+        if storageKey == Self.copilotAddOnStorageKey {
+            return copilotAddOnEnabled
+        }
+
+        guard let identifier = ProviderIdentifier(rawValue: storageKey) else {
+            return false
+        }
+
+        return isProviderEnabled(identifier)
+    }
+
+    func providersForStatusBarSection(_ section: StatusBarSettingsSection) -> [ProviderIdentifier] {
+        switch section {
+        case .payAsYouGo:
+            return Self.statusBarPayAsYouGoProviders
+        case .subscription:
+            return Self.statusBarSubscriptionProviders
+        }
     }
 
     private static func sanitizedRawOrder(_ order: [String], allowed: [String]) -> [String] {

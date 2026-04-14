@@ -1,13 +1,14 @@
 import SwiftUI
 import os.log
+import UniformTypeIdentifiers
 
 struct StatusBarSettingsView: View {
-    private enum PayAsYouGoSettingsItem: Hashable {
+    private enum PayAsYouGoSettingsItem: Hashable, Identifiable {
         case provider(ProviderIdentifier)
         case copilotAddOn
 
         init?(storageKey: String) {
-            if storageKey == "copilot_add_on" {
+            if storageKey == AppPreferences.copilotAddOnStorageKey {
                 self = .copilotAddOn
                 return
             }
@@ -19,12 +20,32 @@ struct StatusBarSettingsView: View {
             self = .provider(identifier)
         }
 
+        var id: String { storageKey }
+
         var storageKey: String {
             switch self {
             case let .provider(identifier):
                 return identifier.rawValue
             case .copilotAddOn:
-                return "copilot_add_on"
+                return AppPreferences.copilotAddOnStorageKey
+            }
+        }
+
+        var displayName: String {
+            switch self {
+            case let .provider(identifier):
+                return identifier.displayName
+            case .copilotAddOn:
+                return L("GitHub Copilot Add-on")
+            }
+        }
+
+        var iconProvider: ProviderIdentifier {
+            switch self {
+            case let .provider(identifier):
+                return identifier
+            case .copilotAddOn:
+                return .copilot
             }
         }
     }
@@ -32,26 +53,18 @@ struct StatusBarSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
     @State private var payAsYouGoItemsOrder: [PayAsYouGoSettingsItem]
     @State private var subscriptionOrder: [ProviderIdentifier]
+    @State private var draggedPayAsYouGoItem: PayAsYouGoSettingsItem?
+    @State private var draggedSubscriptionProvider: ProviderIdentifier?
     private let logger = Logger(subsystem: "com.opencodeproviders", category: "StatusBarSettingsView")
 
-    /// Pay-as-you-go providers in stable display order.
-    private static let payAsYouGoProviders: [ProviderIdentifier] = [
-        .openRouter, .openCode
-    ]
-
-    /// Subscription (quota-based) providers in stable display order.
-    private static let subscriptionProviders: [ProviderIdentifier] = [
-        .copilot, .claude, .kimi, .minimaxCodingPlan, .codex,
-        .zaiCodingPlan, .nanoGpt, .antigravity, .chutes, .synthetic, .geminiCLI
-    ]
-
-    private var enabledPayAsYouGo: [ProviderIdentifier] {
-        payAsYouGoItemsOrder.compactMap { item in
-            guard case let .provider(identifier) = item,
-                  prefs.isProviderEnabled(identifier) else {
-                return nil
+    private var visiblePayAsYouGoPreviewItems: [PayAsYouGoSettingsItem] {
+        payAsYouGoItemsOrder.filter { item in
+            switch item {
+            case let .provider(identifier):
+                return prefs.isProviderEnabled(identifier)
+            case .copilotAddOn:
+                return shouldShowCopilotAddOnPreview
             }
-            return identifier
         }
     }
 
@@ -64,11 +77,11 @@ struct StatusBarSettingsView: View {
     }
 
     private var visiblePreviewItemCount: Int {
-        enabledPayAsYouGo.count + enabledSubscription.count + (shouldShowCopilotAddOnPreview ? 1 : 0)
+        visiblePayAsYouGoPreviewItems.count + enabledSubscription.count
     }
 
     private var shouldShowPayAsYouGoPreview: Bool {
-        !enabledPayAsYouGo.isEmpty || shouldShowCopilotAddOnPreview
+        !visiblePayAsYouGoPreviewItems.isEmpty
     }
 
     private var shouldShowQuotaPreview: Bool {
@@ -76,22 +89,24 @@ struct StatusBarSettingsView: View {
     }
 
     private var previewAnimationKey: String {
-        let payAsYouGo = enabledPayAsYouGo.map(\.rawValue).joined(separator: ",")
+        let payAsYouGo = visiblePayAsYouGoPreviewItems.map(\.storageKey).joined(separator: ",")
         let subscription = enabledSubscription.map(\.rawValue).joined(separator: ",")
-        return "\(payAsYouGo)|copilotAddOn:\(shouldShowCopilotAddOnPreview)|\(subscription)"
+        return "\(payAsYouGo)|\(subscription)"
     }
 
     init() {
         let prefs = AppPreferences.shared
         _payAsYouGoItemsOrder = State(
-            initialValue: prefs.payAsYouGoSettingsItemOrder(providers: Self.payAsYouGoProviders).compactMap {
+            initialValue: prefs.payAsYouGoSettingsItemOrder(
+                providers: AppPreferences.statusBarPayAsYouGoProviders
+            ).compactMap {
                 PayAsYouGoSettingsItem(storageKey: $0)
             }
         )
         _subscriptionOrder = State(
             initialValue: prefs.statusBarSettingsOrder(
                 for: .subscription,
-                providers: Self.subscriptionProviders
+                providers: AppPreferences.statusBarSubscriptionProviders
             )
         )
     }
@@ -101,23 +116,22 @@ struct StatusBarSettingsView: View {
             title: L("Status Bar"),
             subtitle: L("Choose which providers appear in UsageBar.")
         ) {
-            // MARK: - Live Preview
             previewSection
 
-            // MARK: - Pay-as-you-go Providers
             SettingsSectionCard(
                 title: L("Pay-as-you-go Providers"),
                 subtitle: L("These providers appear in the usage-based cost section.")
             ) {
-                payAsYouGoGrid
+                providerOrderHint
+                payAsYouGoList
             }
 
-            // MARK: - Subscription Providers
             SettingsSectionCard(
                 title: L("Subscription Providers"),
                 subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
             ) {
-                providerGrid(for: subscriptionOrder, section: .subscription)
+                providerOrderHint
+                subscriptionList
             }
 
             SettingsSecondaryCard(
@@ -130,13 +144,17 @@ struct StatusBarSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-
         .onAppear {
-            payAsYouGoItemsOrder = prefs.payAsYouGoSettingsItemOrder(providers: Self.payAsYouGoProviders).compactMap {
-                PayAsYouGoSettingsItem(storageKey: $0)
-            }
-            subscriptionOrder = prefs.statusBarSettingsOrder(for: .subscription, providers: Self.subscriptionProviders)
+            reloadStoredOrders()
+            logger.debug("Status bar settings loaded with draggable provider lists")
         }
+    }
+
+    private var providerOrderHint: some View {
+        Text(L("Drag rows to change order. Unchecked items move to the bottom automatically."))
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Live Preview Section
@@ -164,18 +182,10 @@ struct StatusBarSettingsView: View {
                 if shouldShowPayAsYouGoPreview {
                     previewHeader(title: L("Pay-as-you-go"))
                         .transition(.opacity)
-                    ForEach(enabledPayAsYouGo, id: \.self) { provider in
+                    ForEach(visiblePayAsYouGoPreviewItems) { item in
                         previewRow(
-                            provider: provider,
-                            text: provider.displayName,
-                            trailingText: "$—"
-                        )
-                        .transition(.opacity)
-                    }
-                    if shouldShowCopilotAddOnPreview {
-                        previewRow(
-                            provider: .copilot,
-                            text: L("Copilot Add-on"),
+                            provider: item.iconProvider,
+                            text: item.displayName,
                             trailingText: "$—"
                         )
                         .transition(.opacity)
@@ -224,21 +234,46 @@ struct StatusBarSettingsView: View {
         )
     }
 
-    @ViewBuilder
-    private var payAsYouGoGrid: some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(minimum: 180), alignment: .leading),
-                GridItem(.flexible(minimum: 180), alignment: .leading)
-            ],
-            alignment: .leading,
-            spacing: 12
-        ) {
-            ForEach(payAsYouGoItemsOrder, id: \.self) { item in
-                payAsYouGoToggle(for: item)
+    private var payAsYouGoList: some View {
+        orderListContainer {
+            ForEach(Array(payAsYouGoItemsOrder.enumerated()), id: \.element) { index, item in
+                payAsYouGoRow(for: item)
+                if index < payAsYouGoItemsOrder.count - 1 {
+                    Divider()
+                        .padding(.leading, 44)
+                }
             }
         }
         .animation(.easeInOut(duration: 0.18), value: payAsYouGoItemsOrder)
+    }
+
+    private var subscriptionList: some View {
+        orderListContainer {
+            ForEach(Array(subscriptionOrder.enumerated()), id: \.element) { index, provider in
+                subscriptionRow(for: provider)
+                if index < subscriptionOrder.count - 1 {
+                    Divider()
+                        .padding(.leading, 44)
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: subscriptionOrder)
+    }
+
+    private func orderListContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.28), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     @ViewBuilder
@@ -291,39 +326,174 @@ struct StatusBarSettingsView: View {
     }
 
     @ViewBuilder
-    private func payAsYouGoToggle(for item: PayAsYouGoSettingsItem) -> some View {
-        switch item {
-        case let .provider(identifier):
-            Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier, section: .payAsYouGo))
-                .toggleStyle(.checkbox)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        case .copilotAddOn:
-            Toggle(L("GitHub Copilot Add-on"), isOn: copilotAddOnBinding)
-                .toggleStyle(.checkbox)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func payAsYouGoRow(for item: PayAsYouGoSettingsItem) -> some View {
+        let enabled = isEnabled(item)
+
+        HStack(spacing: 12) {
+            dragHandle(for: item)
+            previewIcon(for: item.iconProvider, dimmed: !enabled)
+
+            Text(item.displayName)
+                .font(.system(size: 13))
+                .foregroundStyle(enabled ? .primary : .secondary)
+
+            Spacer(minLength: 12)
+
+            Toggle("", isOn: payAsYouGoBinding(for: item))
+                .labelsHidden()
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .opacity(enabled ? 1 : 0.72)
+        .contentShape(Rectangle())
+        .onDrop(
+            of: [UTType.plainText],
+            delegate: ReorderDropDelegate(
+                targetItem: item,
+                draggedItem: $draggedPayAsYouGoItem,
+                canReorderTogether: { isEnabled($0) == isEnabled($1) },
+                move: movePayAsYouGoItem
+            )
+        )
     }
 
     @ViewBuilder
-    private func providerGrid(
-        for providers: [ProviderIdentifier],
-        section: AppPreferences.StatusBarSettingsSection
-    ) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(minimum: 180), alignment: .leading),
-                GridItem(.flexible(minimum: 180), alignment: .leading)
-            ],
-            alignment: .leading,
-            spacing: 12
-        ) {
-            ForEach(providers, id: \.self) { identifier in
-                Toggle(identifier.displayName, isOn: statusBarBinding(for: identifier, section: section))
-                    .toggleStyle(.checkbox)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+    private func subscriptionRow(for provider: ProviderIdentifier) -> some View {
+        let enabled = prefs.isProviderEnabled(provider)
+
+        HStack(spacing: 12) {
+            dragHandle(for: provider)
+            previewIcon(for: provider, dimmed: !enabled)
+
+            Text(provider.displayName)
+                .font(.system(size: 13))
+                .foregroundStyle(enabled ? .primary : .secondary)
+
+            Spacer(minLength: 12)
+
+            Toggle("", isOn: statusBarBinding(for: provider, section: .subscription))
+                .labelsHidden()
         }
-        .animation(.easeInOut(duration: 0.18), value: providers)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .opacity(enabled ? 1 : 0.72)
+        .contentShape(Rectangle())
+        .onDrop(
+            of: [UTType.plainText],
+            delegate: ReorderDropDelegate(
+                targetItem: provider,
+                draggedItem: $draggedSubscriptionProvider,
+                canReorderTogether: { prefs.isProviderEnabled($0) == prefs.isProviderEnabled($1) },
+                move: moveSubscriptionProvider
+            )
+        )
+    }
+
+    @ViewBuilder
+    private func dragHandle(for item: PayAsYouGoSettingsItem) -> some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 16, height: 16)
+            .contentShape(Rectangle())
+            .onDrag {
+                draggedPayAsYouGoItem = item
+                logger.debug("Started dragging pay-as-you-go item \(item.storageKey, privacy: .public)")
+                return NSItemProvider(object: item.storageKey as NSString)
+            }
+    }
+
+    @ViewBuilder
+    private func dragHandle(for provider: ProviderIdentifier) -> some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 16, height: 16)
+            .contentShape(Rectangle())
+            .onDrag {
+                draggedSubscriptionProvider = provider
+                logger.debug("Started dragging subscription provider \(provider.rawValue, privacy: .public)")
+                return NSItemProvider(object: provider.rawValue as NSString)
+            }
+    }
+
+    private func payAsYouGoBinding(for item: PayAsYouGoSettingsItem) -> Binding<Bool> {
+        switch item {
+        case let .provider(identifier):
+            return statusBarBinding(for: identifier, section: .payAsYouGo)
+        case .copilotAddOn:
+            return copilotAddOnBinding
+        }
+    }
+
+    private func movePayAsYouGoItem(_ source: PayAsYouGoSettingsItem, _ destination: PayAsYouGoSettingsItem) {
+        guard isEnabled(source) == isEnabled(destination),
+              let sourceIndex = payAsYouGoItemsOrder.firstIndex(of: source),
+              let destinationIndex = payAsYouGoItemsOrder.firstIndex(of: destination),
+              sourceIndex != destinationIndex else {
+            return
+        }
+
+        var updated = payAsYouGoItemsOrder
+        updated.move(
+            fromOffsets: IndexSet(integer: sourceIndex),
+            toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
+        )
+
+        let normalizedKeys = prefs.normalizedPayAsYouGoSettingsItemOrder(
+            updated.map(\.storageKey),
+            providers: AppPreferences.statusBarPayAsYouGoProviders
+        )
+        let normalizedItems = normalizedKeys.compactMap(PayAsYouGoSettingsItem.init(storageKey:))
+
+        withAnimation(.easeInOut(duration: 0.18)) {
+            payAsYouGoItemsOrder = normalizedItems
+        }
+
+        prefs.setPayAsYouGoSettingsItemOrder(normalizedKeys)
+        logger.debug("Persisted pay-as-you-go settings order: \(normalizedKeys.joined(separator: ","), privacy: .public)")
+    }
+
+    private func moveSubscriptionProvider(_ source: ProviderIdentifier, _ destination: ProviderIdentifier) {
+        guard prefs.isProviderEnabled(source) == prefs.isProviderEnabled(destination),
+              let sourceIndex = subscriptionOrder.firstIndex(of: source),
+              let destinationIndex = subscriptionOrder.firstIndex(of: destination),
+              sourceIndex != destinationIndex else {
+            return
+        }
+
+        var updated = subscriptionOrder
+        updated.move(
+            fromOffsets: IndexSet(integer: sourceIndex),
+            toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
+        )
+
+        let normalized = prefs.normalizedStatusBarOrder(
+            updated,
+            allProviders: AppPreferences.statusBarSubscriptionProviders
+        )
+
+        withAnimation(.easeInOut(duration: 0.18)) {
+            subscriptionOrder = normalized
+        }
+
+        prefs.setStatusBarSettingsOrder(normalized, for: .subscription)
+        logger.debug("Persisted subscription settings order: \(normalized.map { $0.rawValue }.joined(separator: ","), privacy: .public)")
+    }
+
+    private func reloadStoredOrders() {
+        payAsYouGoItemsOrder = prefs.payAsYouGoSettingsItemOrder(
+            providers: AppPreferences.statusBarPayAsYouGoProviders
+        ).compactMap {
+            PayAsYouGoSettingsItem(storageKey: $0)
+        }
+        subscriptionOrder = prefs.statusBarSettingsOrder(
+            for: .subscription,
+            providers: AppPreferences.statusBarSubscriptionProviders
+        )
+        logger.debug(
+            "Reloaded status bar settings order: payg=\(payAsYouGoItemsOrder.map(\.storageKey).joined(separator: ","), privacy: .public) subscription=\(subscriptionOrder.map { $0.rawValue }.joined(separator: ","), privacy: .public)"
+        )
     }
 
     // MARK: - Unified toggle binding
@@ -338,11 +508,6 @@ struct StatusBarSettingsView: View {
             set: { newValue in
                 withAnimation(.easeInOut(duration: 0.18)) {
                     prefs.setProviderEnabled(identifier, enabled: newValue)
-                    if newValue {
-                        prefs.multiProviderProviders.insert(identifier)
-                    } else {
-                        prefs.multiProviderProviders.remove(identifier)
-                    }
                 }
 
                 updateRememberedOrder(for: identifier, enabled: newValue, section: section)
@@ -367,7 +532,9 @@ struct StatusBarSettingsView: View {
                     isEnabled: isEnabled
                 )
                 prefs.setPayAsYouGoSettingsItemOrder(payAsYouGoItemsOrder.map(\.storageKey))
-                logger.debug("Status bar provider visibility changed: copilot_add_on=\(newValue, privacy: .public)")
+                logger.debug(
+                    "Status bar provider visibility changed: copilot_add_on=\(newValue, privacy: .public), order=\(payAsYouGoItemsOrder.map(\.storageKey).joined(separator: ","), privacy: .public)"
+                )
             }
         )
     }
@@ -395,13 +562,19 @@ struct StatusBarSettingsView: View {
                 isEnabled: isEnabled
             )
             prefs.setPayAsYouGoSettingsItemOrder(payAsYouGoItemsOrder.map(\.storageKey))
+            logger.debug(
+                "Normalized pay-as-you-go order after toggle: \(payAsYouGoItemsOrder.map(\.storageKey).joined(separator: ","), privacy: .public)"
+            )
         case .subscription:
             subscriptionOrder = updatedRememberedOrder(
                 from: subscriptionOrder,
                 toggled: identifier,
                 enabled: enabled,
                 section: section,
-                allProviders: Self.subscriptionProviders
+                allProviders: AppPreferences.statusBarSubscriptionProviders
+            )
+            logger.debug(
+                "Normalized subscription order after toggle: \(subscriptionOrder.map { $0.rawValue }.joined(separator: ","), privacy: .public)"
             )
         }
     }
@@ -422,6 +595,32 @@ struct StatusBarSettingsView: View {
         )
 
         prefs.setStatusBarSettingsOrder(order, for: section)
-        return order
+        return prefs.statusBarSettingsOrder(for: section, providers: allProviders)
+    }
+}
+
+private struct ReorderDropDelegate<Item: Hashable>: DropDelegate {
+    let targetItem: Item
+    @Binding var draggedItem: Item?
+    let canReorderTogether: (Item, Item) -> Bool
+    let move: (Item, Item) -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedItem,
+              draggedItem != targetItem,
+              canReorderTogether(draggedItem, targetItem) else {
+            return
+        }
+
+        move(draggedItem, targetItem)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItem = nil
+        return true
     }
 }
