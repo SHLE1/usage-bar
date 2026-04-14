@@ -1,6 +1,15 @@
 import AppKit
 
 extension StatusBarController {
+    private var orderedQuotaProvidersForStatusBar: [ProviderIdentifier] {
+        let selectedProviders = Set(multiProviderSelection)
+        let settingsOrder = AppPreferences.shared.statusBarSettingsOrder(
+            for: .subscription,
+            providers: AppPreferences.statusBarSubscriptionProviders
+        )
+        return settingsOrder.filter { selectedProviders.contains($0) }
+    }
+
     func updateStatusBarText() {
         if isMainMenuTracking {
             hasDeferredStatusBarRefresh = true
@@ -18,8 +27,11 @@ extension StatusBarController {
     }
 
     func updateMultiProviderBarView() {
+        let orderedSelection = orderedQuotaProvidersForStatusBar
+        debugLog("updateMultiProviderBarView: orderedSelection=[\(orderedSelection.map { $0.rawValue }.joined(separator: ", "))]")
+
         var entries: [MultiProviderBarView.Entry] = []
-        for identifier in multiProviderSelection {
+        for identifier in orderedSelection {
             guard isProviderEnabled(identifier),
                   let result = providerResults[identifier],
                   case .quotaBased = result.usage,

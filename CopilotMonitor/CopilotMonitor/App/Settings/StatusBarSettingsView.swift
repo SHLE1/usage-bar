@@ -508,11 +508,6 @@ struct StatusBarSettingsView: View {
             set: { newValue in
                 withAnimation(.easeInOut(duration: 0.18)) {
                     prefs.setProviderEnabled(identifier, enabled: newValue)
-                    if newValue {
-                        prefs.multiProviderProviders.insert(identifier)
-                    } else {
-                        prefs.multiProviderProviders.remove(identifier)
-                    }
                 }
 
                 updateRememberedOrder(for: identifier, enabled: newValue, section: section)
