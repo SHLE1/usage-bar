@@ -47,6 +47,14 @@ extension StatusBarController {
             self, selector: #selector(handleCopilotAddOnChange),
             name: AppPreferences.copilotAddOnDidChange, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleStatusBarOrderChange),
+            name: AppPreferences.statusBarOrderDidChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handlePayAsYouGoOrderChange),
+            name: AppPreferences.payAsYouGoOrderDidChange, object: nil
+        )
     }
 
     @objc func handleRefreshIntervalChange() {
@@ -113,6 +121,18 @@ extension StatusBarController {
 
     @objc func handleCopilotAddOnChange() {
         debugLog("🔔 Settings: Copilot Add-on toggled")
+        updateMultiProviderMenu()
+        updateStatusBarText()
+    }
+
+    @objc func handleStatusBarOrderChange() {
+        debugLog("🔔 Settings: status bar subscription order changed")
+        updateMultiProviderMenu()
+        updateStatusBarText()
+    }
+
+    @objc func handlePayAsYouGoOrderChange() {
+        debugLog("🔔 Settings: pay-as-you-go order changed")
         updateMultiProviderMenu()
         updateStatusBarText()
     }

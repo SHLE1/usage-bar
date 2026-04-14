@@ -241,6 +241,7 @@
 "How this appears" = "显示说明";
 "The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section." = "顶部状态栏只显示配额型 Provider。按量计费 Provider 仍会显示在下拉菜单的费用区块中。";
 "Use Advanced Providers for provider-specific overrides such as the Codex account and limit window." = "像 Codex 账号和限额窗口这样的 Provider 专属覆盖项，请在“高级 Provider”中设置。";
+"Drag rows to change order. Unchecked items move to the bottom automatically." = "拖动行即可调整顺序。未勾选的项目会自动沉到底部。";
 "—% left" = "—% 剩余";
 "5h Only" = "仅 5 小时";
 "Weekly Only" = "仅每周";
