@@ -109,6 +109,8 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
 
 ## Release Policy
 - **Workflow**: STRICTLY follow `docs/RELEASE_WORKFLOW.md` for versioning, building, signing, and notarizing.
+- **Release Build Location (MANDATORY)**: For version releases, DO NOT build release artifacts locally. ALWAYS use GitHub Actions release workflows, especially `.github/workflows/manual-release.yml`, to build and publish release artifacts.
+- **No Local Release Packaging**: Do not use local `xcodebuild archive`, local ZIP packaging, or local DMG packaging for an official release unless the user explicitly asks for a local dry run only.
 - **Signing Availability**: There is currently no Apple signing certificate available for this project.
 - **Distribution Constraint**: Until a valid Apple signing certificate is provided, release packaging can only publish unsigned `.zip` and unsigned `.dmg` artifacts.
 - **Gatekeeper Expectation**: Unsigned release artifacts will not pass macOS Gatekeeper without manual user override.
