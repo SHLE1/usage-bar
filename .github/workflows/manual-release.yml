@@ -197,48 +197,48 @@ jobs:
             echo "dmg_sha=$DMG_SHA"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Generate Release Notes Body
+        id: generated_notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION_TAG="${{ steps.release_version.outputs.version_tag }}"
+          PREVIOUS_TAG="${{ steps.release_version.outputs.previous_tag }}"
+
+          gh api repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="$VERSION_TAG" \
+            -f target_commitish="${{ github.sha }}" \
+            -f previous_tag_name="$PREVIOUS_TAG" \
+            --jq '.body' > "$RUNNER_TEMP/generated-release-notes-body.md"
+
+          cat "$RUNNER_TEMP/generated-release-notes-body.md"
+
       - name: Create Release Notes File
         run: |
           VERSION_TAG="${{ steps.release_version.outputs.version_tag }}"
-          VERSION_NUMBER="${{ steps.release_version.outputs.version_number }}"
-          TAG_EXISTS="${{ steps.release_version.outputs.tag_exists }}"
           PREVIOUS_TAG="${{ steps.release_version.outputs.previous_tag }}"
           ZIP_NAME="${{ steps.package.outputs.zip_name }}"
           DMG_NAME="${{ steps.package.outputs.dmg_name }}"
           ZIP_SHA="${{ steps.package.outputs.zip_sha }}"
           DMG_SHA="${{ steps.package.outputs.dmg_sha }}"
+          GENERATED_BODY_FILE="$RUNNER_TEMP/generated-release-notes-body.md"
 
-          if [ "$TAG_EXISTS" = "true" ]; then
-            VERSION_LINE="- Rebuild release artifacts for \`$VERSION_NUMBER\` with GitHub Actions."
-          else
-            VERSION_LINE="- Bump app version to \`$VERSION_NUMBER\`."
-          fi
+          cp "$GENERATED_BODY_FILE" "$RUNNER_TEMP/release-notes.md"
 
           {
-            printf '%s\n' \
-              "## Release Notes" \
-              "" \
-              "$VERSION_LINE" \
-              "- Publish unsigned \`zip\` and \`dmg\` artifacts." \
-              "- Update the Homebrew tap to the same version." \
-              "" \
-              "## Artifacts" \
-              "- \`$ZIP_NAME\`" \
-              "  - SHA256: \`$ZIP_SHA\`" \
-              "- \`$DMG_NAME\`" \
-              "  - SHA256: \`$DMG_SHA\`" \
-              "" \
-              "## Notice" \
-              "These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening." \
-              "" \
-              "After moving the app to Applications, run:" \
-              "" \
-              '```bash' \
-              'xattr -cr "/Applications/UsageBar.app"' \
-              '```' \
-              "" \
-              "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${PREVIOUS_TAG}...$VERSION_TAG"
-          } > "$RUNNER_TEMP/release-notes.md"
+            printf '\n%s\n' '## Artifacts'
+            printf '%s\n' "- \`$ZIP_NAME\`"
+            printf '%s\n' "  - SHA256: \`$ZIP_SHA\`"
+            printf '%s\n' "- \`$DMG_NAME\`"
+            printf '%s\n' "  - SHA256: \`$DMG_SHA\`"
+            printf '\n%s\n' '## Notice'
+            printf '%s\n' 'These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening.'
+            printf '\n%s\n' 'After moving the app to Applications, run:'
+            printf '%s\n' '```bash'
+            printf '%s\n' 'xattr -cr "/Applications/UsageBar.app"'
+            printf '%s\n' '```'
+            printf '\n%s\n' "**Full Changelog**: https://github.com/SHLE1/usage-bar/compare/${PREVIOUS_TAG}...$VERSION_TAG"
+          } >> "$RUNNER_TEMP/release-notes.md"
 
           cat "$RUNNER_TEMP/release-notes.md"
 
