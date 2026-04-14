@@ -131,7 +131,7 @@ Set your subscription tier per provider (preset or custom monthly cost). The `Qu
 | Tab | Contents |
 |-----|----------|
 | **General** | Auto Refresh (1 min – 1 hr), Prediction Period (7 / 14 / 21 days), App Language (System / EN / 中文), Launch at Login, Critical Badge, CLI Install |
-| **Status Bar** | Live menu preview, per-provider visibility toggles, Copilot Add-on toggle |
+| **Status Bar** | Live menu preview, per-provider visibility toggles, preview/menu order follows the Status Bar provider list, Copilot Add-on toggle |
 | **Advanced Providers** | ChatGPT account selection, status bar window mode (5h / weekly / both) |
 | **Subscriptions** | Monthly cost per quota-based provider |
 

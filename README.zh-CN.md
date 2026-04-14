@@ -131,7 +131,7 @@ UsageBar 自动查找并认证你的 AI 服务商：
 | 选项卡 | 内容 |
 |--------|------|
 | **General（通用）** | 自动刷新周期（1 分钟 – 1 小时）、预测周期（7 / 14 / 21 天）、应用语言（跟随系统 / EN / 中文）、登录时启动、紧急徽章、CLI 安装 |
-| **Status Bar（状态栏）** | 实时菜单预览、按服务商显示开关、Copilot Add-on 开关 |
+| **Status Bar（状态栏）** | 实时菜单预览、按服务商显示开关、预览/菜单顺序跟随状态栏服务商列表、Copilot Add-on 开关 |
 | **Advanced Providers（高级 Provider）** | ChatGPT 账号选择、状态栏窗口模式（5h / weekly / 同时） |
 | **Subscriptions（订阅）** | 配额制服务商的月度订阅费用 |
 

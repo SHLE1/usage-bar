@@ -46,11 +46,17 @@ struct StatusBarSettingsView: View {
     ]
 
     private var enabledPayAsYouGo: [ProviderIdentifier] {
-        Self.payAsYouGoProviders.filter { prefs.isProviderEnabled($0) }
+        payAsYouGoItemsOrder.compactMap { item in
+            guard case let .provider(identifier) = item,
+                  prefs.isProviderEnabled(identifier) else {
+                return nil
+            }
+            return identifier
+        }
     }
 
     private var enabledSubscription: [ProviderIdentifier] {
-        Self.subscriptionProviders.filter { prefs.isProviderEnabled($0) }
+        subscriptionOrder.filter { prefs.isProviderEnabled($0) }
     }
 
     private var shouldShowCopilotAddOnPreview: Bool {

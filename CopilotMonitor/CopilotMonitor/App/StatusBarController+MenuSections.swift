@@ -107,7 +107,10 @@ extension StatusBarController {
         insertIndex += 1
 
         var hasPayAsYouGo = false
-        let payAsYouGoOrder: [ProviderIdentifier] = [.openRouter, .openCode]
+        let payAsYouGoOrder = AppPreferences.shared.payAsYouGoSettingsItemOrder(
+            providers: [.openRouter, .openCode]
+        ).compactMap(ProviderIdentifier.init(rawValue:))
+        debugLog("updateMultiProviderMenu: pay-as-you-go order=[\(payAsYouGoOrder.map { $0.rawValue }.joined(separator: ", "))]")
         for identifier in payAsYouGoOrder {
             guard isProviderEnabled(identifier) else { continue }
 
@@ -392,17 +395,11 @@ extension StatusBarController {
             insertIndex += 1
         }
 
-        let quotaOrder: [ProviderIdentifier] = [
-            .claude,
-            .kimi,
-            .minimaxCodingPlan,
-            .codex,
-            .zaiCodingPlan,
-            .nanoGpt,
-            .antigravity,
-            .chutes,
-            .synthetic
-        ]
+        let quotaOrder = AppPreferences.shared.statusBarSettingsOrder(
+            for: .subscription,
+            providers: [.claude, .kimi, .minimaxCodingPlan, .codex, .zaiCodingPlan, .nanoGpt, .antigravity, .chutes, .synthetic]
+        )
+        debugLog("updateMultiProviderMenu: quota order=[\(quotaOrder.map { $0.rawValue }.joined(separator: ", "))]")
         for identifier in quotaOrder {
             guard isProviderEnabled(identifier) else { continue }
 
