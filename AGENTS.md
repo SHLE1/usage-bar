@@ -14,6 +14,10 @@
 
 ## Coding Rules
 
+### Credits Maintenance
+- When adopting new libraries or external code, always update the acknowledgements sections in both `README.md` and `README.zh-CN.md` before handoff.
+
+
 ### Branding Guides
 - Official Brand: `UsageBar`
   - Don't use mis-capitalized or malformed forms like `Usagebar` or versions with a space (e.g. `Usage Bar`).

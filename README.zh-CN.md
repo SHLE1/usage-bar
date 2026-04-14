@@ -328,9 +328,9 @@ MIT License — 详见 [LICENSE](LICENSE) 文件。
 
 ## 致谢
 
-- [OP.GG](https://op.gg)
-- [Sangrak Choi](https://kargn.as)
-- [OpenCode](https://opencode.ai) — 服务商发现的核心依赖
+- [opgginc/opencode-bar](https://github.com/opgginc/opencode-bar)
+- [ndycode/codex-multi-auth](https://github.com/ndycode/codex-multi-auth)
+- [anomalyco/opencode](https://github.com/anomalyco/opencode)
 
 ---
 

@@ -325,9 +325,9 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Credits
 
-- [OP.GG](https://op.gg)
-- [Sangrak Choi](https://kargn.as)
-- [OpenCode](https://opencode.ai) — The AI coding tool that powers provider detection
+- [opgginc/opencode-bar](https://github.com/opgginc/opencode-bar)
+- [ndycode/codex-multi-auth](https://github.com/ndycode/codex-multi-auth)
+- [anomalyco/opencode](https://github.com/anomalyco/opencode)
 
 ---
 
