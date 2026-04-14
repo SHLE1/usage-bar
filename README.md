@@ -84,6 +84,7 @@ UsageBar automatically finds and authenticates with your AI providers:
 - **Editor configs** — VS Code / Cursor Copilot settings
 - **Browser cookies** — Chrome, Brave, Arc, Edge (GitHub Copilot only)
 - **OpenCode plugins** — Multi-account support for ChatGPT, Antigravity, Gemini, Claude
+- **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — Native multi-account support for ChatGPT (highest priority source)
 
 Multi-source accounts are automatically deduplicated by email.
 
@@ -237,10 +238,13 @@ Verify OpenCode is installed and authenticated. The app searches for `auth.json`
 2. `~/.local/share/opencode/auth.json` (default)
 3. `~/Library/Application Support/opencode/auth.json` (macOS fallback)
 
-For ChatGPT multi-account setups, the app also checks:
-- `~/.opencode/auth/openai.json`
-- `~/.opencode/openai-codex-accounts.json`
-- `~/.opencode/projects/*/openai-codex-accounts.json`
+For ChatGPT multi-account setups, the app checks (in priority order):
+1. **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — `~/.codex/multi-auth/*.json` (or `$CODEX_MULTI_AUTH_DIR`)
+2. OpenCode auth — `auth.json` with `openai` provider entry
+3. OpenCode multi-auth — `~/.opencode/auth/openai.json`
+4. OpenCode legacy — `~/.opencode/openai-codex-accounts.json` and `~/.opencode/projects/*/openai-codex-accounts.json`
+
+Install [codex-multi-auth](https://github.com/ndycode/codex-multi-auth) to add multiple ChatGPT accounts and have UsageBar automatically track all of them.
 
 </details>
 

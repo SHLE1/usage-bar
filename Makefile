@@ -4,6 +4,8 @@
 
 .PHONY: setup lint lint-swift lint-actions help
 
+ACTION_VALIDATOR := ./node_modules/.bin/action-validator
+
 # Default target
 help:
 	@echo "Available commands:"
@@ -35,7 +37,8 @@ lint-swift:
 
 lint-actions:
 	@echo "Running action-validator..."
+	@test -x "$(ACTION_VALIDATOR)" || (echo "action-validator not found. Run: npm install" && exit 1)
 	@for f in .github/workflows/*.yml; do \
 		echo "Validating $$f..."; \
-		npx --yes @action-validator/cli "$$f"; \
+		"$(ACTION_VALIDATOR)" "$$f"; \
 	done

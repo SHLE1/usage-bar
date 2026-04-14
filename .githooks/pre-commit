@@ -47,12 +47,13 @@ echo ""
 echo "=== GitHub Actions ==="
 
 STAGED_WORKFLOWS=$(git diff --cached --name-only --diff-filter=ACM | grep '^\.github/workflows/.*\.yml$' || true)
+ACTION_VALIDATOR="./node_modules/.bin/action-validator"
 
 if [ -n "$STAGED_WORKFLOWS" ]; then
-    if command -v npx >/dev/null 2>&1; then
+    if [ -x "$ACTION_VALIDATOR" ]; then
         for file in $STAGED_WORKFLOWS; do
             echo "Validating $file..."
-            npx --yes @action-validator/cli "$file"
+            "$ACTION_VALIDATOR" "$file"
             if [ $? -ne 0 ]; then
                 echo "❌ action-validator found issues in $file"
                 EXIT_CODE=1
@@ -62,7 +63,7 @@ if [ -n "$STAGED_WORKFLOWS" ]; then
             echo "✓ All workflow files valid"
         fi
     else
-        echo "⚠ npx not found, skipping workflow validation"
+        echo "⚠ action-validator not found, skipping workflow validation (run npm install)"
     fi
 else
     echo "No workflow files staged, skipping"

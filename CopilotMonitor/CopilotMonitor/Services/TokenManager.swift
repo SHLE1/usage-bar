@@ -374,6 +374,7 @@ struct CodexLBEncryptedAccount {
 
 /// Auth source types for OpenAI (Codex) account discovery
 enum OpenAIAuthSource {
+    case codexMultiAuth
     case opencodeAuth
     case openCodeMultiAuth
     case codexLB
@@ -729,6 +730,13 @@ final class TokenManager: @unchecked Sendable {
 
     /// Paths where oc-chatgpt-multi-auth account files were found
     private(set) var lastFoundOpenCodeMultiAuthPaths: [URL] = []
+
+    /// Cached codex-multi-auth OpenAI accounts
+    private var cachedCodexMultiAuthAccounts: [OpenAIAuthAccount]?
+    private var codexMultiAuthAccountsCacheTimestamp: Date?
+
+    /// Paths where codex-multi-auth account files were found
+    private(set) var lastFoundCodexMultiAuthPaths: [URL] = []
 
     /// Cached GitHub Copilot token accounts (OpenCode + VS Code)
     private var cachedCopilotAccounts: [CopilotAuthAccount]?
@@ -1759,6 +1767,8 @@ final class TokenManager: @unchecked Sendable {
 
     private func openAISourceLabel(for source: OpenAIAuthSource) -> String {
         switch source {
+        case .codexMultiAuth:
+            return "Codex Multi Auth"
         case .opencodeAuth:
             return "OpenCode"
         case .openCodeMultiAuth:
@@ -1867,6 +1877,7 @@ final class TokenManager: @unchecked Sendable {
     private func dedupeOpenAIAccounts(_ accounts: [OpenAIAuthAccount]) -> [OpenAIAuthAccount] {
         func priority(for source: OpenAIAuthSource) -> Int {
             switch source {
+            case .codexMultiAuth: return 4
             case .opencodeAuth: return 3
             case .openCodeMultiAuth: return 2
             case .codexLB: return 1
@@ -2216,6 +2227,311 @@ final class TokenManager: @unchecked Sendable {
             )
         }
 
+        return nil
+    }
+
+    // MARK: - Codex Multi Auth Account Discovery
+
+    /// Resolves the codex-multi-auth root directory.
+    /// Priority: CODEX_MULTI_AUTH_DIR env var > ~/.codex/multi-auth
+    private func codexMultiAuthRoot() -> URL? {
+        let fileManager = FileManager.default
+        if let envDir = ProcessInfo.processInfo.environment["CODEX_MULTI_AUTH_DIR"],
+           !envDir.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let envURL = URL(fileURLWithPath: envDir, isDirectory: true)
+            if fileManager.fileExists(atPath: envURL.path) {
+                logger.info("codex-multi-auth root from CODEX_MULTI_AUTH_DIR: \(envURL.path)")
+                return envURL
+            }
+            logger.warning("CODEX_MULTI_AUTH_DIR set but does not exist: \(envDir)")
+        }
+
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        let defaultRoot = homeDir
+            .appendingPathComponent(".codex", isDirectory: true)
+            .appendingPathComponent("multi-auth", isDirectory: true)
+        if fileManager.fileExists(atPath: defaultRoot.path) {
+            logger.info("codex-multi-auth root at default path: \(defaultRoot.path)")
+            return defaultRoot
+        }
+
+        return nil
+    }
+
+    /// Returns all codex-multi-auth account file paths in priority order.
+    private func codexMultiAuthPaths() -> [URL] {
+        guard let root = codexMultiAuthRoot() else {
+            return []
+        }
+
+        let fileManager = FileManager.default
+        var paths: [URL] = [
+            root.appendingPathComponent("openai-codex-accounts.json")
+        ]
+
+        let projectsDir = root.appendingPathComponent("projects", isDirectory: true)
+        if let projectDirectories = try? fileManager.contentsOfDirectory(
+            at: projectsDir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) {
+            let projectFiles = projectDirectories
+                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+                .map { $0.appendingPathComponent("openai-codex-accounts.json") }
+            paths.append(contentsOf: projectFiles)
+        }
+
+        var deduped: [URL] = []
+        var visited = Set<String>()
+        for path in paths {
+            let normalizedPath = path.standardizedFileURL.path
+            if visited.insert(normalizedPath).inserted {
+                deduped.append(path)
+            }
+        }
+        return deduped
+    }
+
+    /// Reads codex-multi-auth V3 account storage and returns OpenAIAuthAccount entries.
+    func readCodexMultiAuthFiles(at paths: [URL]) -> [OpenAIAuthAccount] {
+        var accounts: [OpenAIAuthAccount] = []
+        let fileManager = FileManager.default
+
+        for path in paths {
+            guard fileManager.fileExists(atPath: path.path) else {
+                continue
+            }
+            guard fileManager.isReadableFile(atPath: path.path) else {
+                logger.warning("codex-multi-auth file not readable: \(path.path)")
+                continue
+            }
+
+            guard let data = try? Data(contentsOf: path) else {
+                logger.warning("codex-multi-auth file could not be read: \(path.path)")
+                continue
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data, options: []),
+                  let dict = json as? [String: Any] else {
+                logger.warning("codex-multi-auth file is not valid JSON: \(path.path)")
+                continue
+            }
+
+            guard let rawAccounts = dict["accounts"] as? [[String: Any]] else {
+                logger.warning("codex-multi-auth file missing 'accounts' array: \(path.path)")
+                continue
+            }
+
+            var pathAccounts: [OpenAIAuthAccount] = []
+            for accountDict in rawAccounts {
+                // Skip disabled accounts
+                if let enabled = accountDict["enabled"] as? Bool, !enabled {
+                    logger.info("codex-multi-auth: skipping disabled account in \(path.path)")
+                    continue
+                }
+
+                let accessToken = (accountDict["accessToken"] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let accountId = (accountDict["accountId"] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let email = (accountDict["email"] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                // Accounts without usable access token are skipped for live fetch
+                // but may still be used for quota-cache identity matching later.
+                guard !accessToken.isEmpty else {
+                    logger.info("codex-multi-auth: skipping account without access token (accountId=\(accountId ?? "nil"), email=\(email ?? "nil")) in \(path.path)")
+                    continue
+                }
+
+                // Try to extract accountId and email from the access token payload if not stored
+                let tokenPayload = decodeOpenAIAccessTokenPayload(accessToken)
+                let resolvedAccountId = normalizedNonEmpty(accountId)
+                    ?? normalizedNonEmpty(tokenPayload?.auth?.chatGPTAccountId)
+                let resolvedEmail = normalizedNonEmpty(email)
+                    ?? normalizedNonEmpty(tokenPayload?.profile?.email)
+
+                pathAccounts.append(
+                    OpenAIAuthAccount(
+                        accessToken: accessToken,
+                        accountId: resolvedAccountId,
+                        externalUsageAccountId: nil,
+                        email: resolvedEmail,
+                        authSource: path.path,
+                        sourceLabels: [openAISourceLabel(for: .codexMultiAuth)],
+                        source: .codexMultiAuth,
+                        credentialType: .oauthBearer
+                    )
+                )
+            }
+
+            if !pathAccounts.isEmpty {
+                logger.info("Loaded \(pathAccounts.count) codex-multi-auth account(s) from \(path.path)")
+                accounts.append(contentsOf: pathAccounts)
+            }
+        }
+
+        return accounts
+    }
+
+    /// Reads and caches codex-multi-auth accounts from discovered paths.
+    private func readCodexMultiAuthAccounts() -> [OpenAIAuthAccount] {
+        return queue.sync {
+            if let cached = cachedCodexMultiAuthAccounts,
+               let timestamp = codexMultiAuthAccountsCacheTimestamp,
+               Date().timeIntervalSince(timestamp) < cacheValiditySeconds {
+                return cached
+            }
+
+            let fileManager = FileManager.default
+            let paths = codexMultiAuthPaths()
+            let accounts = readCodexMultiAuthFiles(at: paths)
+            let existingPaths = paths.filter { fileManager.fileExists(atPath: $0.path) }
+
+            cachedCodexMultiAuthAccounts = accounts
+            codexMultiAuthAccountsCacheTimestamp = Date()
+            lastFoundCodexMultiAuthPaths = existingPaths
+            return accounts
+        }
+    }
+
+    // MARK: - Codex Multi Auth Quota Cache
+
+    /// Window entry in codex-multi-auth quota-cache.json
+    struct CodexMultiAuthQuotaWindow {
+        let usedPercent: Double?
+        let windowMinutes: Int?
+        let resetAtMs: Int64?
+    }
+
+    /// Single entry in codex-multi-auth quota-cache.json
+    struct CodexMultiAuthQuotaCacheEntry {
+        let updatedAt: Int64
+        let status: Int
+        let model: String?
+        let planType: String?
+        let primary: CodexMultiAuthQuotaWindow
+        let secondary: CodexMultiAuthQuotaWindow
+    }
+
+    /// Complete codex-multi-auth quota cache
+    struct CodexMultiAuthQuotaCache {
+        let byAccountId: [String: CodexMultiAuthQuotaCacheEntry]
+        let byEmail: [String: CodexMultiAuthQuotaCacheEntry]
+    }
+
+    /// Reads codex-multi-auth quota-cache.json from discovered paths.
+    /// Checks CODEX_MULTI_AUTH_DIR/quota-cache.json first, then ~/.codex/multi-auth/quota-cache.json.
+    func readCodexMultiAuthQuotaCache() -> CodexMultiAuthQuotaCache? {
+        let fileManager = FileManager.default
+        var paths: [URL] = []
+
+        if let envDir = ProcessInfo.processInfo.environment["CODEX_MULTI_AUTH_DIR"],
+           !envDir.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            paths.append(URL(fileURLWithPath: envDir, isDirectory: true)
+                .appendingPathComponent("quota-cache.json"))
+        }
+
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        paths.append(homeDir
+            .appendingPathComponent(".codex", isDirectory: true)
+            .appendingPathComponent("multi-auth", isDirectory: true)
+            .appendingPathComponent("quota-cache.json"))
+
+        for path in paths {
+            guard fileManager.fileExists(atPath: path.path) else {
+                continue
+            }
+            guard fileManager.isReadableFile(atPath: path.path) else {
+                logger.warning("codex-multi-auth quota-cache.json not readable: \(path.path)")
+                continue
+            }
+
+            guard let data = try? Data(contentsOf: path) else {
+                logger.warning("codex-multi-auth quota-cache.json could not be read: \(path.path)")
+                continue
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data, options: []),
+                  let dict = json as? [String: Any] else {
+                logger.warning("codex-multi-auth quota-cache.json is not valid JSON: \(path.path)")
+                continue
+            }
+
+            let byAccountId = parseQuotaCacheEntries(dict["byAccountId"] as? [String: Any])
+            let byEmail = parseQuotaCacheEntries(dict["byEmail"] as? [String: Any])
+
+            if byAccountId.isEmpty && byEmail.isEmpty {
+                logger.info("codex-multi-auth quota-cache.json has no entries: \(path.path)")
+                continue
+            }
+
+            logger.info("Loaded codex-multi-auth quota-cache.json from \(path.path): \(byAccountId.count) byAccountId, \(byEmail.count) byEmail")
+            return CodexMultiAuthQuotaCache(byAccountId: byAccountId, byEmail: byEmail)
+        }
+
+        return nil
+    }
+
+    private func parseQuotaCacheEntries(_ dict: [String: Any]?) -> [String: CodexMultiAuthQuotaCacheEntry] {
+        guard let dict else { return [:] }
+        var entries: [String: CodexMultiAuthQuotaCacheEntry] = [:]
+
+        for (key, value) in dict {
+            guard let entryDict = value as? [String: Any] else { continue }
+            guard let updatedAt = (entryDict["updatedAt"] as? NSNumber)?.int64Value else {
+                logger.info("codex-multi-auth quota cache: skipping entry '\(key)' missing updatedAt")
+                continue
+            }
+            let status = (entryDict["status"] as? NSNumber)?.intValue ?? 0
+            let model = entryDict["model"] as? String
+            let planType = entryDict["planType"] as? String
+            let primary = parseQuotaWindow(entryDict["primary"] as? [String: Any])
+            let secondary = parseQuotaWindow(entryDict["secondary"] as? [String: Any])
+
+            entries[key] = CodexMultiAuthQuotaCacheEntry(
+                updatedAt: updatedAt,
+                status: status,
+                model: model,
+                planType: planType,
+                primary: primary,
+                secondary: secondary
+            )
+        }
+
+        return entries
+    }
+
+    private func parseQuotaWindow(_ dict: [String: Any]?) -> CodexMultiAuthQuotaWindow {
+        guard let dict else {
+            return CodexMultiAuthQuotaWindow(usedPercent: nil, windowMinutes: nil, resetAtMs: nil)
+        }
+        let usedPercent = (dict["usedPercent"] as? NSNumber)?.doubleValue
+        let windowMinutes = (dict["windowMinutes"] as? NSNumber)?.intValue
+        let resetAtMs = (dict["resetAtMs"] as? NSNumber)?.int64Value
+        return CodexMultiAuthQuotaWindow(
+            usedPercent: usedPercent,
+            windowMinutes: windowMinutes,
+            resetAtMs: resetAtMs
+        )
+    }
+
+    /// Looks up a quota cache entry by email first, then accountId (email-first stability rule).
+    func lookupQuotaCacheEntry(
+        cache: CodexMultiAuthQuotaCache,
+        email: String?,
+        accountId: String?
+    ) -> CodexMultiAuthQuotaCacheEntry? {
+        if let normalizedEmail = normalizedNonEmpty(email)?.lowercased(),
+           let entry = cache.byEmail[normalizedEmail] {
+            logger.info("codex-multi-auth quota cache matched by email: \(normalizedEmail)")
+            return entry
+        }
+        if let normalizedAccountId = normalizedNonEmpty(accountId),
+           let entry = cache.byAccountId[normalizedAccountId] {
+            logger.info("codex-multi-auth quota cache matched by accountId: \(normalizedAccountId)")
+            return entry
+        }
         return nil
     }
 
@@ -3121,10 +3437,17 @@ final class TokenManager: @unchecked Sendable {
 
     // MARK: - OpenAI Account Discovery
 
-    /// Gets all OpenAI accounts (OpenCode auth + codex-lb + Codex native auth)
+    /// Gets all OpenAI accounts (codex-multi-auth + OpenCode auth + codex-lb + Codex native auth)
     func getOpenAIAccounts() -> [OpenAIAuthAccount] {
         var accounts: [OpenAIAuthAccount] = []
 
+        // Priority 1: codex-multi-auth (highest priority)
+        let codexMultiAuthAccounts = readCodexMultiAuthAccounts()
+        if !codexMultiAuthAccounts.isEmpty {
+            accounts.append(contentsOf: codexMultiAuthAccounts)
+        }
+
+        // Priority 2: OpenCode direct OAuth
         if let auth = readOpenCodeAuth(),
            let access = auth.openai?.access,
            !access.isEmpty {

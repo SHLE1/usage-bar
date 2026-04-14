@@ -100,6 +100,7 @@ log stream --predicate 'subsystem == "com.opencodeproviders"' --level debug
 ### Instruction of each task
 - In all changes, always write debugging log for actually printing before you confirming the feature is fully functional.
 - After each change, check whether the corresponding Chinese i18n is missing or incomplete, and finish it before handing off.
+- **After adding or changing any user-facing feature, update `README.md` and `README.zh-CN.md`** to reflect the change before handing off.
 - After each change, follow:
   - Clear cache and compile the binary
   - Kill the existing process, and run the new app.

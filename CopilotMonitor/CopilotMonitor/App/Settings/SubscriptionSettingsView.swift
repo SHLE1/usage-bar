@@ -10,6 +10,11 @@ struct SubscriptionSettingsView: View {
     @State private var rows: [SubscriptionRow] = []
     @State private var totalCost: Double = 0
 
+    private struct DetectedSubscriptionAccount {
+        let key: String
+        let displayName: String
+    }
+
     /// Providers that support subscription presets (quota-based only).
     private static let subscribableProviders: [ProviderIdentifier] = {
         ProviderIdentifier.allCases.filter { !ProviderSubscriptionPresets.presets(for: $0).isEmpty }
@@ -52,6 +57,12 @@ struct SubscriptionSettingsView: View {
             }
         }
         .onAppear { reload() }
+        .onReceive(NotificationCenter.default.publisher(for: AppPreferences.enabledProvidersDidChange)) { _ in
+            reload()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppPreferences.codexStatusBarAccountDidChange)) { _ in
+            reload()
+        }
     }
 
     // MARK: - Data Loading
@@ -65,12 +76,31 @@ struct SubscriptionSettingsView: View {
         var seen = Set<String>()
         var result: [SubscriptionRow] = []
 
-        // 1) Enumerate subscribable providers — one row per provider (or per account if saved)
+        // 1) Enumerate subscribable providers — prefer currently detected accounts when available
         for provider in Self.subscribableProviders {
             let baseKey = manager.subscriptionKey(for: provider)
 
             // Collect all saved keys that belong to this provider
             let providerKeys = allSavedKeys.filter { keyBelongsToProvider($0, provider: provider) }
+            let detectedAccounts = detectedSubscriptionAccounts(for: provider)
+
+            if !detectedAccounts.isEmpty {
+                subscriptionSettingsLogger.debug(
+                    "Detected \(detectedAccounts.count) live subscription account(s) for provider \(provider.rawValue, privacy: .public)"
+                )
+                for detected in detectedAccounts {
+                    let plan = manager.getPlan(forKey: detected.key)
+                    result.append(SubscriptionRow(
+                        key: detected.key,
+                        provider: provider,
+                        plan: plan,
+                        presets: ProviderSubscriptionPresets.presets(for: provider),
+                        displayNameOverride: detected.displayName
+                    ))
+                    seen.insert(detected.key)
+                }
+                continue
+            }
 
             if providerKeys.isEmpty {
                 // No saved subscription yet — show a single row for the provider
@@ -158,6 +188,174 @@ struct SubscriptionSettingsView: View {
         let prefix = key.split(separator: ".", maxSplits: 1).first.map(String.init) ?? key
         return ProviderIdentifier(rawValue: prefix)
     }
+
+    private func detectedSubscriptionAccounts(for provider: ProviderIdentifier) -> [DetectedSubscriptionAccount] {
+        switch provider {
+        case .codex:
+            return detectedCodexSubscriptionAccounts()
+        case .claude:
+            return detectedClaudeSubscriptionAccounts()
+        case .copilot:
+            return detectedCopilotSubscriptionAccounts()
+        case .geminiCLI:
+            return detectedGeminiSubscriptionAccounts()
+        default:
+            return []
+        }
+    }
+
+    private func detectedCodexSubscriptionAccounts() -> [DetectedSubscriptionAccount] {
+        let accounts = TokenManager.shared.getOpenAIAccounts()
+        let emailCounts = normalizedEmailCounts(accounts.map { $0.email })
+        return deduplicatedDetectedSubscriptionAccounts(
+            accounts.enumerated().compactMap { index, account in
+                let subscriptionId = normalizedSubscriptionIdentity(email: account.email, fallback: account.accountId)
+                guard let subscriptionId else { return nil }
+                let label = detectedAccountLabel(
+                    preferredEmail: account.email,
+                    fallbackId: account.accountId,
+                    sourceLabels: account.sourceLabels,
+                    fallbackIndex: index,
+                    duplicateEmailCounts: emailCounts
+                )
+                return DetectedSubscriptionAccount(
+                    key: SubscriptionSettingsManager.shared.subscriptionKey(for: .codex, accountId: subscriptionId),
+                    displayName: "\(ProviderIdentifier.codex.displayName) (\(label))"
+                )
+            }
+        )
+    }
+
+    private func detectedClaudeSubscriptionAccounts() -> [DetectedSubscriptionAccount] {
+        let accounts = TokenManager.shared.getClaudeAccounts()
+        let emailCounts = normalizedEmailCounts(accounts.map { $0.email })
+        return deduplicatedDetectedSubscriptionAccounts(
+            accounts.enumerated().compactMap { index, account in
+                let subscriptionId = normalizedSubscriptionIdentity(email: account.email, fallback: account.accountId)
+                guard let subscriptionId else { return nil }
+                let label = detectedAccountLabel(
+                    preferredEmail: account.email,
+                    fallbackId: account.accountId,
+                    sourceLabels: account.sourceLabels,
+                    fallbackIndex: index,
+                    duplicateEmailCounts: emailCounts
+                )
+                return DetectedSubscriptionAccount(
+                    key: SubscriptionSettingsManager.shared.subscriptionKey(for: .claude, accountId: subscriptionId),
+                    displayName: "\(ProviderIdentifier.claude.displayName) (\(label))"
+                )
+            }
+        )
+    }
+
+    private func detectedCopilotSubscriptionAccounts() -> [DetectedSubscriptionAccount] {
+        let accounts = TokenManager.shared.getGitHubCopilotAccounts()
+        return deduplicatedDetectedSubscriptionAccounts(
+            accounts.enumerated().compactMap { index, account in
+                let normalizedLogin = normalizedNonEmpty(account.login)?.lowercased()
+                let normalizedAccountId = normalizedNonEmpty(account.accountId)
+                let subscriptionId = normalizedLogin ?? normalizedAccountId
+                guard let subscriptionId else { return nil }
+                let label = normalizedLogin
+                    ?? normalizedAccountId
+                    ?? "Account #\(index + 1)"
+                return DetectedSubscriptionAccount(
+                    key: SubscriptionSettingsManager.shared.subscriptionKey(for: .copilot, accountId: subscriptionId),
+                    displayName: "\(ProviderIdentifier.copilot.displayName) (\(label))"
+                )
+            }
+        )
+    }
+
+    private func detectedGeminiSubscriptionAccounts() -> [DetectedSubscriptionAccount] {
+        let accounts = TokenManager.shared.getAllGeminiAccounts()
+        let emailCounts = normalizedEmailCounts(accounts.map { $0.email })
+        return deduplicatedDetectedSubscriptionAccounts(
+            accounts.enumerated().compactMap { index, account in
+                let subscriptionId = normalizedSubscriptionIdentity(email: account.email, fallback: account.accountId)
+                guard let subscriptionId else { return nil }
+                let label = detectedAccountLabel(
+                    preferredEmail: account.email,
+                    fallbackId: account.accountId,
+                    sourceLabels: account.sourceLabels,
+                    fallbackIndex: index,
+                    duplicateEmailCounts: emailCounts
+                )
+                return DetectedSubscriptionAccount(
+                    key: SubscriptionSettingsManager.shared.subscriptionKey(for: .geminiCLI, accountId: subscriptionId),
+                    displayName: "\(ProviderIdentifier.geminiCLI.displayName) (\(label))"
+                )
+            }
+        )
+    }
+
+    private func deduplicatedDetectedSubscriptionAccounts(_ accounts: [DetectedSubscriptionAccount]) -> [DetectedSubscriptionAccount] {
+        var ordered: [DetectedSubscriptionAccount] = []
+        var seen = Set<String>()
+        for account in accounts {
+            guard seen.insert(account.key).inserted else { continue }
+            ordered.append(account)
+        }
+        return ordered
+    }
+
+    private func normalizedSubscriptionIdentity(email: String?, fallback: String?) -> String? {
+        if let normalizedEmail = normalizedNonEmpty(email)?.lowercased() {
+            return normalizedEmail
+        }
+        return normalizedNonEmpty(fallback)
+    }
+
+    private func normalizedNonEmpty(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func normalizedEmailCounts(_ emails: [String?]) -> [String: Int] {
+        emails.reduce(into: [String: Int]()) { counts, email in
+            guard let normalizedEmail = normalizedNonEmpty(email)?.lowercased() else { return }
+            counts[normalizedEmail, default: 0] += 1
+        }
+    }
+
+    private func detectedAccountLabel(
+        preferredEmail: String?,
+        fallbackId: String?,
+        sourceLabels: [String],
+        fallbackIndex: Int,
+        duplicateEmailCounts: [String: Int]
+    ) -> String {
+        let trimmedEmail = normalizedNonEmpty(preferredEmail)
+        let normalizedEmail = trimmedEmail?.lowercased() ?? ""
+
+        if let trimmedEmail {
+            if duplicateEmailCounts[normalizedEmail, default: 0] > 1 {
+                if let accountId = normalizedNonEmpty(fallbackId) {
+                    return "\(trimmedEmail) (\(accountId))"
+                }
+
+                if let sourceLabel = sourceLabels
+                    .compactMap({ normalizedNonEmpty($0) })
+                    .first {
+                    return "\(trimmedEmail) (\(sourceLabel))"
+                }
+            }
+            return trimmedEmail
+        }
+
+        if let fallbackId = normalizedNonEmpty(fallbackId) {
+            return fallbackId
+        }
+
+        if let sourceLabel = sourceLabels
+            .compactMap({ normalizedNonEmpty($0) })
+            .first {
+            return sourceLabel
+        }
+
+        return "Account #\(fallbackIndex + 1)"
+    }
 }
 
 // MARK: - Row Model
@@ -169,17 +367,29 @@ struct SubscriptionRow: Identifiable {
     var plan: SubscriptionPlan
     let presets: [SubscriptionPreset]
     let isOrphaned: Bool
+    let displayNameOverride: String?
 
-    init(key: String, provider: ProviderIdentifier?, plan: SubscriptionPlan, presets: [SubscriptionPreset], isOrphaned: Bool = false) {
+    init(
+        key: String,
+        provider: ProviderIdentifier?,
+        plan: SubscriptionPlan,
+        presets: [SubscriptionPreset],
+        isOrphaned: Bool = false,
+        displayNameOverride: String? = nil
+    ) {
         self.id = key
         self.key = key
         self.provider = provider
         self.plan = plan
         self.presets = presets
         self.isOrphaned = isOrphaned
+        self.displayNameOverride = displayNameOverride
     }
 
     var displayName: String {
+        if let displayNameOverride, !displayNameOverride.isEmpty {
+            return displayNameOverride
+        }
         guard let provider = provider else { return key }
         let base = provider.displayName
         // If key has an account suffix, show it

@@ -1,5 +1,5 @@
 import XCTest
-@testable import CopilotMonitor
+@testable import UsageBar
 
 final class AntigravityProviderVarintTests: XCTestCase {
     private let provider = AntigravityProvider()
