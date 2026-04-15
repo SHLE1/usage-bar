@@ -1,4 +1,7 @@
+import AppKit
 import SwiftUI
+
+private let defaultSettingsCardContentInsets = EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
 
 struct SettingsPage<Content: View>: View {
     let title: String?
@@ -34,7 +37,7 @@ struct SettingsPage<Content: View>: View {
                 content
             }
             .frame(maxWidth: 720, alignment: .leading)
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 24)
             .padding(.vertical, 24)
         }
         .scrollIndicators(.automatic)
@@ -45,15 +48,18 @@ struct SettingsPage<Content: View>: View {
 struct SettingsSectionCard<Content: View>: View {
     let title: String
     let subtitle: String?
+    let contentInsets: EdgeInsets
     let content: Content
 
     init(
         title: String,
         subtitle: String? = nil,
+        contentInsets: EdgeInsets = defaultSettingsCardContentInsets,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.contentInsets = contentInsets
         self.content = content()
     }
 
@@ -74,8 +80,7 @@ struct SettingsSectionCard<Content: View>: View {
             GroupBox {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 4)
+                    .padding(contentInsets)
             }
         }
     }
@@ -116,14 +121,25 @@ struct SettingsRow<Accessory: View>: View {
     }
 }
 
+enum SettingsSummaryRowTitleTone {
+    case primary
+    case secondary
+}
+
 /// A row variant for summary/metric values that need more breathing room.
 /// The title acts as a label; the value is the focal point.
 struct SettingsSummaryRow<Value: View>: View {
     let title: String
+    let titleTone: SettingsSummaryRowTitleTone
     let value: Value
 
-    init(title: String, @ViewBuilder value: () -> Value) {
+    init(
+        title: String,
+        titleTone: SettingsSummaryRowTitleTone = .secondary,
+        @ViewBuilder value: () -> Value
+    ) {
         self.title = title
+        self.titleTone = titleTone
         self.value = value()
     }
 
@@ -131,7 +147,7 @@ struct SettingsSummaryRow<Value: View>: View {
         HStack(alignment: .center, spacing: 12) {
             Text(title)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(titleTone == .primary ? .primary : .secondary)
 
             Spacer()
 
@@ -141,19 +157,58 @@ struct SettingsSummaryRow<Value: View>: View {
     }
 }
 
+struct SettingsProviderIcon: View {
+    let provider: ProviderIdentifier?
+    var dimmed: Bool = false
+    var size: CGFloat = 14
+    var showsFallback: Bool = false
+    var fallbackSystemName: String = "questionmark.circle"
+
+    var body: some View {
+        Group {
+            if let provider {
+                providerIcon(for: provider)
+            } else if showsFallback {
+                Image(systemName: fallbackSystemName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            }
+        }
+        .frame(width: size, height: size)
+        .foregroundStyle(dimmed ? .quaternary : .secondary)
+    }
+
+    @ViewBuilder
+    private func providerIcon(for provider: ProviderIdentifier) -> some View {
+        if let assetName = provider.menuIconAssetName,
+           let nsImage = NSImage(named: assetName) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            Image(systemName: provider.menuIconSymbolName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        }
+    }
+}
+
 /// Visually lighter section card for supplementary content.
 struct SettingsSecondaryCard<Content: View>: View {
     let title: String
     let subtitle: String?
+    let contentInsets: EdgeInsets
     let content: Content
 
     init(
         title: String,
         subtitle: String? = nil,
+        contentInsets: EdgeInsets = defaultSettingsCardContentInsets,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.contentInsets = contentInsets
         self.content = content()
     }
 
@@ -176,8 +231,7 @@ struct SettingsSecondaryCard<Content: View>: View {
             GroupBox {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 4)
+                    .padding(contentInsets)
             }
         }
     }

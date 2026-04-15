@@ -27,7 +27,8 @@ struct SubscriptionSettingsView: View {
                 title: L("Monthly Total")
             ) {
                 SettingsSummaryRow(
-                    title: L("Configured subscription cost")
+                    title: L("Configured subscription cost"),
+                    titleTone: .primary
                 ) {
                     Text(String(format: "$%.2f/m", totalCost))
                         .font(.body.monospaced())
@@ -419,15 +420,22 @@ private struct SubscriptionRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: showCustomField ? 6 : 0) {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(row.displayName)
-                        .font(.body)
-                        .lineLimit(1)
+                HStack(alignment: .center, spacing: 10) {
+                    SettingsProviderIcon(
+                        provider: row.provider,
+                        showsFallback: row.provider == nil
+                    )
 
-                    if row.isOrphaned {
-                        Text(L("Saved setting without a detected account"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(row.displayName)
+                            .font(.body)
+                            .lineLimit(1)
+
+                        if row.isOrphaned {
+                            Text(L("Saved setting without a detected account"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -466,7 +474,9 @@ private struct SubscriptionRowView: View {
         }
         .onAppear {
             syncFromPlan()
-            subscriptionSettingsLogger.debug("Using adaptive-width native subscription plan picker for \(row.key, privacy: .public)")
+            subscriptionSettingsLogger.debug(
+                "Using adaptive-width native subscription plan picker with provider icon for \(row.key, privacy: .public)"
+            )
         }
         .onChange(of: row.plan) { _ in
             syncFromPlan()

@@ -76,10 +76,6 @@ struct StatusBarSettingsView: View {
         prefs.copilotAddOnEnabled && prefs.isProviderEnabled(.copilot)
     }
 
-    private var visiblePreviewItemCount: Int {
-        visiblePayAsYouGoPreviewItems.count + enabledSubscription.count
-    }
-
     private var shouldShowPayAsYouGoPreview: Bool {
         !visiblePayAsYouGoPreviewItems.isEmpty
     }
@@ -112,30 +108,30 @@ struct StatusBarSettingsView: View {
     }
 
     var body: some View {
-        SettingsPage(
-            subtitle: L("Choose which providers appear in UsageBar.")
-        ) {
+        SettingsPage {
             previewSection
 
             SettingsSectionCard(
                 title: L("Pay-as-you-go Providers"),
-                subtitle: L("These providers appear in the usage-based cost section.")
+                subtitle: L("These providers appear in the usage-based cost section."),
+                contentInsets: .init()
             ) {
                 payAsYouGoList
             }
 
             SettingsSectionCard(
                 title: L("Subscription Providers"),
-                subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
+                subtitle: L("Quota-based providers shown in the quota section and the top status bar summary."),
+                contentInsets: .init()
             ) {
                 subscriptionList
             }
 
             SettingsSecondaryCard(
                 title: L("How this appears"),
-                subtitle: L("The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.")
+                contentInsets: .init()
             ) {
-                Text(L("Use Advanced Providers for provider-specific overrides such as the Codex account and limit window."))
+                Text(L("Top status bar shows quota-based providers only. Use Advanced Providers for overrides such as the Codex account and limit window."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -143,7 +139,7 @@ struct StatusBarSettingsView: View {
         }
         .onAppear {
             reloadStoredOrders()
-            logger.debug("Status bar settings loaded with draggable provider lists")
+            logger.debug("Status bar settings loaded with simplified menu preview and draggable provider lists")
         }
     }
 
@@ -151,7 +147,10 @@ struct StatusBarSettingsView: View {
 
     @ViewBuilder
     private var previewSection: some View {
-        GroupBox {
+        SettingsSectionCard(
+            title: L("Menu Preview"),
+            contentInsets: .init()
+        ) {
             VStack(alignment: .leading, spacing: 0) {
                 if shouldShowPayAsYouGoPreview {
                     previewHeader(title: L("Pay-as-you-go"))
@@ -185,22 +184,8 @@ struct StatusBarSettingsView: View {
                     }
                 }
             }
-            .padding(8)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            HStack {
-                Text(L("Menu Preview"))
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
         }
     }
 
@@ -272,18 +257,7 @@ struct StatusBarSettingsView: View {
 
     @ViewBuilder
     private func previewIcon(for provider: ProviderIdentifier, dimmed: Bool) -> some View {
-        Group {
-            if let assetName = provider.menuIconAssetName,
-               let nsImage = NSImage(named: assetName) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } else {
-                Image(systemName: provider.menuIconSymbolName)
-            }
-        }
-        .frame(width: 14, height: 14)
-        .foregroundStyle(dimmed ? .quaternary : .secondary)
+        SettingsProviderIcon(provider: provider, dimmed: dimmed)
     }
 
     @ViewBuilder
@@ -291,12 +265,7 @@ struct StatusBarSettingsView: View {
         let enabled = isEnabled(item)
 
         HStack(spacing: 12) {
-            dragHandle(for: item)
-            previewIcon(for: item.iconProvider, dimmed: !enabled)
-
-            Text(item.displayName)
-                .font(.system(size: 13))
-                .foregroundStyle(enabled ? .primary : .secondary)
+            payAsYouGoDragLabel(for: item, enabled: enabled)
 
             Spacer(minLength: 12)
 
@@ -323,12 +292,7 @@ struct StatusBarSettingsView: View {
         let enabled = prefs.isProviderEnabled(provider)
 
         HStack(spacing: 12) {
-            dragHandle(for: provider)
-            previewIcon(for: provider, dimmed: !enabled)
-
-            Text(provider.displayName)
-                .font(.system(size: 13))
-                .foregroundStyle(enabled ? .primary : .secondary)
+            subscriptionDragLabel(for: provider, enabled: enabled)
 
             Spacer(minLength: 12)
 
@@ -351,31 +315,47 @@ struct StatusBarSettingsView: View {
     }
 
     @ViewBuilder
-    private func dragHandle(for item: PayAsYouGoSettingsItem) -> some View {
-        Image(systemName: "line.3.horizontal")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 16, height: 16)
-            .contentShape(Rectangle())
-            .onDrag {
-                draggedPayAsYouGoItem = item
-                logger.debug("Started dragging pay-as-you-go item \(item.storageKey, privacy: .public)")
-                return NSItemProvider(object: item.storageKey as NSString)
-            }
+    private func payAsYouGoDragLabel(for item: PayAsYouGoSettingsItem, enabled: Bool) -> some View {
+        HStack(spacing: 12) {
+            dragHandleIcon()
+            previewIcon(for: item.iconProvider, dimmed: !enabled)
+
+            Text(item.displayName)
+                .font(.system(size: 13))
+                .foregroundStyle(enabled ? .primary : .secondary)
+        }
+        .contentShape(Rectangle())
+        .onDrag {
+            draggedPayAsYouGoItem = item
+            logger.debug("Started dragging pay-as-you-go item \(item.storageKey, privacy: .public) from combined row label")
+            return NSItemProvider(object: item.storageKey as NSString)
+        }
     }
 
     @ViewBuilder
-    private func dragHandle(for provider: ProviderIdentifier) -> some View {
+    private func subscriptionDragLabel(for provider: ProviderIdentifier, enabled: Bool) -> some View {
+        HStack(spacing: 12) {
+            dragHandleIcon()
+            previewIcon(for: provider, dimmed: !enabled)
+
+            Text(provider.displayName)
+                .font(.system(size: 13))
+                .foregroundStyle(enabled ? .primary : .secondary)
+        }
+        .contentShape(Rectangle())
+        .onDrag {
+            draggedSubscriptionProvider = provider
+            logger.debug("Started dragging subscription provider \(provider.rawValue, privacy: .public) from combined row label")
+            return NSItemProvider(object: provider.rawValue as NSString)
+        }
+    }
+
+    @ViewBuilder
+    private func dragHandleIcon() -> some View {
         Image(systemName: "line.3.horizontal")
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(.secondary)
             .frame(width: 16, height: 16)
-            .contentShape(Rectangle())
-            .onDrag {
-                draggedSubscriptionProvider = provider
-                logger.debug("Started dragging subscription provider \(provider.rawValue, privacy: .public)")
-                return NSItemProvider(object: provider.rawValue as NSString)
-            }
     }
 
     private func payAsYouGoBinding(for item: PayAsYouGoSettingsItem) -> Binding<Bool> {
