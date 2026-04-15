@@ -178,5 +178,3 @@ struct SettingsSecondaryCard<Content: View>: View {
         }
     }
 }
-
-
