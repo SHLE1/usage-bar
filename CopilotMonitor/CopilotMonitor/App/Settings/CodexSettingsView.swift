@@ -6,9 +6,7 @@ struct AdvancedProviderSettingsView: View {
     @State private var accountOptions: [CodexStatusBarAccountOption] = []
 
     var body: some View {
-        SettingsPage(
-            title: L("Advanced Providers")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
                 title: L("Codex")
             ) {

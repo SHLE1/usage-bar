@@ -11,9 +11,7 @@ struct GeneralSettingsView: View {
     @State private var showingCLIAlert = false
 
     var body: some View {
-        SettingsPage(
-            title: L("General")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
                 title: L("Usage Updates")
             ) {

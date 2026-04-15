@@ -113,27 +113,29 @@ struct StatusBarSettingsView: View {
 
     var body: some View {
         SettingsPage(
-            title: L("Status Bar"),
             subtitle: L("Choose which providers appear in UsageBar.")
         ) {
             previewSection
 
             SettingsSectionCard(
-                title: L("Pay-as-you-go Providers")
+                title: L("Pay-as-you-go Providers"),
+                subtitle: L("These providers appear in the usage-based cost section.")
             ) {
                 payAsYouGoList
             }
 
             SettingsSectionCard(
-                title: L("Subscription Providers")
+                title: L("Subscription Providers"),
+                subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
             ) {
                 subscriptionList
             }
 
             SettingsSecondaryCard(
-                title: L("Note")
+                title: L("How this appears"),
+                subtitle: L("The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.")
             ) {
-                Text(L("The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides."))
+                Text(L("Use Advanced Providers for provider-specific overrides such as the Codex account and limit window."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

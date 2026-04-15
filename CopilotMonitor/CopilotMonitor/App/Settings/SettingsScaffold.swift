@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct SettingsPage<Content: View>: View {
-    let title: String
+    let title: String?
     let subtitle: String?
     let content: Content
 
     init(
-        title: String,
+        title: String? = nil,
         subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) {
@@ -18,31 +18,30 @@ struct SettingsPage<Content: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
+                if let title, !title.isEmpty {
                     Text(title)
                         .font(.title3)
                         .fontWeight(.semibold)
-
-                    if let subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                 }
-                .padding(.bottom, 2)
+
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 content
             }
             .frame(maxWidth: 720, alignment: .leading)
-            .padding(24)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 24)
         }
         .scrollIndicators(.automatic)
     }
 }
 
-/// System-owned grouped card using native GroupBox.
-/// On macOS 26+, GroupBox automatically adopts the new system visuals.
+/// Section card with title placed above GroupBox, matching macOS System Settings.
 struct SettingsSectionCard<Content: View>: View {
     let title: String
     let subtitle: String?
@@ -59,15 +58,10 @@ struct SettingsSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        GroupBox {
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
+        VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .medium))
 
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
@@ -75,6 +69,13 @@ struct SettingsSectionCard<Content: View>: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+
+            GroupBox {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 4)
             }
         }
     }
@@ -140,8 +141,7 @@ struct SettingsSummaryRow<Value: View>: View {
     }
 }
 
-/// System-owned secondary card using native GroupBox.
-/// Visually lighter via reduced label emphasis.
+/// Visually lighter section card for supplementary content.
 struct SettingsSecondaryCard<Content: View>: View {
     let title: String
     let subtitle: String?
@@ -158,10 +158,7 @@ struct SettingsSecondaryCard<Content: View>: View {
     }
 
     var body: some View {
-        GroupBox {
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
+        VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption)
@@ -174,6 +171,13 @@ struct SettingsSecondaryCard<Content: View>: View {
                         .foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+
+            GroupBox {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 4)
             }
         }
     }

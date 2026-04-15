@@ -22,10 +22,7 @@ struct SubscriptionSettingsView: View {
     }()
 
     var body: some View {
-        SettingsPage(
-            title: L("Subscriptions"),
-            subtitle: L("Set plan costs for quota-based providers.")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
                 title: L("Monthly Total")
             ) {

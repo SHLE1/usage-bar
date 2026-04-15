@@ -100,8 +100,7 @@ extension StatusBarController {
         menu.insertItem(separator1, at: insertIndex)
         insertIndex += 1
 
-        let payAsYouGoHeader = NSMenuItem()
-        payAsYouGoHeader.view = createHeaderView(title: String(format: L("Pay-as-you-go: $%.2f"), payAsYouGoTotal))
+        let payAsYouGoHeader = createSectionHeaderItem(title: String(format: L("Pay-as-you-go: $%.2f"), payAsYouGoTotal))
         payAsYouGoHeader.tag = 999
         menu.insertItem(payAsYouGoHeader, at: insertIndex)
         insertIndex += 1
@@ -125,11 +124,10 @@ extension StatusBarController {
         menu.insertItem(separator2, at: insertIndex)
         insertIndex += 1
 
-        let quotaHeader = NSMenuItem()
         let quotaTitle = subscriptionTotal > 0
             ? String(format: L("Quota Status: $%.0f/m"), subscriptionTotal)
             : L("Quota Status")
-        quotaHeader.view = createHeaderView(title: quotaTitle)
+        let quotaHeader = createSectionHeaderItem(title: quotaTitle)
         quotaHeader.tag = 999
         menu.insertItem(quotaHeader, at: insertIndex)
         insertIndex += 1
@@ -433,9 +431,7 @@ extension StatusBarController {
 
             let submenu = NSMenu()
             let overageRequests = details.copilotOverageRequests ?? 0
-            let overageItem = NSMenuItem()
-            overageItem.view = createDisabledLabelView(text: String(format: L("Overage Requests: %.0f"), overageRequests))
-            submenu.addItem(overageItem)
+            submenu.addItem(createDisabledMenuItem(text: String(format: L("Overage Requests: %.0f"), overageRequests)))
 
             submenu.addItem(NSMenuItem.separator())
             let historyItem = NSMenuItem(title: L("Usage History"), action: nil, keyEquivalent: "")
@@ -448,13 +444,10 @@ extension StatusBarController {
             submenu.addItem(NSMenuItem.separator())
 
             if let email = details.email {
-                let emailItem = NSMenuItem()
-                emailItem.view = createDisabledLabelView(
+                submenu.addItem(createDisabledMenuItem(
                     text: String(format: L("Account: %@"), email),
-                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account"),
-                    multiline: false
-                )
-                submenu.addItem(emailItem)
+                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account")
+                ))
             }
 
             if let authSource = details.authSource {
@@ -768,13 +761,8 @@ extension StatusBarController {
                 let filledBlocks = Int((Double(used) / Double(max(limit, 1))) * 10)
                 let emptyBlocks = 10 - filledBlocks
                 let progressBar = String(repeating: "═", count: filledBlocks) + String(repeating: "░", count: emptyBlocks)
-                let progressItem = NSMenuItem()
-                progressItem.view = createDisabledLabelView(text: "[\(progressBar)] \(used)/\(limit)")
-                submenu.addItem(progressItem)
-
-                let usedItem = NSMenuItem()
-                usedItem.view = createDisabledLabelView(text: String(format: L("Monthly Usage: %.0f%%"), usedPercent))
-                submenu.addItem(usedItem)
+                submenu.addItem(createDisabledMenuItem(text: "[\(progressBar)] \(used)/\(limit)"))
+                submenu.addItem(createDisabledMenuItem(text: String(format: L("Monthly Usage: %.0f%%"), usedPercent)))
 
                 if let resetDate = copilotUsage.quotaResetDateUTC {
                     let formatter = DateFormatter()
@@ -785,41 +773,30 @@ extension StatusBarController {
                     paceItem.view = createPaceView(paceInfo: paceInfo)
                     submenu.addItem(paceItem)
 
-                    let resetItem = NSMenuItem()
-                    resetItem.view = createDisabledLabelView(
-                        text: String(format: L("Resets: %@ UTC"), formatter.string(from: resetDate)),
-                        indent: 0,
-                        textColor: .secondaryLabelColor
-                    )
-                    submenu.addItem(resetItem)
+                    submenu.addItem(createDisabledMenuItem(
+                        text: String(format: L("Resets: %@ UTC"), formatter.string(from: resetDate))
+                    ))
                     debugLog("updateMultiProviderMenu: reset row tone aligned with pace text for copilot fallback")
                 }
 
                 submenu.addItem(NSMenuItem.separator())
 
                 if let planName = copilotUsage.planDisplayName {
-                    let planItem = NSMenuItem()
-                    planItem.view = createDisabledLabelView(
+                    submenu.addItem(createDisabledMenuItem(
                         text: String(format: L("Plan: %@"), planName),
                         icon: NSImage(systemSymbolName: "crown", accessibilityDescription: "Plan")
-                    )
-                    submenu.addItem(planItem)
+                    ))
                 }
 
-                let freeItem = NSMenuItem()
-                freeItem.view = createDisabledLabelView(text: String(format: L("Quota Limit: %@"), String(limit)))
-                submenu.addItem(freeItem)
+                submenu.addItem(createDisabledMenuItem(text: String(format: L("Quota Limit: %@"), String(limit))))
 
                 submenu.addItem(NSMenuItem.separator())
 
                 if let email = providerResults[.copilot]?.details?.email {
-                    let emailItem = NSMenuItem()
-                    emailItem.view = createDisabledLabelView(
+                    submenu.addItem(createDisabledMenuItem(
                         text: String(format: L("Email: %@"), email),
-                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email"),
-                        multiline: false
-                    )
-                    submenu.addItem(emailItem)
+                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
+                    ))
                 }
 
                 let authItem = NSMenuItem()
@@ -1298,9 +1275,7 @@ extension StatusBarController {
     ) -> NSMenu {
         let submenu = NSMenu()
 
-        let statusItem = NSMenuItem()
-        statusItem.view = createDisabledLabelView(text: String(format: L("Status: %@"), errorMenuStatus(for: errorMessage).title))
-        submenu.addItem(statusItem)
+        submenu.addItem(createDisabledMenuItem(text: String(format: L("Status: %@"), errorMenuStatus(for: errorMessage).title)))
 
         let errorItem = NSMenuItem()
         errorItem.view = createDisabledLabelView(text: String(format: L("Error: %@"), errorMessage), multiline: true)
