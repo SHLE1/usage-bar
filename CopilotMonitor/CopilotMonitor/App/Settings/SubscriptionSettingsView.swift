@@ -24,24 +24,21 @@ struct SubscriptionSettingsView: View {
     var body: some View {
         SettingsPage(
             title: L("Subscriptions"),
-            subtitle: L("Set monthly plan costs for quota-based providers and any detected accounts.")
+            subtitle: L("Set plan costs for quota-based providers.")
         ) {
             SettingsSectionCard(
-                title: L("Monthly Total"),
-                subtitle: L("This total is used for the quota subscription summary.")
+                title: L("Monthly Total")
             ) {
-                SettingsRow(
+                SettingsSummaryRow(
                     title: L("Configured subscription cost")
                 ) {
                     Text(String(format: "$%.2f/m", totalCost))
                         .font(.body.monospaced())
-                        .foregroundStyle(.secondary)
                 }
             }
 
             SettingsSectionCard(
-                title: L("Provider Plans"),
-                subtitle: L("Choose a preset or enter a custom monthly amount for each provider.")
+                title: L("Provider Plans")
             ) {
                 VStack(spacing: 0) {
                     ForEach(Array($rows.enumerated()), id: \.offset) { index, $row in
@@ -433,7 +430,7 @@ private struct SubscriptionRowView: View {
                     if row.isOrphaned {
                         Text(L("Saved setting without a detected account"))
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -445,7 +442,7 @@ private struct SubscriptionRowView: View {
                 HStack(alignment: .center, spacing: 8) {
                     Text(L("Custom monthly cost"))
                         .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
 
                     Spacer()
 
@@ -459,7 +456,7 @@ private struct SubscriptionRowView: View {
 
                         Text(verbatim: "/m")
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Button(L("Apply")) {

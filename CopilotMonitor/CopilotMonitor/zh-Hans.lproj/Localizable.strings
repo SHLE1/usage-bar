@@ -319,3 +319,6 @@
 "Account" = "账号";
 "Plan" = "套餐";
 "Credits: $%.2f" = "余额：$%.2f";
+"Note" = "备注";
+"Set plan costs for quota-based providers." = "为配额制服务商设置订阅费用。";
+"The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides." = "顶部状态栏仅显示配额制服务商。如需服务商专属设置，请前往「高级服务商」。";

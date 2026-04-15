@@ -12,17 +12,14 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         SettingsPage(
-            title: L("General"),
-            subtitle: L("Control refresh timing, appearance, startup behavior, and command line access.")
+            title: L("General")
         ) {
             SettingsSectionCard(
-                title: L("Usage Updates"),
-                subtitle: L("Choose how often UsageBar refreshes and how it estimates end-of-month cost.")
+                title: L("Usage Updates")
             ) {
                 VStack(spacing: 0) {
                     SettingsRow(
-                        title: L("Auto Refresh Period"),
-                        description: L("How often provider data refreshes in the background.")
+                        title: L("Auto Refresh Period")
                     ) {
                         Picker("", selection: $prefs.refreshInterval) {
                             ForEach(RefreshInterval.allCases, id: \.self) { interval in
@@ -41,8 +38,7 @@ struct GeneralSettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Prediction Period"),
-                        description: L("The usage window used for monthly cost forecasts.")
+                        title: L("Prediction Period")
                     ) {
                         Picker("", selection: $prefs.predictionPeriod) {
                             ForEach(PredictionPeriod.allCases, id: \.self) { period in
@@ -60,13 +56,11 @@ struct GeneralSettingsView: View {
             }
 
             SettingsSectionCard(
-                title: L("App Behavior"),
-                subtitle: L("Decide how UsageBar behaves after launch.")
+                title: L("App Behavior")
             ) {
                 VStack(spacing: 0) {
                     SettingsRow(
-                        title: L("App Language"),
-                        description: L("Choose which language UsageBar uses. The default follows macOS.")
+                        title: L("App Language")
                     ) {
                         Picker("", selection: $prefs.appLanguageMode) {
                             ForEach(AppLanguageMode.allCases, id: \.self) { mode in
@@ -85,8 +79,7 @@ struct GeneralSettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Appearance"),
-                        description: L("Choose whether UsageBar follows macOS appearance or stays in a fixed mode.")
+                        title: L("Appearance")
                     ) {
                         Picker("", selection: $prefs.appAppearanceMode) {
                             ForEach(AppAppearanceMode.allCases, id: \.self) { mode in
@@ -105,8 +98,7 @@ struct GeneralSettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Launch at Login"),
-                        description: L("Open UsageBar automatically when you sign in to macOS.")
+                        title: L("Launch at Login")
                     ) {
                         Toggle("", isOn: $prefs.launchAtLogin)
                             .labelsHidden()
@@ -117,8 +109,7 @@ struct GeneralSettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Critical Badge"),
-                        description: L("Show an attention badge when a provider reaches a critical state.")
+                        title: L("Critical Badge")
                     ) {
                         Toggle("", isOn: $prefs.criticalBadge)
                             .labelsHidden()
@@ -128,8 +119,7 @@ struct GeneralSettingsView: View {
             }
 
             SettingsSectionCard(
-                title: L("Command Line Tool"),
-                subtitle: L("Install the usagebar command so you can use UsageBar data from Terminal.")
+                title: L("Command Line Tool")
             ) {
                 SettingsRow(
                     title: cliInstalled ? L("Installed") : L("Not Installed"),

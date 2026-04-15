@@ -119,24 +119,21 @@ struct StatusBarSettingsView: View {
             previewSection
 
             SettingsSectionCard(
-                title: L("Pay-as-you-go Providers"),
-                subtitle: L("These providers appear in the usage-based cost section.")
+                title: L("Pay-as-you-go Providers")
             ) {
                 payAsYouGoList
             }
 
             SettingsSectionCard(
-                title: L("Subscription Providers"),
-                subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
+                title: L("Subscription Providers")
             ) {
                 subscriptionList
             }
 
             SettingsSecondaryCard(
-                title: L("How this appears"),
-                subtitle: L("The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.")
+                title: L("Note")
             ) {
-                Text(L("Use Advanced Providers for provider-specific overrides such as the Codex account and limit window."))
+                Text(L("The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -194,13 +191,13 @@ struct StatusBarSettingsView: View {
                 Text(L("Menu Preview"))
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
                 Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
                     .font(.caption)
-                    .foregroundStyle(.quaternary)
+                    .foregroundStyle(.tertiary)
             }
         }
     }

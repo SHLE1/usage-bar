@@ -319,3 +319,6 @@
 "Account" = "Account";
 "Plan" = "Plan";
 "Credits: $%.2f" = "Credits: $%.2f";
+"Note" = "Note";
+"Set plan costs for quota-based providers." = "Set plan costs for quota-based providers.";
+"The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides." = "The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides.";
