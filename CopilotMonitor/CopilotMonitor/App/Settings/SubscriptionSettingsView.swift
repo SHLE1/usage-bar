@@ -29,14 +29,11 @@ struct SubscriptionSettingsView: View {
                 title: L("Monthly Total"),
                 subtitle: L("This total is used for the quota subscription summary.")
             ) {
-                HStack {
-                    Text(L("Configured subscription cost"))
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
+                SettingsRow(
+                    title: L("Configured subscription cost")
+                ) {
                     Text(String(format: "$%.2f/m", totalCost))
-                        .font(.system(.title3, design: .monospaced).weight(.semibold))
+                        .font(.body.monospaced().weight(.semibold))
                 }
             }
 
@@ -44,13 +41,13 @@ struct SubscriptionSettingsView: View {
                 title: L("Provider Plans"),
                 subtitle: L("Choose a preset or enter a custom monthly amount for each provider.")
             ) {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(Array($rows.enumerated()), id: \.offset) { index, $row in
                         SubscriptionRowView(row: $row, onChanged: recalculate)
 
                         if index < rows.count - 1 {
                             Divider()
-                                .padding(.vertical, 2)
+                                .padding(.vertical, 12)
                         }
                     }
                 }
@@ -414,14 +411,14 @@ private struct SubscriptionRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: showCustomField ? 10 : 0) {
             HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(row.displayName)
                         .font(.body)
                         .lineLimit(1)
 
                     if row.isOrphaned {
                         Text(L("Saved setting without a detected account"))
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -431,30 +428,33 @@ private struct SubscriptionRowView: View {
             }
 
             if showCustomField {
-                HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(L("Custom monthly cost"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    TextField("0.00", text: $customAmountText)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 96)
-                        .multilineTextAlignment(.trailing)
-                        .onSubmit { applyCustomAmount() }
+                    HStack(spacing: 4) {
+                        TextField("0.00", text: $customAmountText)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.trailing)
+                            .onSubmit { applyCustomAmount() }
 
-                    Text(verbatim: L("/m"))
-                        .foregroundStyle(.secondary)
+                        Text(verbatim: "/m")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Button(L("Apply")) {
                         applyCustomAmount()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
+                .padding(.leading, 4)
             }
         }
-        .padding(.vertical, 14)
         .onAppear {
             syncFromPlan()
             subscriptionSettingsLogger.debug("Using compact subscription plan control for \(row.key, privacy: .public)")
