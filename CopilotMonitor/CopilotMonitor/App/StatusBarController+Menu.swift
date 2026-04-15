@@ -105,9 +105,14 @@ extension StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
+        let aboutItem = NSMenuItem(title: L("About UsageBar"), action: #selector(showAboutPanel), keyEquivalent: "")
+        aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "About")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let versionItem = NSMenuItem(title: String(format: L("UsageBar v%@"), version), action: #selector(openGitHub), keyEquivalent: "")
-        versionItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Version")
+        versionItem.image = NSImage(systemSymbolName: "link", accessibilityDescription: "GitHub")
         versionItem.target = self
         menu.addItem(versionItem)
 

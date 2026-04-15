@@ -24,7 +24,7 @@ final class AppPreferencesTests: XCTestCase {
     }
 
     func testRememberedStatusBarOrderMovesDisabledProviderToTopOfDisabledGroup() {
-        let providers: [ProviderIdentifier] = [.copilot, .claude, .kimi, .codex]
+        let providers: [ProviderIdentifier] = [.copilot, .kimi, .codex, .claude]
         let enabledProviders: Set<ProviderIdentifier> = [.copilot, .kimi]
 
         let order = AppPreferences.rememberedStatusBarOrder(
@@ -59,6 +59,17 @@ final class AppPreferencesTests: XCTestCase {
             toggled: "opencode",
             enabled: true,
             isEnabled: { $0 != "copilot_add_on" }
+        )
+
+        XCTAssertEqual(order, ["openrouter", "opencode", "copilot_add_on"])
+    }
+
+    func testRememberedItemOrderMovesDisabledItemToTopOfDisabledGroup() {
+        let order = AppPreferences.rememberedItemOrder(
+            from: ["openrouter", "opencode", "copilot_add_on"],
+            toggled: "opencode",
+            enabled: false,
+            isEnabled: { $0 == "openrouter" }
         )
 
         XCTAssertEqual(order, ["openrouter", "opencode", "copilot_add_on"])

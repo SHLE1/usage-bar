@@ -6,19 +6,14 @@ struct AdvancedProviderSettingsView: View {
     @State private var accountOptions: [CodexStatusBarAccountOption] = []
 
     var body: some View {
-        SettingsPage(
-            title: L("Advanced Providers"),
-            subtitle: L("Manage provider-specific overrides that do not belong in the main status bar settings.")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
-                title: L("Codex"),
-                subtitle: L("Choose which Codex account and limit window UsageBar follows in the status bar.")
+                title: L("Codex")
             ) {
                 VStack(spacing: 0) {
                     if accountOptions.isEmpty {
                         SettingsRow(
-                            title: L("Status Bar Account"),
-                            description: L("Choose which detected Codex account the status bar should follow.")
+                            title: L("Status Bar Account")
                         ) {
                             Text(L("No Codex accounts detected yet."))
                                 .font(.subheadline)
@@ -26,48 +21,42 @@ struct AdvancedProviderSettingsView: View {
                         }
                     } else if accountOptions.count == 1, let option = accountOptions.first {
                         SettingsRow(
-                            title: L("Selected Account"),
-                            description: L("The only detected Codex account on this Mac.")
+                            title: L("Selected Account")
                         ) {
                             Text(option.displayName)
                                 .foregroundStyle(.secondary)
                         }
                     } else {
                         SettingsRow(
-                            title: L("Selected Account"),
-                            description: L("Switch which Codex account drives the status bar.")
+                            title: L("Selected Account")
                         ) {
-                            Menu {
+                            Picker("", selection: Binding(
+                                get: { prefs.codexStatusBarAccountSelectionKey ?? accountOptions.first?.selectionKey ?? "" },
+                                set: { prefs.codexStatusBarAccountSelectionKey = $0 }
+                            )) {
                                 ForEach(accountOptions) { option in
-                                    Button(option.displayName) {
-                                        prefs.codexStatusBarAccountSelectionKey = option.selectionKey
-                                    }
+                                    Text(option.displayName).tag(option.selectionKey)
                                 }
-                            } label: {
-                                CompactSettingsMenuLabel(title: selectedAccountTitle)
                             }
-                            .buttonStyle(.plain)
+                            .labelsHidden()
+                            .pickerStyle(.menu)
                             .fixedSize()
                         }
                     }
 
                     Divider()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Status Bar Window"),
-                        description: L("Choose which Codex limit window stays visible in the status bar.")
+                        title: L("Status Bar Window")
                     ) {
-                        Menu {
+                        Picker("", selection: $prefs.codexStatusBarWindowMode) {
                             ForEach(statusBarWindowModes, id: \.self) { mode in
-                                Button(mode.title) {
-                                    prefs.codexStatusBarWindowMode = mode
-                                }
+                                Text(mode.title).tag(mode)
                             }
-                        } label: {
-                            CompactSettingsMenuLabel(title: prefs.codexStatusBarWindowMode.title)
                         }
-                        .buttonStyle(.plain)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
                         .fixedSize()
                     }
                 }

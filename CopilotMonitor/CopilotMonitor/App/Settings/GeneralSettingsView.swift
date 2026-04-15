@@ -11,127 +11,113 @@ struct GeneralSettingsView: View {
     @State private var showingCLIAlert = false
 
     var body: some View {
-        SettingsPage(
-            title: L("General"),
-            subtitle: L("Control refresh timing, appearance, startup behavior, and command line access.")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
-                title: L("Usage Updates"),
-                subtitle: L("Choose how often UsageBar refreshes and how it estimates end-of-month cost.")
+                title: L("Usage Updates")
             ) {
                 VStack(spacing: 0) {
                     SettingsRow(
-                        title: L("Auto Refresh Period"),
-                        description: L("How often provider data refreshes in the background.")
+                        title: L("Auto Refresh Period")
                     ) {
-                        Menu {
+                        Picker("", selection: $prefs.refreshInterval) {
                             ForEach(RefreshInterval.allCases, id: \.self) { interval in
-                                Button(interval.title) {
-                                    prefs.refreshInterval = interval
-                                    generalSettingsLogger.debug("Selected refresh interval \(interval.title, privacy: .public)")
-                                }
+                                Text(interval.title).tag(interval)
                             }
-                        } label: {
-                            CompactSettingsMenuLabel(title: prefs.refreshInterval.title)
                         }
-                        .buttonStyle(.plain)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
                         .fixedSize()
+                        .onChange(of: prefs.refreshInterval) { newValue in
+                            generalSettingsLogger.debug("Selected refresh interval \(newValue.title, privacy: .public)")
+                        }
                     }
 
                     Divider()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Prediction Period"),
-                        description: L("The usage window used for monthly cost forecasts.")
+                        title: L("Prediction Period")
                     ) {
-                        Menu {
+                        Picker("", selection: $prefs.predictionPeriod) {
                             ForEach(PredictionPeriod.allCases, id: \.self) { period in
-                                Button(period.title) {
-                                    prefs.predictionPeriod = period
-                                    generalSettingsLogger.debug("Selected prediction period \(period.title, privacy: .public)")
-                                }
+                                Text(period.title).tag(period)
                             }
-                        } label: {
-                            CompactSettingsMenuLabel(title: prefs.predictionPeriod.title)
                         }
-                        .buttonStyle(.plain)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
                         .fixedSize()
+                        .onChange(of: prefs.predictionPeriod) { newValue in
+                            generalSettingsLogger.debug("Selected prediction period \(newValue.title, privacy: .public)")
+                        }
                     }
                 }
             }
 
             SettingsSectionCard(
-                title: L("App Behavior"),
-                subtitle: L("Decide how UsageBar behaves after launch.")
+                title: L("App Behavior")
             ) {
                 VStack(spacing: 0) {
                     SettingsRow(
-                        title: L("App Language"),
-                        description: L("Choose which language UsageBar uses. The default follows macOS.")
+                        title: L("App Language")
                     ) {
-                        Menu {
+                        Picker("", selection: $prefs.appLanguageMode) {
                             ForEach(AppLanguageMode.allCases, id: \.self) { mode in
-                                Button(mode.title) {
-                                    prefs.appLanguageMode = mode
-                                    generalSettingsLogger.debug("Selected app language \(mode.rawValue, privacy: .public)")
-                                }
+                                Text(mode.title).tag(mode)
                             }
-                        } label: {
-                            CompactSettingsMenuLabel(title: prefs.appLanguageMode.title)
                         }
-                        .buttonStyle(.plain)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
                         .fixedSize()
+                        .onChange(of: prefs.appLanguageMode) { newValue in
+                            generalSettingsLogger.debug("Selected app language \(newValue.rawValue, privacy: .public)")
+                        }
                     }
 
                     Divider()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Appearance"),
-                        description: L("Choose whether UsageBar follows macOS appearance or stays in a fixed mode.")
+                        title: L("Appearance")
                     ) {
-                        Menu {
+                        Picker("", selection: $prefs.appAppearanceMode) {
                             ForEach(AppAppearanceMode.allCases, id: \.self) { mode in
-                                Button(mode.title) {
-                                    prefs.appAppearanceMode = mode
-                                    generalSettingsLogger.debug("Selected app appearance \(mode.rawValue, privacy: .public)")
-                                }
+                                Text(mode.title).tag(mode)
                             }
-                        } label: {
-                            CompactSettingsMenuLabel(title: prefs.appAppearanceMode.title)
                         }
-                        .buttonStyle(.plain)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
                         .fixedSize()
+                        .onChange(of: prefs.appAppearanceMode) { newValue in
+                            generalSettingsLogger.debug("Selected app appearance \(newValue.rawValue, privacy: .public)")
+                        }
                     }
 
                     Divider()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Launch at Login"),
-                        description: L("Open UsageBar automatically when you sign in to macOS.")
+                        title: L("Launch at Login")
                     ) {
                         Toggle("", isOn: $prefs.launchAtLogin)
                             .labelsHidden()
+                            .toggleStyle(.switch)
                     }
 
                     Divider()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
-                        title: L("Critical Badge"),
-                        description: L("Show an attention badge when a provider reaches a critical state.")
+                        title: L("Critical Badge")
                     ) {
                         Toggle("", isOn: $prefs.criticalBadge)
                             .labelsHidden()
+                            .toggleStyle(.switch)
                     }
                 }
             }
 
             SettingsSectionCard(
-                title: L("Command Line Tool"),
-                subtitle: L("Install the usagebar command so you can use UsageBar data from Terminal.")
+                title: L("Command Line Tool")
             ) {
                 SettingsRow(
                     title: cliInstalled ? L("Installed") : L("Not Installed"),
@@ -152,7 +138,7 @@ struct GeneralSettingsView: View {
             Text(cliActionMessage ?? "")
         }
         .onAppear {
-            generalSettingsLogger.debug("Rendering general settings with compact menu controls")
+            generalSettingsLogger.debug("Rendering general settings with native picker controls")
         }
     }
 

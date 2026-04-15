@@ -43,10 +43,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         window.titlebarSeparatorStyle = .automatic
         window.isMovableByWindowBackground = false
         window.isReleasedWhenClosed = false
-        window.center()
+
+        // Restore saved frame or center on first open
+        window.setFrameAutosaveName("UsageBarSettingsWindow")
+        if !window.setFrameUsingName("UsageBarSettingsWindow") {
+            window.center()
+        }
+
         window.makeKeyAndOrderFront(nil)
 
-        logger.info("Applied standard settings window chrome with centered title")
+        logger.info("Applied standard settings window chrome with frame autosave")
         logger.debug("Opened settings window at \(Int(window.frame.width))x\(Int(window.frame.height))")
 
         settingsWindow = window

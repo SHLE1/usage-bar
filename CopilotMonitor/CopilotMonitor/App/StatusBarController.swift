@@ -1082,23 +1082,37 @@ final class StatusBarController: NSObject {
 
      // MARK: - Custom Menu Item Views
 
+    /// System-first section header: uses attributedTitle instead of a custom view.
+    func createSectionHeaderItem(title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        item.attributedTitle = NSAttributedString(
+            string: title,
+            attributes: [
+                .font: NSFont.systemFont(ofSize: 11, weight: .bold),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+        )
+        return item
+    }
+
+    /// System-first disabled menu item: uses standard NSMenuItem instead of a custom view.
+    func createDisabledMenuItem(text: String, icon: NSImage? = nil) -> NSMenuItem {
+        let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        if let icon = icon {
+            item.image = icon
+        }
+        return item
+    }
+
+    /// Backward-compatible custom header view for detail submenus that still assign NSView directly.
     func createHeaderView(title: String) -> NSView {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 23))
-
-        let label = NSTextField(labelWithString: title)
-        label.font = NSFont.systemFont(ofSize: 11, weight: .bold)
-        // Use secondaryLabelColor which adapts properly to dark/light mode in menu items
-        label.textColor = NSColor.secondaryLabelColor
-        label.translatesAutoresizingMaskIntoConstraints = false
-
-        view.addSubview(label)
-
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-
-        return view
+        createDisabledLabelView(
+            text: title,
+            font: NSFont.systemFont(ofSize: 11, weight: .bold),
+            textColor: .secondaryLabelColor
+        )
     }
 
     func createDisabledLabelView(
@@ -1233,6 +1247,12 @@ final class StatusBarController: NSObject {
         if let url = URL(string: "https://github.com/SHLE1/usage-bar") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    @objc func showAboutPanel() {
+        logger.info("Showing standard About panel")
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
 
     @objc func shareUsageSnapshotClicked() {
@@ -1880,12 +1900,10 @@ final class StatusBarController: NSObject {
                         } else {
                             providerLabel = String(format: L("%@: $%.2f"), provider.displayName, cost)
                         }
-                        let providerItem = NSMenuItem()
-                        providerItem.view = createDisabledLabelView(
+                        breakdownSubmenu.addItem(createDisabledMenuItem(
                             text: providerLabel,
                             icon: iconForProvider(provider)
-                        )
-                        breakdownSubmenu.addItem(providerItem)
+                        ))
                     }
                 }
 
@@ -1939,12 +1957,10 @@ final class StatusBarController: NSObject {
 
         if state.hasNoData {
             debugLog("updateHistorySubmenu: hasNoData=true, returning early")
-            let item = NSMenuItem()
-            item.view = createDisabledLabelView(
+            historySubmenu.addItem(createDisabledMenuItem(
                 text: L("No data"),
                 icon: NSImage(systemSymbolName: "tray", accessibilityDescription: L("No data"))
-            )
-            historySubmenu.addItem(item)
+            ))
             return
         }
         debugLog("updateHistorySubmenu: hasNoData=false, continuing")
@@ -1982,19 +1998,15 @@ final class StatusBarController: NSObject {
             }
 
             if prediction.confidenceLevel == .low {
-                let confItem = NSMenuItem()
-                confItem.view = createDisabledLabelView(
+                historySubmenu.addItem(createDisabledMenuItem(
                     text: L("Low prediction accuracy"),
                     icon: NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Low accuracy")
-                )
-                historySubmenu.addItem(confItem)
+                ))
             } else if prediction.confidenceLevel == .medium {
-                let confItem = NSMenuItem()
-                confItem.view = createDisabledLabelView(
+                historySubmenu.addItem(createDisabledMenuItem(
                     text: L("Medium prediction accuracy"),
                     icon: NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Medium accuracy")
-                )
-                historySubmenu.addItem(confItem)
+                ))
             }
 
             debugLog("updateHistorySubmenu: adding separator after prediction")
@@ -2006,12 +2018,10 @@ final class StatusBarController: NSObject {
 
         if state.isStale {
             debugLog("updateHistorySubmenu: data is stale, adding stale item")
-            let staleItem = NSMenuItem()
-            staleItem.view = createDisabledLabelView(
+            historySubmenu.addItem(createDisabledMenuItem(
                 text: L("Data is stale"),
                 icon: NSImage(systemSymbolName: "clock.badge.exclamationmark", accessibilityDescription: L("Data is stale"))
-            )
-            historySubmenu.addItem(staleItem)
+            ))
             debugLog("updateHistorySubmenu: stale item added")
         }
 

@@ -6,7 +6,13 @@ private let settingsViewLogger = Logger(subsystem: "com.opencodeproviders", cate
 
 struct SettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
-    @State private var selectedTab: SettingsTab? = .general
+    @State private var selectedTab: SettingsTab? = {
+        if let saved = UserDefaults.standard.string(forKey: "settings.selectedTab"),
+           let tab = SettingsTab(rawValue: saved) {
+            return tab
+        }
+        return .general
+    }()
     private var minimumSidebarWidth: CGFloat {
         SettingsSidebarMetrics.minimumWidth(for: SettingsTab.allCases)
     }
@@ -61,6 +67,9 @@ struct SettingsView: View {
         }
         .onChange(of: selectedTab) { newValue in
             let title = newValue?.title ?? SettingsTab.general.title
+            if let rawValue = newValue?.rawValue {
+                UserDefaults.standard.set(rawValue, forKey: "settings.selectedTab")
+            }
             settingsViewLogger.debug("Switched settings tab to \(title, privacy: .public)")
         }
     }

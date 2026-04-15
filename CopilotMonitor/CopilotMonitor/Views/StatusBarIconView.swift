@@ -30,6 +30,19 @@ final class StatusBarIconView: NSView {
     private let criticalBadgeSize: CGFloat = 6
     private let criticalBadgeInset: CGFloat = 1
 
+    // MARK: - Accessibility
+
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+
+    override func accessibilityLabel() -> String? { "UsageBar" }
+
+    override func accessibilityValue() -> Any? {
+        if isLoading { return "Loading" }
+        if hasError { return "Error" }
+        if let statusText { return statusText }
+        return "Ready"
+    }
+
     /// Nil means icon-only rendering (no text reservation).
     private var statusText: String? {
         if isLoading {

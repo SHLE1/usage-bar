@@ -15,6 +15,22 @@ final class MultiProviderStatusBarIconView: NSView {
     private var isLoading = false
     private var hasError = false
 
+    // MARK: - Accessibility
+
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+
+    override func accessibilityLabel() -> String? { "UsageBar Multi-Provider" }
+
+    override func accessibilityValue() -> Any? {
+        if isLoading { return "Loading" }
+        if hasError { return "Error" }
+        var parts = [formatCost(totalOverageCost)]
+        for alert in alerts {
+            parts.append("\(alert.identifier.rawValue) \(String(format: "%.0f%%", alert.remainingPercent))")
+        }
+        return parts.joined(separator: ", ")
+    }
+
     /// Dynamic width calculation based on content
     /// Base: $ icon (16px) + padding (6px) = 22px
     /// Cost text: variable width

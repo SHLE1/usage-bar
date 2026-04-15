@@ -245,7 +245,7 @@ final class AppPreferences: ObservableObject {
             return currentEnabled + [identifier] + currentDisabled
         }
 
-        return currentEnabled + currentDisabled + [identifier]
+        return currentEnabled + [identifier] + currentDisabled
     }
 
     static func rememberedItemOrder<Item: Hashable>(
@@ -261,14 +261,10 @@ final class AppPreferences: ObservableObject {
 
         let withoutItem = uniqueOrder.filter { $0 != item }
 
-        if enabled {
-            let insertIndex = withoutItem.firstIndex(where: { !isEnabled($0) }) ?? withoutItem.endIndex
-            var updated = withoutItem
-            updated.insert(item, at: insertIndex)
-            return updated
-        }
-
-        return withoutItem + [item]
+        let insertIndex = withoutItem.firstIndex(where: { !isEnabled($0) }) ?? withoutItem.endIndex
+        var updated = withoutItem
+        updated.insert(item, at: insertIndex)
+        return updated
     }
 
     static func sanitizedStatusBarOrder(

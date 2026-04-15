@@ -241,6 +241,7 @@
 "How this appears" = "How this appears";
 "The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section." = "The top status bar only shows quota-based providers. Pay-as-you-go providers still appear in the dropdown cost section.";
 "Use Advanced Providers for provider-specific overrides such as the Codex account and limit window." = "Use Advanced Providers for provider-specific overrides such as the Codex account and limit window.";
+"Top status bar shows quota-based providers only. Use Advanced Providers for overrides such as the Codex account and limit window." = "Top status bar shows quota-based providers only. Use Advanced Providers for overrides such as the Codex account and limit window.";
 "Drag rows to change order. Unchecked items move to the bottom automatically." = "Drag rows to change order. Unchecked items move to the bottom automatically.";
 "—% left" = "—% left";
 "5h Only" = "5h Only";
@@ -319,3 +320,6 @@
 "Account" = "Account";
 "Plan" = "Plan";
 "Credits: $%.2f" = "Credits: $%.2f";
+"Note" = "Note";
+"Set plan costs for quota-based providers." = "Set plan costs for quota-based providers.";
+"The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides." = "The top status bar only shows quota-based providers. Use Advanced Providers for provider-specific overrides.";

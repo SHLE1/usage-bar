@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import os.log
 
@@ -21,36 +22,29 @@ struct SubscriptionSettingsView: View {
     }()
 
     var body: some View {
-        SettingsPage(
-            title: L("Subscriptions"),
-            subtitle: L("Set monthly plan costs for quota-based providers and any detected accounts.")
-        ) {
+        SettingsPage {
             SettingsSectionCard(
-                title: L("Monthly Total"),
-                subtitle: L("This total is used for the quota subscription summary.")
+                title: L("Monthly Total")
             ) {
-                HStack {
-                    Text(L("Configured subscription cost"))
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
+                SettingsSummaryRow(
+                    title: L("Configured subscription cost"),
+                    titleTone: .primary
+                ) {
                     Text(String(format: "$%.2f/m", totalCost))
-                        .font(.system(.title3, design: .monospaced).weight(.semibold))
+                        .font(.body.monospaced())
                 }
             }
 
             SettingsSectionCard(
-                title: L("Provider Plans"),
-                subtitle: L("Choose a preset or enter a custom monthly amount for each provider.")
+                title: L("Provider Plans")
             ) {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(Array($rows.enumerated()), id: \.offset) { index, $row in
                         SubscriptionRowView(row: $row, onChanged: recalculate)
 
                         if index < rows.count - 1 {
                             Divider()
-                                .padding(.vertical, 2)
+                                .padding(.vertical, 8)
                         }
                     }
                 }
@@ -404,155 +398,320 @@ struct SubscriptionRow: Identifiable {
 
 // MARK: - Row View
 
+private enum SubscriptionPlanPickerSelection: Hashable {
+    case none
+    case preset(Int)
+    case custom
+}
+
+private struct SubscriptionPlanPickerOption: Hashable {
+    let selection: SubscriptionPlanPickerSelection
+    let title: String
+}
+
 private struct SubscriptionRowView: View {
     @Binding var row: SubscriptionRow
     var onChanged: () -> Void
 
     @State private var customAmountText: String = ""
     @State private var showCustomField: Bool = false
+    @State private var pickerSelection: SubscriptionPlanPickerSelection = .none
 
     var body: some View {
-        VStack(alignment: .leading, spacing: showCustomField ? 10 : 0) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(row.displayName)
-                        .font(.body)
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: showCustomField ? 6 : 0) {
+            HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: 10) {
+                    SettingsProviderIcon(
+                        provider: row.provider,
+                        showsFallback: row.provider == nil
+                    )
 
-                    if row.isOrphaned {
-                        Text(L("Saved setting without a detected account"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(row.displayName)
+                            .font(.body)
+                            .lineLimit(1)
+
+                        if row.isOrphaned {
+                            Text(L("Saved setting without a detected account"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                subscriptionPlanMenu
+                subscriptionPlanPicker
             }
 
             if showCustomField {
-                HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(L("Custom monthly cost"))
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    TextField("0.00", text: $customAmountText)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 96)
-                        .multilineTextAlignment(.trailing)
-                        .onSubmit { applyCustomAmount() }
+                    HStack(spacing: 4) {
+                        TextField("0.00", text: $customAmountText)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 72)
+                            .multilineTextAlignment(.trailing)
+                            .controlSize(.small)
+                            .onSubmit { applyCustomAmount() }
 
-                    Text(verbatim: L("/m"))
-                        .foregroundStyle(.secondary)
+                        Text(verbatim: "/m")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Button(L("Apply")) {
                         applyCustomAmount()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
+                .padding(.leading, 2)
             }
         }
-        .padding(.vertical, 14)
         .onAppear {
             syncFromPlan()
-            subscriptionSettingsLogger.debug("Using compact subscription plan control for \(row.key, privacy: .public)")
+            subscriptionSettingsLogger.debug(
+                "Using adaptive-width native subscription plan picker with provider icon for \(row.key, privacy: .public)"
+            )
+        }
+        .onChange(of: row.plan) { _ in
+            syncFromPlan()
         }
     }
 
-    private var subscriptionPlanMenu: some View {
-        Menu {
-            Button(L("None")) {
-                row.plan = .none
-                showCustomField = false
-                subscriptionSettingsLogger.debug("Selected no subscription plan for \(row.key, privacy: .public)")
-                onChanged()
-            }
-
-            if !row.presets.isEmpty {
-                Divider()
-
-                ForEach(Array(row.presets.enumerated()), id: \.offset) { _, preset in
-                    Button("\(preset.name) \(currencyText(for: preset.cost))") {
-                        row.plan = .preset(preset.name, preset.cost)
-                        showCustomField = false
-                        subscriptionSettingsLogger.debug("Selected preset subscription plan \(preset.name, privacy: .public) for \(row.key, privacy: .public)")
-                        onChanged()
-                    }
-                }
-            }
-
-            Divider()
-
-            Button(selectionTitle(for: .custom(0))) {
-                if case .custom(let amount) = row.plan {
-                    customAmountText = String(format: "%.2f", amount)
-                } else if case .preset(_, let amount) = row.plan {
-                    customAmountText = String(format: "%.2f", amount)
-                }
-                showCustomField = true
-                subscriptionSettingsLogger.debug("Selected custom subscription plan for \(row.key, privacy: .public)")
-            }
-        } label: {
-            CompactSettingsMenuLabel(title: selectionTitle(for: row.plan))
-        }
-        .controlSize(.regular)
-        .buttonStyle(.plain)
+    private var subscriptionPlanPicker: some View {
+        AdaptiveWidthPopupPicker(
+            options: pickerOptions,
+            selection: pickerSelectionBinding,
+            accessibilityLabel: row.displayName,
+            accessibilityValue: displaySelectionTitle
+        )
         .fixedSize()
     }
 
-    private func selectionTitle(for plan: SubscriptionPlan) -> String {
-        switch plan {
+    private var pickerOptions: [SubscriptionPlanPickerOption] {
+        var options: [SubscriptionPlanPickerOption] = [
+            SubscriptionPlanPickerOption(selection: .none, title: L("None"))
+        ]
+
+        options.append(contentsOf: row.presets.enumerated().map { index, preset in
+            SubscriptionPlanPickerOption(
+                selection: .preset(index),
+                title: "\(preset.name) \(currencyText(for: preset.cost))"
+            )
+        })
+
+        options.append(SubscriptionPlanPickerOption(selection: .custom, title: customSelectionTitle))
+        return options
+    }
+
+    private var pickerSelectionBinding: Binding<SubscriptionPlanPickerSelection> {
+        Binding(
+            get: { pickerSelection },
+            set: { newValue in
+                pickerSelection = newValue
+                applyPickerSelection(newValue)
+            }
+        )
+    }
+
+    private var customSelectionTitle: String {
+        if let amount = currentCustomAmount, amount > 0 {
+            return String(format: L("Custom %@"), currencyText(for: amount))
+        }
+        return L("Custom")
+    }
+
+    private var displaySelectionTitle: String {
+        switch pickerSelection {
         case .none:
             return L("None")
-        case .preset(let name, let cost):
-            return "\(name) \(currencyText(for: cost))"
+        case .preset(let index):
+            guard row.presets.indices.contains(index) else {
+                return L("None")
+            }
+            let preset = row.presets[index]
+            return "\(preset.name) \(currencyText(for: preset.cost))"
         case .custom:
-            let amount: Double
-            switch row.plan {
-            case .custom(let currentAmount):
-                amount = currentAmount
-            case .preset(_, let currentAmount):
-                amount = currentAmount
-            default:
-                amount = Double(customAmountText) ?? 0
-            }
-            if amount > 0 {
-                return String(format: L("Custom %@"), currencyText(for: amount))
-            }
-            return L("Custom")
+            return customSelectionTitle
         }
+    }
+
+    private var currentCustomAmount: Double? {
+        if let typedAmount = Double(customAmountText), typedAmount > 0 {
+            return typedAmount
+        }
+
+        switch row.plan {
+        case .custom(let amount):
+            return amount
+        case .preset(_, let amount) where pickerSelection == .custom:
+            return amount
+        default:
+            return nil
+        }
+    }
+
+    private func applyPickerSelection(_ selection: SubscriptionPlanPickerSelection) {
+        switch selection {
+        case .none:
+            row.plan = .none
+            showCustomField = false
+            subscriptionSettingsLogger.debug("Selected no subscription plan for \(row.key, privacy: .public)")
+            onChanged()
+
+        case .preset(let index):
+            guard row.presets.indices.contains(index) else { return }
+            let preset = row.presets[index]
+            row.plan = .preset(preset.name, preset.cost)
+            showCustomField = false
+            subscriptionSettingsLogger.debug(
+                "Selected preset subscription plan \(preset.name, privacy: .public) for \(row.key, privacy: .public)"
+            )
+            onChanged()
+
+        case .custom:
+            if case .custom(let amount) = row.plan {
+                customAmountText = String(format: "%.2f", amount)
+            } else if case .preset(_, let amount) = row.plan {
+                customAmountText = String(format: "%.2f", amount)
+            }
+            showCustomField = true
+            subscriptionSettingsLogger.debug("Selected custom subscription plan for \(row.key, privacy: .public)")
+        }
+    }
+
+    private func matchedPresetIndex(for plan: SubscriptionPlan) -> Int? {
+        guard case .preset(let name, let cost) = plan else { return nil }
+        return row.presets.firstIndex(where: { preset in
+            preset.name == name && abs(preset.cost - cost) < 0.01
+        })
     }
 
     private func syncFromPlan() {
         switch row.plan {
+        case .none:
+            pickerSelection = .none
+            showCustomField = false
+
         case .custom(let amount):
+            pickerSelection = .custom
             showCustomField = true
             customAmountText = String(format: "%.2f", amount)
+
         case .preset(_, let cost):
-            // If preset cost doesn't match any known option, treat as custom
-            if !row.presets.contains(where: { abs($0.cost - cost) < 0.01 }) {
+            if let index = matchedPresetIndex(for: row.plan) {
+                pickerSelection = .preset(index)
+                showCustomField = false
+            } else {
+                pickerSelection = .custom
                 showCustomField = true
                 customAmountText = String(format: "%.2f", cost)
             }
-        default:
-            break
         }
     }
 
     private func applyCustomAmount() {
         guard let amount = Double(customAmountText), amount > 0 else {
             row.plan = .none
+            pickerSelection = .none
             showCustomField = false
             onChanged()
             return
         }
         row.plan = .custom(amount)
+        pickerSelection = .custom
         onChanged()
     }
 
     private func currencyText(for amount: Double) -> String {
         String(format: "$%.2f", amount)
+    }
+}
+
+private struct AdaptiveWidthPopupPicker: NSViewRepresentable {
+    let options: [SubscriptionPlanPickerOption]
+    let selection: Binding<SubscriptionPlanPickerSelection>
+    let accessibilityLabel: String
+    let accessibilityValue: String
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> AdaptiveWidthPopUpButton {
+        let button = AdaptiveWidthPopUpButton(frame: .zero, pullsDown: false)
+        button.bezelStyle = .rounded
+        button.controlSize = .regular
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.selectionChanged(_:))
+        updateButton(button, coordinator: context.coordinator)
+        return button
+    }
+
+    func updateNSView(_ nsView: AdaptiveWidthPopUpButton, context: Context) {
+        context.coordinator.parent = self
+        updateButton(nsView, coordinator: context.coordinator)
+    }
+
+    private func updateButton(_ button: AdaptiveWidthPopUpButton, coordinator: Coordinator) {
+        coordinator.options = options
+
+        let selectedIndex = options.firstIndex(where: { $0.selection == selection.wrappedValue }) ?? 0
+        let existingTitles = button.itemTitles
+        let newTitles = options.map { $0.title }
+
+        if existingTitles != newTitles {
+            button.removeAllItems()
+            button.addItems(withTitles: newTitles)
+        }
+
+        if button.indexOfSelectedItem != selectedIndex {
+            button.selectItem(at: selectedIndex)
+        }
+
+        button.invalidateIntrinsicContentSize()
+        button.setAccessibilityLabel(accessibilityLabel)
+        button.setAccessibilityValue(accessibilityValue)
+        button.toolTip = accessibilityValue
+    }
+
+    final class Coordinator: NSObject {
+        var parent: AdaptiveWidthPopupPicker
+        var options: [SubscriptionPlanPickerOption] = []
+
+        init(parent: AdaptiveWidthPopupPicker) {
+            self.parent = parent
+        }
+
+        @objc func selectionChanged(_ sender: NSPopUpButton) {
+            let selectedIndex = sender.indexOfSelectedItem
+            guard options.indices.contains(selectedIndex) else { return }
+            parent.selection.wrappedValue = options[selectedIndex].selection
+        }
+    }
+}
+
+private final class AdaptiveWidthPopUpButton: NSPopUpButton {
+    override var intrinsicContentSize: NSSize {
+        let fallback = super.intrinsicContentSize
+        let selectedTitle = titleOfSelectedItem?.isEmpty == false ? titleOfSelectedItem! : " "
+
+        let probe = NSPopUpButton(frame: .zero, pullsDown: false)
+        probe.bezelStyle = bezelStyle
+        probe.controlSize = controlSize
+        probe.font = font
+        probe.addItem(withTitle: selectedTitle)
+        probe.sizeToFit()
+
+        let width = ceil(max(probe.frame.width, 72))
+        let height = ceil(max(fallback.height, probe.frame.height))
+        return NSSize(width: width, height: height)
     }
 }
