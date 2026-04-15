@@ -38,7 +38,7 @@ struct GeneralSettingsView: View {
                     }
 
                     Divider()
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
                         title: L("Prediction Period"),
@@ -82,7 +82,7 @@ struct GeneralSettingsView: View {
                     }
 
                     Divider()
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
                         title: L("Appearance"),
@@ -102,7 +102,7 @@ struct GeneralSettingsView: View {
                     }
 
                     Divider()
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
                         title: L("Launch at Login"),
@@ -114,7 +114,7 @@ struct GeneralSettingsView: View {
                     }
 
                     Divider()
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
                         title: L("Critical Badge"),

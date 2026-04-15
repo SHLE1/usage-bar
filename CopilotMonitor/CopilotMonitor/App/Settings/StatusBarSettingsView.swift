@@ -152,8 +152,8 @@ struct StatusBarSettingsView: View {
 
     private var providerOrderHint: some View {
         Text(L("Drag rows to change order. Unchecked items move to the bottom automatically."))
-            .font(.caption)
-            .foregroundStyle(.tertiary)
+            .font(.caption2)
+            .foregroundStyle(.quaternary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -161,21 +161,18 @@ struct StatusBarSettingsView: View {
 
     @ViewBuilder
     private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: "eye")
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 12))
                 Text(L("Menu Preview"))
-                    .font(.subheadline)
+                    .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
 
                 Spacer()
 
                 Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.quaternary)
             }
 
             VStack(alignment: .leading, spacing: 0) {
@@ -211,26 +208,27 @@ struct StatusBarSettingsView: View {
                     }
                 }
             }
-            .padding(10)
+            .padding(8)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(Color(nsColor: .windowBackgroundColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.12), lineWidth: 0.5)
             )
         }
-        .padding(16)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.25), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.15), lineWidth: 0.5)
         )
     }
 
@@ -266,14 +264,14 @@ struct StatusBarSettingsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color(nsColor: .windowBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.12), lineWidth: 0.5)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     @ViewBuilder
@@ -343,7 +341,7 @@ struct StatusBarSettingsView: View {
                 .labelsHidden()
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .opacity(enabled ? 1 : 0.72)
         .contentShape(Rectangle())
         .onDrop(
@@ -375,7 +373,7 @@ struct StatusBarSettingsView: View {
                 .labelsHidden()
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .opacity(enabled ? 1 : 0.72)
         .contentShape(Rectangle())
         .onDrop(

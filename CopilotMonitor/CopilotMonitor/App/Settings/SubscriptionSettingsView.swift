@@ -34,7 +34,8 @@ struct SubscriptionSettingsView: View {
                     title: L("Configured subscription cost")
                 ) {
                     Text(String(format: "$%.2f/m", totalCost))
-                        .font(.body.monospaced().weight(.semibold))
+                        .font(.body.monospaced())
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -48,7 +49,7 @@ struct SubscriptionSettingsView: View {
 
                         if index < rows.count - 1 {
                             Divider()
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 8)
                         }
                     }
                 }
@@ -422,17 +423,17 @@ private struct SubscriptionRowView: View {
     @State private var pickerSelection: SubscriptionPlanPickerSelection = .none
 
     var body: some View {
-        VStack(alignment: .leading, spacing: showCustomField ? 10 : 0) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: showCustomField ? 6 : 0) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(row.displayName)
                         .font(.body)
                         .lineLimit(1)
 
                     if row.isOrphaned {
                         Text(L("Saved setting without a detected account"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -443,21 +444,22 @@ private struct SubscriptionRowView: View {
             if showCustomField {
                 HStack(alignment: .center, spacing: 8) {
                     Text(L("Custom monthly cost"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
 
                     Spacer()
 
                     HStack(spacing: 4) {
                         TextField("0.00", text: $customAmountText)
                             .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
+                            .frame(width: 72)
                             .multilineTextAlignment(.trailing)
+                            .controlSize(.small)
                             .onSubmit { applyCustomAmount() }
 
                         Text(verbatim: "/m")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
 
                     Button(L("Apply")) {
@@ -465,7 +467,7 @@ private struct SubscriptionRowView: View {
                     }
                     .controlSize(.small)
                 }
-                .padding(.leading, 4)
+                .padding(.leading, 2)
             }
         }
         .onAppear {

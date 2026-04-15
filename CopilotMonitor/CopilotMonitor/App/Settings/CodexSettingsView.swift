@@ -52,7 +52,7 @@ struct AdvancedProviderSettingsView: View {
                     }
 
                     Divider()
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
 
                     SettingsRow(
                         title: L("Status Bar Window"),
