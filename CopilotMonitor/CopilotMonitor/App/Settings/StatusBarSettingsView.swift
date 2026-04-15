@@ -122,7 +122,6 @@ struct StatusBarSettingsView: View {
                 title: L("Pay-as-you-go Providers"),
                 subtitle: L("These providers appear in the usage-based cost section.")
             ) {
-                providerOrderHint
                 payAsYouGoList
             }
 
@@ -130,7 +129,6 @@ struct StatusBarSettingsView: View {
                 title: L("Subscription Providers"),
                 subtitle: L("Quota-based providers shown in the quota section and the top status bar summary.")
             ) {
-                providerOrderHint
                 subscriptionList
             }
 
@@ -150,31 +148,11 @@ struct StatusBarSettingsView: View {
         }
     }
 
-    private var providerOrderHint: some View {
-        Text(L("Drag rows to change order. Unchecked items move to the bottom automatically."))
-            .font(.caption2)
-            .foregroundStyle(.quaternary)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
     // MARK: - Live Preview Section
 
     @ViewBuilder
     private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(L("Menu Preview"))
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.tertiary)
-
-                Spacer()
-
-                Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
-                    .font(.caption)
-                    .foregroundStyle(.quaternary)
-            }
-
+        GroupBox {
             VStack(alignment: .leading, spacing: 0) {
                 if shouldShowPayAsYouGoPreview {
                     previewHeader(title: L("Pay-as-you-go"))
@@ -210,26 +188,21 @@ struct StatusBarSettingsView: View {
             }
             .padding(8)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color(nsColor: .windowBackgroundColor))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.12), lineWidth: 0.5)
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            HStack {
+                Text(L("Menu Preview"))
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.tertiary)
+
+                Spacer()
+
+                Text(String(format: L("Showing %d item(s)"), visiblePreviewItemCount))
+                    .font(.caption)
+                    .foregroundStyle(.quaternary)
+            }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.15), lineWidth: 0.5)
-        )
     }
 
     private var payAsYouGoList: some View {
@@ -263,15 +236,6 @@ struct StatusBarSettingsView: View {
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(nsColor: .windowBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.12), lineWidth: 0.5)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     @ViewBuilder
