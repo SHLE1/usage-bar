@@ -17,12 +17,13 @@ struct SettingsPage<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.title)
 
                     Text(subtitle)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -30,7 +31,7 @@ struct SettingsPage<Content: View>: View {
                 content
             }
             .frame(maxWidth: 720, alignment: .leading)
-            .padding(28)
+            .padding(24)
         }
         .scrollIndicators(.automatic)
     }
@@ -52,8 +53,8 @@ struct SettingsSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.headline)
 
@@ -67,15 +68,15 @@ struct SettingsSectionCard<Content: View>: View {
 
             content
         }
-        .padding(20)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.25), lineWidth: 0.5)
         )
     }
 }
@@ -132,8 +133,8 @@ struct SettingsSecondaryCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -148,15 +149,15 @@ struct SettingsSecondaryCard<Content: View>: View {
 
             content
         }
-        .padding(16)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.15), lineWidth: 0.5)
         )
     }
 }

@@ -495,10 +495,10 @@ private struct SubscriptionRowView: View {
                 subscriptionSettingsLogger.debug("Selected custom subscription plan for \(row.key, privacy: .public)")
             }
         } label: {
-            CompactSettingsMenuLabel(title: selectionTitle(for: row.plan))
+            Text(selectionTitle(for: row.plan))
+                .fixedSize()
         }
-        .controlSize(.regular)
-        .buttonStyle(.plain)
+        .menuStyle(.borderlessButton)
         .fixedSize()
     }
 

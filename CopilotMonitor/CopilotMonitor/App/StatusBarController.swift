@@ -1235,6 +1235,12 @@ final class StatusBarController: NSObject {
         }
     }
 
+    @objc func showAboutPanel() {
+        logger.info("Showing standard About panel")
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
+
     @objc func shareUsageSnapshotClicked() {
         logger.info("Share Usage Snapshot triggered")
         debugLog("shareUsageSnapshotClicked: started")

@@ -161,7 +161,7 @@ struct StatusBarSettingsView: View {
 
     @ViewBuilder
     private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "eye")
                     .foregroundStyle(.secondary)
@@ -211,26 +211,26 @@ struct StatusBarSettingsView: View {
                     }
                 }
             }
-            .padding(12)
+            .padding(10)
             .animation(.easeInOut(duration: 0.18), value: previewAnimationKey)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color(nsColor: .windowBackgroundColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 0.5)
             )
         }
-        .padding(20)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.25), lineWidth: 0.5)
         )
     }
 
@@ -266,14 +266,14 @@ struct StatusBarSettingsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color(nsColor: .windowBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.28), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.2), lineWidth: 0.5)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     @ViewBuilder
