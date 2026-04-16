@@ -347,11 +347,11 @@ final class NanoGptProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 {
+        if httpResponse.isAuthError {
             throw ProviderError.authenticationFailed("Invalid Nano-GPT API key")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             let body = String(data: data, encoding: .utf8) ?? ""
             logger.error("Nano-GPT HTTP \(httpResponse.statusCode): \(body, privacy: .public)")
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")

@@ -3786,7 +3786,7 @@ final class TokenManager: @unchecked Sendable {
                 return nil
             }
 
-            guard httpResponse.statusCode == 200 else {
+            guard httpResponse.isSuccess else {
                 logger.error("Copilot API returned status: \(httpResponse.statusCode)")
                 if let responseBody = String(data: data, encoding: .utf8) {
                     let truncated = String(responseBody.prefix(256))
@@ -4170,7 +4170,7 @@ final class TokenManager: @unchecked Sendable {
                 return nil
             }
 
-            guard httpResponse.statusCode == 200 else {
+            guard httpResponse.isSuccess else {
                 logger.error("OAuth token refresh failed with status: \(httpResponse.statusCode)")
                 return nil
             }

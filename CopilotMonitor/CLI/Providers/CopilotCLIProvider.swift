@@ -188,7 +188,7 @@ actor CopilotCLIProvider: ProviderProtocol {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.isSuccess else {
                 return nil
             }
             guard let profile = try? JSONDecoder().decode(GitHubUserProfileResponse.self, from: data) else {
@@ -345,7 +345,7 @@ actor CopilotCLIProvider: ProviderProtocol {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                if httpResponse.isAuthError {
                     logger.warning("CopilotCLIProvider: Billing page auth failed (HTTP \(httpResponse.statusCode))")
                     return nil
                 }
@@ -401,12 +401,12 @@ actor CopilotCLIProvider: ProviderProtocol {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                if httpResponse.isAuthError {
                     logger.warning("CopilotCLIProvider: Usage API auth failed (HTTP \(httpResponse.statusCode))")
                     return nil
                 }
 
-                if httpResponse.statusCode != 200 {
+                if !httpResponse.isSuccess {
                     logger.warning("CopilotCLIProvider: Usage API returned HTTP \(httpResponse.statusCode)")
                     return nil
                 }
@@ -431,10 +431,7 @@ actor CopilotCLIProvider: ProviderProtocol {
 
     private func formatResetDate(_ date: Date?) -> String? {
         guard let date = date else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter.string(from: date)
+        return SharedDateFormatters.monthDayYear.string(from: date)
     }
 
 }

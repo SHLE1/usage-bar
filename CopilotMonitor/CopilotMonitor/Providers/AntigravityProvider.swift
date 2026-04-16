@@ -189,11 +189,11 @@ final class AntigravityProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 {
+        if httpResponse.isAuthError {
             throw ProviderError.authenticationFailed("Antigravity fallback token expired")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 

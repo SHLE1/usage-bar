@@ -547,7 +547,7 @@ final class CodexProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        guard httpResponse.statusCode == 200 else {
+        guard httpResponse.isSuccess else {
             logger.error("Codex API request failed with status code: \(httpResponse.statusCode)")
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }

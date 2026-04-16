@@ -81,8 +81,6 @@ final class StatusBarController: NSObject {
     var multiProviderBarView: MultiProviderBarView?
     var multiProviderBarMenu: NSMenu!
     var menu: NSMenu!
-    private var signInItem: NSMenuItem!
-    private var resetLoginItem: NSMenuItem!
     var launchAtLoginItem: NSMenuItem!
     var installCLIItem: NSMenuItem!
     var refreshIntervalMenu: NSMenu!
@@ -1200,29 +1198,6 @@ final class StatusBarController: NSObject {
         }
     }
 
-      private func updateUIForSuccess(usage: CopilotUsage) {
-          currentUsage = usage
-          updateStatusBarText()
-          signInItem.isHidden = true
-          updateHistorySubmenu()
-          updateMultiProviderMenu()
-      }
-
-    private func updateUIForLoggedOut() {
-        logger.info("updateUIForLoggedOut: showing default status")
-        debugLog("updateUIForLoggedOut: reset status bar icon to default")
-        updateStatusBarText()
-        signInItem.isHidden = false
-    }
-
-    private func handleFetchError(_ error: Error) {
-        statusBarIconView?.showError()
-    }
-
-    @objc private func signInClicked() {
-        NotificationCenter.default.post(name: Notification.Name("sessionExpired"), object: nil)
-    }
-
     @objc func refreshClicked() {
         logger.info("⌨️ [Keyboard] ⌘R Refresh triggered")
         debugLog("⌨️ refreshClicked: ⌘R shortcut activated")
@@ -1596,7 +1571,15 @@ final class StatusBarController: NSObject {
 
     @objc func launchAtLoginClicked() {
         let service = SMAppService.mainApp
-        try? (service.status == .enabled ? service.unregister() : service.register())
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else {
+                try service.register()
+            }
+        } catch {
+            logger.error("Launch at login toggle failed: \(error.localizedDescription)")
+        }
         updateLaunchAtLoginState()
     }
 
@@ -2018,9 +2001,6 @@ final class StatusBarController: NSObject {
 
         if let history = state.history {
             debugLog("updateHistorySubmenu: history exists, processing \(history.recentDays.count) days")
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMM d"
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
 
             var utcCalendar = Calendar(identifier: .gregorian)
             if let utc = TimeZone(identifier: "UTC") {
@@ -2035,7 +2015,7 @@ final class StatusBarController: NSObject {
             for day in history.recentDays {
                 let dayStart = utcCalendar.startOfDay(for: day.date)
                 let isToday = dayStart == today
-                let dateStr = dateFormatter.string(from: day.date)
+                let dateStr = SharedDateFormatters.monthDay.string(from: day.date)
                 let reqStr = numberFormatter.string(from: NSNumber(value: day.totalRequests)) ?? "0"
                 let label = isToday
                     ? String(format: L("%@ (Today): %@ req"), dateStr, reqStr)

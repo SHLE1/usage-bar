@@ -291,11 +291,11 @@ final class GeminiCLIProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 {
+        if httpResponse.isAuthError {
             throw ProviderError.authenticationFailed("Token expired for account #\(accountIndex + 1)")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 

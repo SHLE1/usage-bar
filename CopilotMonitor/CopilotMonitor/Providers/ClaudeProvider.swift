@@ -382,12 +382,12 @@ final class ClaudeProvider: ProviderProtocol {
                     continue
                 }
 
-                if httpResponse.statusCode == 401 {
+                if httpResponse.isAuthError {
                     logger.warning("Claude identity endpoint unauthorized: \(endpoint)")
                     return nil
                 }
 
-                guard (200...299).contains(httpResponse.statusCode) else {
+                guard httpResponse.isSuccess else {
                     logger.debug("Claude identity endpoint skipped: \(endpoint) status=\(httpResponse.statusCode)")
                     continue
                 }
@@ -519,18 +519,18 @@ final class ClaudeProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 {
-            logger.warning("Claude API returned 401 - token expired")
+        if httpResponse.isAuthError {
+            logger.warning("Claude API returned \(httpResponse.statusCode) - token expired")
             throw ProviderError.authenticationFailed("Token expired or invalid")
         }
 
-        if httpResponse.statusCode == 429 {
+        if httpResponse.isRateLimited {
             let message = parseClaudeAPIErrorMessage(from: data) ?? "Rate limited. Please try again later."
             logger.warning("Claude API returned 429 - \(message)")
             throw ProviderError.networkError(message)
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             let message = parseClaudeAPIErrorMessage(from: data) ?? "HTTP \(httpResponse.statusCode)"
             logger.error("Claude API returned status \(httpResponse.statusCode): \(message)")
             throw ProviderError.networkError(message)

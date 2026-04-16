@@ -79,12 +79,12 @@ final class KimiProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 {
-            logger.warning("Kimi API returned 401 - token expired")
+        if httpResponse.isAuthError {
+            logger.warning("Kimi API returned \(httpResponse.statusCode) - token expired")
             throw ProviderError.authenticationFailed("Token expired or invalid")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             logger.error("Kimi API returned status \(httpResponse.statusCode)")
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }

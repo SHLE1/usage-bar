@@ -163,10 +163,7 @@ final class CopilotProvider: ProviderProtocol {
 
     private func formatResetDate(_ date: Date?) -> String? {
         guard let date = date else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter.string(from: date)
+        return SharedDateFormatters.monthDayYear.string(from: date)
     }
 
     // MARK: - Token & Account Helpers

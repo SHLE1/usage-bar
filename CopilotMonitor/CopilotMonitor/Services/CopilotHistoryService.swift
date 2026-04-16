@@ -263,22 +263,12 @@ class CopilotHistoryService {
         let trimmed = dateString.trimmingCharacters(in: .whitespaces)
 
         // Try full format first (with year): "Jan 29, 2026"
-        let fullFormatter = DateFormatter()
-        fullFormatter.dateFormat = "MMM d, yyyy"
-        fullFormatter.locale = Locale(identifier: "en_US_POSIX")
-        fullFormatter.timeZone = TimeZone(identifier: "UTC")
-
-        if let date = fullFormatter.date(from: trimmed) {
+        if let date = SharedDateFormatters.monthDayYear.date(from: trimmed) {
             return date
         }
 
         // Short format without year: "Jan 29"
-        let shortFormatter = DateFormatter()
-        shortFormatter.dateFormat = "MMM d"
-        shortFormatter.locale = Locale(identifier: "en_US_POSIX")
-        shortFormatter.timeZone = TimeZone(identifier: "UTC")
-
-        if let date = shortFormatter.date(from: trimmed) {
+        if let date = SharedDateFormatters.monthDay.date(from: trimmed) {
             // Add current year
             var components = Calendar.current.dateComponents([.month, .day], from: date)
             components.year = Calendar.current.component(.year, from: Date())

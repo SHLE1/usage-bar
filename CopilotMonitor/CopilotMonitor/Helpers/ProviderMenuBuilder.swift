@@ -1027,9 +1027,6 @@ extension StatusBarController {
 
         if let history = state.history {
             debugLog("createCopilotHistorySubmenu: history exists, processing \(history.recentDays.count) days")
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMM d"
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
 
             var utcCalendar = Calendar(identifier: .gregorian)
             utcCalendar.timeZone = TimeZone(identifier: "UTC")!
@@ -1042,7 +1039,7 @@ extension StatusBarController {
             for day in history.recentDays {
                 let dayStart = utcCalendar.startOfDay(for: day.date)
                 let isToday = dayStart == today
-                let dateStr = dateFormatter.string(from: day.date)
+                let dateStr = SharedDateFormatters.monthDay.string(from: day.date)
                 let billedAmount = day.billedAmount
                 let overageReq = Int(day.billedRequests)
                 let label: String

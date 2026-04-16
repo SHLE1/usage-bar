@@ -132,11 +132,8 @@ final class ZaiCodingPlanProvider: ProviderProtocol {
 
         let now = Date()
         let startDate = now.addingTimeInterval(-24 * 60 * 60)
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        let startTimeStr = dateFormatter.string(from: startDate)
-        let endTimeStr = dateFormatter.string(from: now)
+        let startTimeStr = SharedDateFormatters.utcDateTime.string(from: startDate)
+        let endTimeStr = SharedDateFormatters.utcDateTime.string(from: now)
 
         var modelUsageTotals: ZaiModelUsageTotals?
         do {
@@ -231,11 +228,11 @@ final class ZaiCodingPlanProvider: ProviderProtocol {
             throw ProviderError.networkError("Invalid response type")
         }
 
-        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+        if httpResponse.isAuthError {
             throw ProviderError.authenticationFailed("Z.AI Coding Plan access token invalid or missing")
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard httpResponse.isSuccess else {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
