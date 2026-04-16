@@ -5,19 +5,14 @@ final class CopilotProviderTests: XCTestCase {
     
     func testCopilotUsageDecoding() throws {
         let fixtureData = loadFixture(named: "copilot_response.json")
-        let response = try JSONSerialization.jsonObject(with: fixtureData) as? [String: Any]
-        
-        XCTAssertNotNil(response)
-        XCTAssertEqual(response?["copilot_plan"] as? String, "individual_pro")
-        
-        let quotaSnapshots = response?["quota_snapshots"] as? [String: Any]
-        XCTAssertNotNil(quotaSnapshots)
-        
-        let premiumInteractions = quotaSnapshots?["premium_interactions"] as? [String: Any]
-        XCTAssertNotNil(premiumInteractions)
-        XCTAssertEqual(premiumInteractions?["entitlement"] as? Int, 1500)
-        XCTAssertEqual(premiumInteractions?["remaining"] as? Int, -3821)
-        XCTAssertEqual(premiumInteractions?["overage_permitted"] as? Bool, true)
+        let response = try JSONDecoder().decode(CopilotInternalUserResponse.self, from: fixtureData)
+
+        XCTAssertEqual(response.resolvedPlan, "individual_pro")
+
+        let premiumInteractions = try XCTUnwrap(response.quotaSnapshots?["premium_interactions"])
+        XCTAssertEqual(premiumInteractions.entitlement, 1500)
+        XCTAssertEqual(premiumInteractions.remaining, -3821)
+        XCTAssertEqual(premiumInteractions.overagePermitted, true)
     }
     
     func testCopilotUsageModelDecoding() throws {
@@ -231,24 +226,17 @@ final class CopilotProviderTests: XCTestCase {
 
     func testFixturePremiumInteractionsExtraction() throws {
         let fixtureData = loadFixture(named: "copilot_response.json")
-        let response = try JSONSerialization.jsonObject(with: fixtureData) as? [String: Any]
-
-        XCTAssertNotNil(response)
-
-        let quotaSnapshots = response?["quota_snapshots"] as? [String: Any]
-        XCTAssertNotNil(quotaSnapshots)
-
-        let premium = quotaSnapshots?["premium_interactions"] as? [String: Any]
-        XCTAssertNotNil(premium)
+        let response = try JSONDecoder().decode(CopilotInternalUserResponse.self, from: fixtureData)
+        let premium = try XCTUnwrap(response.quotaSnapshots?["premium_interactions"])
 
         // Verify premium_interactions fields match expected values
-        XCTAssertEqual(premium?["entitlement"] as? Int, 1500)
-        XCTAssertEqual(premium?["remaining"] as? Int, -3821)
-        XCTAssertEqual(premium?["overage_permitted"] as? Bool, true)
+        XCTAssertEqual(premium.entitlement, 1500)
+        XCTAssertEqual(premium.remaining, -3821)
+        XCTAssertEqual(premium.overagePermitted, true)
 
         // Verify used = entitlement - remaining (clamped to 0)
-        let entitlement = premium?["entitlement"] as? Int ?? 0
-        let remaining = premium?["remaining"] as? Int ?? 0
+        let entitlement = premium.entitlement ?? 0
+        let remaining = premium.remaining ?? 0
         let used = max(0, entitlement - remaining)
         XCTAssertEqual(used, 5321)
     }

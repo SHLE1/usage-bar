@@ -171,26 +171,6 @@ final class CopilotProvider: ProviderProtocol {
 
     // MARK: - Token & Account Helpers
 
-    private struct CopilotTokenInfo {
-        let accountId: String?
-        let login: String?
-        let planInfo: CopilotPlanInfo?
-        let authSource: String
-        let source: CopilotAuthSource
-
-        var quotaLimit: Int? { planInfo?.quotaLimit }
-        var quotaRemaining: Int? { planInfo?.quotaRemaining }
-        var plan: String? { planInfo?.plan }
-        var resetDate: Date? { planInfo?.quotaResetDateUTC }
-    }
-
-    private struct CopilotAccountCandidate {
-        let accountId: String?
-        let usage: ProviderUsage
-        let details: DetailedUsage
-        let sourcePriority: Int
-    }
-
     private func sourcePriority(_ source: CopilotAuthSource?) -> Int {
         source?.priority ?? 0
     }
@@ -269,10 +249,10 @@ final class CopilotProvider: ProviderProtocol {
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 return nil
             }
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            guard let profile = try? JSONDecoder().decode(GitHubUserProfileResponse.self, from: data) else {
                 return nil
             }
-            return json["login"] as? String
+            return profile.login
         } catch {
             logger.warning("CopilotProvider: Failed to fetch user login: \(error.localizedDescription)")
             return nil
@@ -621,50 +601,19 @@ final class CopilotProvider: ProviderProtocol {
                 }
             }
 
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            guard let envelope = try? JSONDecoder().decode(CopilotBillingUsageEnvelope.self, from: data),
+                  let usage = envelope.usage else {
                 logger.error("CopilotProvider: Failed to parse usage JSON")
                 return nil
             }
 
-            if let usage = parseUsageFromResponse(json) {
-                logger.info("CopilotProvider: Usage data parsed - used: \(usage.usedRequests), limit: \(usage.limitRequests)")
-                return usage
-            }
+            logger.info("CopilotProvider: Usage data parsed - used: \(usage.usedRequests), limit: \(usage.limitRequests)")
+            return usage
         } catch {
             logger.error("CopilotProvider: Usage fetch error - \(error.localizedDescription)")
         }
 
         return nil
-    }
-
-    /// Parse CopilotUsage from API response dictionary
-    /// - Parameter rootDict: Raw response from API
-    /// - Returns: Parsed CopilotUsage or nil if parsing fails
-    private func parseUsageFromResponse(_ rootDict: [String: Any]) -> CopilotUsage? {
-        // Unwrap payload or data wrapper if present
-        var dict = rootDict
-        if let payload = rootDict["payload"] as? [String: Any] {
-            dict = payload
-        } else if let data = rootDict["data"] as? [String: Any] {
-            dict = data
-        }
-
-        logger.info("CopilotProvider: Parsing data (Keys: \(dict.keys.joined(separator: ", ")))")
-
-        // Extract values with fallback key names
-        let netBilledAmount = APIValueParser.parseDouble(from: dict, keys: ["netBilledAmount", "net_billed_amount"])
-        let netQuantity = APIValueParser.parseDouble(from: dict, keys: ["netQuantity", "net_quantity"])
-        let discountQuantity = APIValueParser.parseDouble(from: dict, keys: ["discountQuantity", "discount_quantity"])
-        let limit = APIValueParser.parseInt(from: dict, keys: ["userPremiumRequestEntitlement", "user_premium_request_entitlement", "quantity"])
-        let filteredLimit = APIValueParser.parseInt(from: dict, keys: ["filteredUserPremiumRequestEntitlement"])
-
-        return CopilotUsage(
-            netBilledAmount: netBilledAmount,
-            netQuantity: netQuantity,
-            discountQuantity: discountQuantity,
-            userPremiumRequestEntitlement: limit,
-            filteredUserPremiumRequestEntitlement: filteredLimit
-        )
     }
 
     // MARK: - Caching

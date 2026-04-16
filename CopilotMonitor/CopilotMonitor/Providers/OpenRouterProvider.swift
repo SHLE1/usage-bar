@@ -116,13 +116,13 @@ final class OpenRouterProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            let creditsResponse = try JSONDecoder().decode(CreditsResponse.self, from: data)
-            return creditsResponse
-        } catch {
-            logger.error("Failed to decode credits response: \(error.localizedDescription)")
-            throw ProviderError.decodingError(error.localizedDescription)
-        }
+        return try decodeProviderPayload(
+            CreditsResponse.self,
+            from: data,
+            logger: logger,
+            responseName: "OpenRouter credits response",
+            failureMessage: "Invalid OpenRouter credits response"
+        )
     }
 
     /// Fetches API key information including rate limits (for future use)
@@ -152,12 +152,12 @@ final class OpenRouterProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            let keyResponse = try JSONDecoder().decode(KeyResponse.self, from: data)
-            return keyResponse
-        } catch {
-            logger.error("Failed to decode key response: \(error.localizedDescription)")
-            throw ProviderError.decodingError(error.localizedDescription)
-        }
+        return try decodeProviderPayload(
+            KeyResponse.self,
+            from: data,
+            logger: logger,
+            responseName: "OpenRouter key response",
+            failureMessage: "Invalid OpenRouter key response"
+        )
     }
 }

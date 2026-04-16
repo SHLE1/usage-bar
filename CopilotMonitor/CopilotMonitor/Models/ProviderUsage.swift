@@ -66,8 +66,6 @@ enum ProviderUsage {
         }
     }
 
-    /// Remaining quota for quota-based providers
-    /// Returns nil for pay-as-you-go providers
     var remainingQuota: Int? {
         switch self {
         case .quotaBased(let remaining, _, _):
@@ -77,8 +75,6 @@ enum ProviderUsage {
         }
     }
 
-    /// Total entitlement for quota-based providers
-    /// Returns nil for pay-as-you-go providers
     var totalEntitlement: Int? {
         switch self {
         case .quotaBased(_, let entitlement, _):
@@ -88,8 +84,6 @@ enum ProviderUsage {
         }
     }
 
-    /// Reset time for pay-as-you-go providers
-    /// Returns nil for quota-based providers
     var resetTime: Date? {
         switch self {
         case .payAsYouGo(_, _, let resetsAt):
@@ -99,8 +93,6 @@ enum ProviderUsage {
         }
     }
 
-    /// Cost for pay-as-you-go providers
-    /// Returns nil for quota-based providers
     var cost: Double? {
         switch self {
         case .payAsYouGo(_, let cost, _):

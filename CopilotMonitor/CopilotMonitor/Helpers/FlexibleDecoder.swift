@@ -3,6 +3,39 @@ import Foundation
 /// Shared flexible decoder helpers for API response structs whose numeric
 /// fields may arrive as Int, Double, Int64, or String.
 enum FlexibleDecoder {
+    static func decodeString<Key: CodingKey>(
+        _ container: KeyedDecodingContainer<Key>,
+        forKey key: Key
+    ) -> String? {
+        if let value = try? container.decodeIfPresent(String.self, forKey: key) {
+            return value
+        }
+        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? container.decodeIfPresent(Int64.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? container.decodeIfPresent(Bool.self, forKey: key) {
+            return value ? "true" : "false"
+        }
+        return nil
+    }
+
+    static func decodeString<Key: CodingKey>(
+        _ container: KeyedDecodingContainer<Key>,
+        forKeys keys: [Key]
+    ) -> String? {
+        for key in keys {
+            if let value = decodeString(container, forKey: key) {
+                return value
+            }
+        }
+        return nil
+    }
 
     static func decodeInt<Key: CodingKey>(
         _ container: KeyedDecodingContainer<Key>,

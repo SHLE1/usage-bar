@@ -340,12 +340,13 @@ final class AntigravityProvider: ProviderProtocol {
             throw ProviderError.decodingError("Invalid cache auth JSON encoding")
         }
 
-        do {
-            return try JSONDecoder().decode(AntigravityCachedAuthStatus.self, from: data)
-        } catch {
-            logger.error("Failed to decode antigravityAuthStatus JSON: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid antigravityAuthStatus JSON")
-        }
+        return try decodeProviderPayload(
+            AntigravityCachedAuthStatus.self,
+            from: data,
+            logger: logger,
+            responseName: "antigravityAuthStatus JSON",
+            failureMessage: "Invalid antigravityAuthStatus JSON"
+        )
     }
 
     private func parseCachedUsage(from payload: Data) throws -> AntigravityParsedCacheUsage {

@@ -30,13 +30,11 @@ final class ProviderUsageTests: XCTestCase {
     
     /// Test that Copilot fixture JSON can be loaded and decoded
     func testCopilotFixtureLoading() throws {
-        let fixture = try loadFixture(named: "copilot_response")
-        XCTAssertNotNil(fixture)
-        
-        // Verify structure
-        let dict = fixture as? [String: Any]
-        XCTAssertNotNil(dict?["copilot_plan"])
-        XCTAssertNotNil(dict?["quota_snapshots"])
+        let fixtureData = try loadFixtureData(named: "copilot_response")
+        let response = try JSONDecoder().decode(CopilotInternalUserResponse.self, from: fixtureData)
+
+        XCTAssertEqual(response.resolvedPlan, "individual_pro")
+        XCTAssertNotNil(response.quotaSnapshots)
     }
     
     /// Test that Gemini fixture JSON can be loaded and decoded
@@ -132,29 +130,29 @@ final class ProviderUsageTests: XCTestCase {
         XCTAssertNil(ChutesProvider.calculateMonthlyValueUsedPercent(usedUSD: 10, capUSD: 0))
     }
 
-    func testChutesExtractMonthlyValueUsedUSDPrefersAggregateFields() {
-        let payload: [String: Any] = [
-            "summary": [
-                "total_cost_usd": 34.25
-            ],
+    func testChutesExtractMonthlyValueUsedUSDPrefersAggregateFields() throws {
+        let payload = try decodeChutesUsageSummary("""
+        {
+            "summary": { "total_cost_usd": 34.25 },
             "items": [
-                ["cost_usd": 10.0],
-                ["cost_usd": 20.0]
+                { "cost_usd": 10.0 },
+                { "cost_usd": 20.0 }
             ]
-        ]
-
+        }
+        """)
         XCTAssertEqual(ChutesProvider.extractMonthlyValueUsedUSD(from: payload), 34.25)
     }
 
-    func testChutesExtractMonthlyValueUsedUSDSumsRecognizedItemFields() {
-        let payload: [String: Any] = [
+    func testChutesExtractMonthlyValueUsedUSDSumsRecognizedItemFields() throws {
+        let payload = try decodeChutesUsageSummary("""
+        {
             "items": [
-                ["cost_usd": 12.5],
-                ["total_cost": "7.25"],
-                ["ignored": 99]
+                { "cost_usd": 12.5 },
+                { "total_cost": "7.25" },
+                { "ignored": 99 }
             ]
-        ]
-
+        }
+        """)
         XCTAssertEqual(ChutesProvider.extractMonthlyValueUsedUSD(from: payload), 19.75)
     }
 
@@ -355,15 +353,18 @@ final class ProviderUsageTests: XCTestCase {
     /// - Parameter named: The name of the fixture file (without .json extension)
     /// - Returns: Decoded JSON object
     private func loadFixture(named: String) throws -> Any {
+        let data = try loadFixtureData(named: named)
+        return try JSONSerialization.jsonObject(with: data, options: [])
+    }
+
+    private func loadFixtureData(named: String) throws -> Data {
         let testBundle = Bundle(for: type(of: self))
         
         guard let url = testBundle.url(forResource: named, withExtension: "json") else {
             throw NSError(domain: "FixtureError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fixture file not found: \(named)"])
         }
         
-        let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data, options: [])
-        return json
+        return try Data(contentsOf: url)
     }
 
     /// Parse formatter output JSON text into dictionary for assertions.
@@ -371,6 +372,11 @@ final class ProviderUsageTests: XCTestCase {
         let data = try XCTUnwrap(jsonString.data(using: .utf8))
         let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
         return try XCTUnwrap(jsonObject as? [String: Any])
+    }
+
+    private func decodeChutesUsageSummary(_ jsonString: String) throws -> ChutesUsageSummaryValue {
+        let data = try XCTUnwrap(jsonString.data(using: .utf8))
+        return try JSONDecoder().decode(ChutesUsageSummaryValue.self, from: data)
     }
 
     private func makeQuotaResult(remaining: Int) -> ProviderResult {

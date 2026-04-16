@@ -89,7 +89,9 @@ final class MultiProviderBarView: NSView {
     }
 
     private func tinted(_ image: NSImage, color: NSColor) -> NSImage {
-        let copy = image.copy() as! NSImage
+        guard let copy = image.copy() as? NSImage else {
+            return image
+        }
         copy.lockFocus()
         color.set()
         NSRect(origin: .zero, size: copy.size).fill(using: .sourceAtop)

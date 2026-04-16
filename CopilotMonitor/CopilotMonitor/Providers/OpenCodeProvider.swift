@@ -63,11 +63,14 @@ final class OpenCodeProvider: ProviderProtocol {
         return nil
     }
 
-    /// Finds opencode binary using `which` command in current environment.
-    private func findBinaryViaWhich() -> URL? {
+    private func runCommandAndReadTrimmedOutput(
+        executableURL: URL,
+        arguments: [String],
+        failureMessage: String
+    ) -> String? {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        process.arguments = ["opencode"]
+        process.executableURL = executableURL
+        process.arguments = arguments
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -81,14 +84,29 @@ final class OpenCodeProvider: ProviderProtocol {
 
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             guard let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !output.isEmpty else { return nil }
+                  !output.isEmpty else {
+                return nil
+            }
 
-            guard FileManager.default.fileExists(atPath: output) else { return nil }
-            return URL(fileURLWithPath: output)
+            return output
         } catch {
-            DebugLogger.log("OpenCode", "'which opencode' failed: \(error.localizedDescription)", to: "/tmp/opencode_debug.log")
+            DebugLogger.log("OpenCode", "\(failureMessage): \(error.localizedDescription)", to: "/tmp/opencode_debug.log")
             return nil
         }
+    }
+
+    /// Finds opencode binary using `which` command in current environment.
+    private func findBinaryViaWhich() -> URL? {
+        guard let output = runCommandAndReadTrimmedOutput(
+            executableURL: URL(fileURLWithPath: "/usr/bin/which"),
+            arguments: ["opencode"],
+            failureMessage: "'which opencode' failed"
+        ) else {
+            return nil
+        }
+
+        guard FileManager.default.fileExists(atPath: output) else { return nil }
+        return URL(fileURLWithPath: output)
     }
 
     /// Finds opencode binary using login shell to capture user's full PATH.
@@ -96,30 +114,16 @@ final class OpenCodeProvider: ProviderProtocol {
     private func findBinaryViaLoginShell() -> URL? {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: shell)
-        process.arguments = ["-lc", "which opencode 2>/dev/null"]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-
-            guard process.terminationStatus == 0 else { return nil }
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !output.isEmpty else { return nil }
-
-            guard FileManager.default.fileExists(atPath: output) else { return nil }
-            return URL(fileURLWithPath: output)
-        } catch {
-            DebugLogger.log("OpenCode", "Login shell 'which opencode' failed: \(error.localizedDescription)", to: "/tmp/opencode_debug.log")
+        guard let output = runCommandAndReadTrimmedOutput(
+            executableURL: URL(fileURLWithPath: shell),
+            arguments: ["-lc", "which opencode 2>/dev/null"],
+            failureMessage: "Login shell 'which opencode' failed"
+        ) else {
             return nil
         }
+
+        guard FileManager.default.fileExists(atPath: output) else { return nil }
+        return URL(fileURLWithPath: output)
     }
 
     /// Parsed statistics from `opencode stats`.

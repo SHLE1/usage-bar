@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// Defines the type of provider based on billing model
 enum ProviderType {
@@ -179,6 +180,37 @@ protocol ProviderProtocol: AnyObject {
 extension ProviderProtocol {
     var fetchTimeout: TimeInterval { 10.0 }
     var minimumFetchInterval: TimeInterval { 0 }
+}
+
+func decodeProviderPayload<T: Decodable>(
+    _ type: T.Type,
+    from data: Data,
+    logger: Logger,
+    responseName: String,
+    failureMessage: String
+) throws -> T {
+    do {
+        return try JSONDecoder().decode(T.self, from: data)
+    } catch let error as ProviderError {
+        throw error
+    } catch {
+        logger.error("Failed to decode \(responseName, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        throw ProviderError.decodingError(failureMessage)
+    }
+}
+
+func decodeJSONObject(
+    from data: Data,
+    logger: Logger,
+    responseName: String,
+    failureMessage: String
+) throws -> Any {
+    do {
+        return try JSONSerialization.jsonObject(with: data)
+    } catch {
+        logger.error("Failed to decode \(responseName, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        throw ProviderError.decodingError(failureMessage)
+    }
 }
 
 /// Errors that can occur during provider operations

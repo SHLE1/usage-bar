@@ -268,8 +268,6 @@ final class ClaudeProvider: ProviderProtocol {
             return 2
         case .claudeCodeConfig:
             return 1
-        case .claudeLegacyCredentials:
-            return 0
         }
     }
 
@@ -281,8 +279,6 @@ final class ClaudeProvider: ProviderProtocol {
             return "Claude Code (Keychain)"
         case .claudeCodeConfig:
             return "Claude Code"
-        case .claudeLegacyCredentials:
-            return "Claude Code (Legacy)"
         }
     }
 

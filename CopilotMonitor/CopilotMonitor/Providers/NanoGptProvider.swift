@@ -311,12 +311,13 @@ final class NanoGptProvider: ProviderProtocol {
         let (data, response) = try await session.data(for: request)
         try validateHTTP(response: response, data: data)
 
-        do {
-            return try JSONDecoder().decode(NanoGptSubscriptionUsageResponse.self, from: data)
-        } catch {
-            logger.error("Failed to decode Nano-GPT usage: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid Nano-GPT usage response")
-        }
+        return try decodeProviderPayload(
+            NanoGptSubscriptionUsageResponse.self,
+            from: data,
+            logger: logger,
+            responseName: "Nano-GPT usage response",
+            failureMessage: "Invalid Nano-GPT usage response"
+        )
     }
 
     private func fetchBalance(apiKey: String) async throws -> NanoGptBalanceResponse {
@@ -332,12 +333,13 @@ final class NanoGptProvider: ProviderProtocol {
         let (data, response) = try await session.data(for: request)
         try validateHTTP(response: response, data: data)
 
-        do {
-            return try JSONDecoder().decode(NanoGptBalanceResponse.self, from: data)
-        } catch {
-            logger.error("Failed to decode Nano-GPT balance: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid Nano-GPT balance response")
-        }
+        return try decodeProviderPayload(
+            NanoGptBalanceResponse.self,
+            from: data,
+            logger: logger,
+            responseName: "Nano-GPT balance response",
+            failureMessage: "Invalid Nano-GPT balance response"
+        )
     }
 
     private func validateHTTP(response: URLResponse, data: Data) throws {

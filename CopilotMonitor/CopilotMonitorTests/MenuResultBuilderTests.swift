@@ -1,10 +1,3 @@
-//
-//  MenuResultBuilderTests.swift
-//  CopilotMonitorTests
-//
-//  Created by Result Builder TDD
-//
-
 import XCTest
 @testable import UsageBar
 

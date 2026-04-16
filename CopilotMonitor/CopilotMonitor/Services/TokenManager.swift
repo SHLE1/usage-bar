@@ -414,7 +414,6 @@ enum ClaudeAuthSource {
     case opencodeAuth
     case claudeCodeConfig
     case claudeCodeKeychain
-    case claudeLegacyCredentials
 }
 
 /// Unified Claude account model used by the provider layer
@@ -1179,8 +1178,7 @@ final class TokenManager: @unchecked Sendable {
         return nil
     }
 
-    /// Returns the path where auth.json was found, or nil if not found
-    /// Useful for displaying in UI to help users troubleshoot
+    /// Used for UI diagnostics to help troubleshoot auth configuration
     private(set) var lastFoundAuthPath: URL?
 
     /// Thread-safe read of OpenCode auth tokens with caching
@@ -1788,8 +1786,6 @@ final class TokenManager: @unchecked Sendable {
             return "Claude Code"
         case .claudeCodeKeychain:
             return "Claude Code (Keychain)"
-        case .claudeLegacyCredentials:
-            return "Claude Code (Legacy)"
         }
     }
 
@@ -3105,7 +3101,7 @@ final class TokenManager: @unchecked Sendable {
         return accounts
     }
 
-    /// Gets all Claude accounts (OpenCode auth + Claude Code local auth)
+    /// Discovers Claude accounts across OpenCode and local sources
     func getClaudeAccounts() -> [ClaudeAuthAccount] {
         if let cached = queue.sync(execute: {
             if let cached = cachedClaudeAccounts,
@@ -3162,7 +3158,6 @@ final class TokenManager: @unchecked Sendable {
             case .opencodeAuth: return 3
             case .claudeCodeKeychain: return 2
             case .claudeCodeConfig: return 1
-            case .claudeLegacyCredentials: return 0
             }
         }
 
@@ -3370,7 +3365,7 @@ final class TokenManager: @unchecked Sendable {
         return accounts
     }
 
-    /// Gets all GitHub Copilot token accounts (OpenCode auth + Copilot CLI Keychain + VS Code Copilot tokens)
+    /// Discovers Copilot accounts across multiple sources
     func getGitHubCopilotAccounts() -> [CopilotAuthAccount] {
         if let cached = queue.sync(execute: {
             if let cached = cachedCopilotAccounts,
@@ -3437,7 +3432,7 @@ final class TokenManager: @unchecked Sendable {
 
     // MARK: - OpenAI Account Discovery
 
-    /// Gets all OpenAI accounts (codex-multi-auth + OpenCode auth + codex-lb + Codex native auth)
+    /// Discovers OpenAI accounts across all configured sources
     func getOpenAIAccounts() -> [OpenAIAuthAccount] {
         var accounts: [OpenAIAuthAccount] = []
 
@@ -3720,8 +3715,6 @@ final class TokenManager: @unchecked Sendable {
 
     // MARK: - Token Accessors
 
-    /// Gets Anthropic (Claude) access token from OpenCode auth
-    /// - Returns: Access token string if available, nil otherwise
     func getAnthropicAccessToken() -> String? {
         if let auth = readOpenCodeAuth(), let access = auth.anthropic?.access {
             return access
@@ -3729,7 +3722,7 @@ final class TokenManager: @unchecked Sendable {
         return getClaudeAccounts().first?.accessToken
     }
 
-    /// Gets OpenAI access token, first from OpenCode auth, then falling back to Codex CLI native auth (~/.codex/auth.json)
+    /// Resolves OpenAI access token (OpenCode primary, Codex CLI fallback)
     func getOpenAIAccessToken() -> String? {
         // Primary: OpenCode auth
         if let auth = readOpenCodeAuth(), let access = auth.openai?.access {
@@ -3750,7 +3743,7 @@ final class TokenManager: @unchecked Sendable {
         return nil
     }
 
-    /// Gets OpenAI account ID, first from OpenCode auth, then falling back to Codex CLI native auth
+    /// Resolves OpenAI account ID (OpenCode primary, Codex CLI fallback)
     func getOpenAIAccountId() -> String? {
         // Primary: OpenCode auth
         if let auth = readOpenCodeAuth(),
@@ -3765,8 +3758,6 @@ final class TokenManager: @unchecked Sendable {
         return nil
     }
 
-    /// Gets GitHub Copilot access token from OpenCode auth
-    /// - Returns: Access token string if available, nil otherwise
     func getGitHubCopilotAccessToken() -> String? {
         if let auth = readOpenCodeAuth(), let access = auth.githubCopilot?.access {
             return access
@@ -3774,8 +3765,6 @@ final class TokenManager: @unchecked Sendable {
         return getGitHubCopilotAccounts().first?.accessToken
     }
 
-    /// Fetches Copilot plan and quota info from GitHub internal API
-    /// - Returns: CopilotPlanInfo if successful, nil otherwise
     func fetchCopilotPlanInfo(accessToken: String) async -> CopilotPlanInfo? {
         guard let url = URL(string: "https://api.github.com/copilot_internal/user") else {
             logger.error("Invalid Copilot API URL")
@@ -3806,55 +3795,20 @@ final class TokenManager: @unchecked Sendable {
                 return nil
             }
 
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            guard let payload = try? JSONDecoder().decode(CopilotInternalUserResponse.self, from: data) else {
                 logger.error("Failed to parse Copilot API response")
                 return nil
             }
 
-            let plan = json["copilot_plan"] as? String ?? json["plan"] as? String
-            let userIdString = json["user_id"] as? String
-            let userIdInt = json["user_id"] as? Int ?? (json["id"] as? Int)
-            let userId = userIdString ?? userIdInt.map { String($0) }
-
-            var resetDate: Date?
-
-            // Parse quota_reset_date_utc (format: "2026-03-01T00:00:00.000Z")
-            if let resetDateStr = json["quota_reset_date_utc"] as? String {
-                resetDate = ISO8601DateParsing.parse(resetDateStr)
-            }
-
-            // Fallback to quota_reset_date (format: "2026-03-01")
-            if resetDate == nil, let resetDateStr = json["quota_reset_date"] as? String {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd"
-                dateFormatter.timeZone = TimeZone(identifier: "UTC")
-                resetDate = dateFormatter.date(from: resetDateStr)
-            }
-
-            // Additional fallback: limited_user_reset_date
-            if resetDate == nil, let limitedReset = json["limited_user_reset_date"] as? String {
-                resetDate = ISO8601DateParsing.parse(limitedReset)
-            }
-
-            // Try multiple quota sources for different API versions
-            let limitedUserQuotas = json["limited_user_quotas"] as? [String: Any]
-            let monthlyQuotas = json["monthly_quotas"] as? [String: Any]
-            let quotaSnapshots = json["quota_snapshots"] as? [String: Any]
-
-            func quotaValue(_ dict: [String: Any]?, key: String) -> Int? {
-                guard let dict = dict else { return nil }
-                if let value = dict[key] as? Int { return value }
-                if let value = dict[key] as? NSNumber { return value.intValue }
-                if let value = dict[key] as? Double { return Int(value) }
-                if let value = dict[key] as? String, let intValue = Int(value) { return intValue }
-                return nil
-            }
+            let plan = payload.resolvedPlan
+            let userId = payload.resolvedUserId
+            let resetDate = payload.resolvedResetDate
 
             // Legacy API format: monthly_quotas and limited_user_quotas
-            let monthlyCompletions = quotaValue(monthlyQuotas, key: "completions")
-            let monthlyChat = quotaValue(monthlyQuotas, key: "chat")
-            let limitedCompletions = quotaValue(limitedUserQuotas, key: "completions")
-            let limitedChat = quotaValue(limitedUserQuotas, key: "chat")
+            let monthlyCompletions = payload.monthlyQuotas?.completions
+            let monthlyChat = payload.monthlyQuotas?.chat
+            let limitedCompletions = payload.limitedUserQuotas?.completions
+            let limitedChat = payload.limitedUserQuotas?.chat
 
             // New API format: quota_snapshots (contains entitlement/remaining for each quota type)
             var snapshotEntitlement: Int?
@@ -3867,14 +3821,14 @@ final class TokenManager: @unchecked Sendable {
             var premiumOverageCount: Int?
             var premiumOveragePermitted: Bool?
 
-            if let snapshots = quotaSnapshots {
+            if let snapshots = payload.quotaSnapshots {
                 // Extract premium_interactions first (the key quota type for usage tracking)
-                if let premium = snapshots["premium_interactions"] as? [String: Any] {
-                    premiumEntitlement = quotaValue(premium, key: "entitlement")
-                    premiumRemaining = quotaValue(premium, key: "remaining")
-                    premiumUnlimited = (premium["unlimited"] as? Bool) ?? false
-                    premiumOverageCount = quotaValue(premium, key: "overage_count")
-                    premiumOveragePermitted = premium["overage_permitted"] as? Bool
+                if let premium = snapshots["premium_interactions"] {
+                    premiumEntitlement = premium.entitlement
+                    premiumRemaining = premium.remaining
+                    premiumUnlimited = premium.unlimited
+                    premiumOverageCount = premium.overageCount
+                    premiumOveragePermitted = premium.overagePermitted
 
                     logger.info("Copilot premium_interactions parsed: entitlement=\(premiumEntitlement ?? -1), remaining=\(premiumRemaining ?? -1), unlimited=\(premiumUnlimited), overageCount=\(premiumOverageCount ?? 0)")
                 }
@@ -3884,20 +3838,16 @@ final class TokenManager: @unchecked Sendable {
                 var totalRemaining = 0
                 var hasUnlimited = false
                 
-                for (_, value) in snapshots {
-                    if let quota = value as? [String: Any] {
-                        // Check if this quota type is unlimited
-                        if let unlimited = quota["unlimited"] as? Bool, unlimited {
-                            hasUnlimited = true
-                        }
-                        
-                        // Add entitlement and remaining
-                        if let entitlement = quotaValue(quota, key: "entitlement"), entitlement > 0 {
-                            totalEntitlement += entitlement
-                        }
-                        if let remaining = quotaValue(quota, key: "remaining") {
-                            totalRemaining += remaining
-                        }
+                for quota in snapshots.values {
+                    if quota.unlimited {
+                        hasUnlimited = true
+                    }
+
+                    if let entitlement = quota.entitlement, entitlement > 0 {
+                        totalEntitlement += entitlement
+                    }
+                    if let remaining = quota.remaining {
+                        totalRemaining += remaining
                     }
                 }
                 
@@ -3951,8 +3901,6 @@ final class TokenManager: @unchecked Sendable {
         return await fetchCopilotPlanInfo(accessToken: accessToken)
     }
 
-    /// Gets OpenRouter API key from OpenCode auth
-    /// - Returns: API key string if available, nil otherwise
     func getOpenRouterAPIKey() -> String? {
         guard let auth = readOpenCodeAuth() else { return nil }
         return auth.openrouter?.key
@@ -3993,20 +3941,15 @@ final class TokenManager: @unchecked Sendable {
         return auth.chutes?.key
     }
 
-    /// Gets Gemini refresh token from discovered Gemini account sources
-    /// - Returns: Refresh token string if available, nil otherwise
     func getGeminiRefreshToken() -> String? {
         return getAllGeminiAccounts().first?.refreshToken
     }
 
-    /// Gets Gemini account email from discovered Gemini account sources
-    /// - Returns: Email string if available, nil otherwise
     func getGeminiAccountEmail() -> String? {
         return getAllGeminiAccounts().first?.email
     }
 
-    /// Gets all Gemini accounts (NoeFabris/opencode-antigravity-auth + jenslys/opencode-gemini-auth)
-    /// and enriches account identity metadata from ~/.gemini/oauth_creds.json when available.
+    /// Discovers Gemini accounts from multiple auth sources, enriched with oauth_creds.json metadata
     func getAllGeminiAccounts() -> [GeminiAuthAccount] {
         var accounts: [GeminiAuthAccount] = []
         let oauthCreds = readGeminiOAuthCreds()
@@ -4166,7 +4109,6 @@ final class TokenManager: @unchecked Sendable {
         }
     }
 
-    /// Gets the count of registered Gemini accounts
     func getGeminiAccountCount() -> Int {
         return getAllGeminiAccounts().count
     }

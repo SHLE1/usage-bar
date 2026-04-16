@@ -3,19 +3,15 @@ import os.log
 
 private let logger = Logger(subsystem: "com.opencodeproviders", category: "Migration")
 
-/// Handles app bundle name migration from old names to "UsageBar.app"
-/// This is needed because Sparkle updates replace bundle contents but keep the folder name,
-/// causing "damaged or incomplete" errors when bundle name doesn't match executable name.
+/// Migrates legacy app bundle names to `UsageBar.app` and cleans old copies.
 @MainActor
 final class AppMigrationHelper {
     
     static let shared = AppMigrationHelper()
     
-    /// The correct app bundle name that should be used
     private let targetBundleName = "UsageBar.app"
     private let expectedBundleID = "io.github.SHLE1.UsageBar"
     
-    /// List of old bundle names that need migration
     private let legacyBundleNames = [
         "CopilotMonitor.app",
         "OpenCodeUsageMonitor.app",
@@ -25,8 +21,6 @@ final class AppMigrationHelper {
     
     private init() {}
     
-    /// Check if migration is needed and perform it if necessary
-    /// Returns true if migration was initiated (app will restart), false if no migration needed
     func checkAndMigrateIfNeeded() -> Bool {
         let bundlePath = Bundle.main.bundlePath
         let currentBundleName = (bundlePath as NSString).lastPathComponent
@@ -142,8 +136,6 @@ final class AppMigrationHelper {
         alert.runModal()
     }
     
-    /// Called by the newly launched app to clean up after migration
-    /// Checks if there's an old bundle that should be removed
     func cleanupLegacyBundlesIfNeeded() {
         let bundlePath = Bundle.main.bundlePath
         let currentBundleName = (bundlePath as NSString).lastPathComponent
@@ -173,17 +165,12 @@ final class AppMigrationHelper {
         }
     }
 
-    // MARK: - OpenCode Zen → OpenCode Provider Identity Migration
-
-    /// Migrates persisted UserDefaults settings from the removed `opencode_zen` provider
-    /// identity to the unified `open_code` identity. Also cleans up stale subscription keys.
-    /// This is idempotent and safe to call on every launch.
+    /// Migrates persisted `UserDefaults` keys from `opencode_zen` to `open_code`.
     func migrateOpenCodeZenSettings() {
         let defaults = UserDefaults.standard
         let legacyRaw = "opencode_zen"
         let canonicalRaw = "open_code"
 
-        // 1. Migrate provider enabled flag
         let legacyEnabledKey = "provider.\(legacyRaw).enabled"
         let canonicalEnabledKey = "provider.\(canonicalRaw).enabled"
         if defaults.object(forKey: legacyEnabledKey) != nil {
@@ -195,14 +182,12 @@ final class AppMigrationHelper {
             defaults.removeObject(forKey: legacyEnabledKey)
         }
 
-        // 2. Migrate pinned provider
         let pinnedKey = "statusBarDisplay.provider"
         if let pinnedValue = defaults.string(forKey: pinnedKey), pinnedValue == legacyRaw {
             defaults.set(canonicalRaw, forKey: pinnedKey)
             logger.info("✅ [Migration] Migrated pinned provider from \(legacyRaw) → \(canonicalRaw)")
         }
 
-        // 3. Migrate multi-provider selection
         let multiKey = "statusBarDisplay.multiProviderProviders"
         if var providers = defaults.array(forKey: multiKey) as? [String] {
             if let idx = providers.firstIndex(of: legacyRaw) {
@@ -211,14 +196,12 @@ final class AppMigrationHelper {
                 } else {
                     providers.remove(at: idx)
                 }
-                // Deduplicate
                 let deduped = Array(NSOrderedSet(array: providers)) as? [String] ?? providers
                 defaults.set(deduped, forKey: multiKey)
                 logger.info("✅ [Migration] Migrated multi-provider selection: replaced \(legacyRaw) with \(canonicalRaw)")
             }
         }
 
-        // 4. Clean up stale OpenCode subscription keys
         let subscriptionPrefix = "subscription_v2."
         let allKeys = defaults.dictionaryRepresentation().keys
         let staleKeys = allKeys.filter { key in

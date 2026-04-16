@@ -1071,7 +1071,7 @@ final class StatusBarController: NSObject {
 
      func tintedImage(_ image: NSImage?, color: NSColor) -> NSImage? {
          guard let image = image else { return nil }
-         let tinted = image.copy() as! NSImage
+         guard let tinted = image.copy() as? NSImage else { return image }
          tinted.lockFocus()
          color.set()
          let rect = NSRect(origin: .zero, size: tinted.size)
@@ -1104,15 +1104,6 @@ final class StatusBarController: NSObject {
             item.image = icon
         }
         return item
-    }
-
-    /// Backward-compatible custom header view for detail submenus that still assign NSView directly.
-    func createHeaderView(title: String) -> NSView {
-        createDisabledLabelView(
-            text: title,
-            font: NSFont.systemFont(ofSize: 11, weight: .bold),
-            textColor: .secondaryLabelColor
-        )
     }
 
     func createDisabledLabelView(

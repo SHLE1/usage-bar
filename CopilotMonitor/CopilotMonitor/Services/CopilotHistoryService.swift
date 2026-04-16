@@ -187,9 +187,8 @@ class CopilotHistoryService {
                 }
             }
 
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let table = json["table"] as? [String: Any],
-                  let rows = table["rows"] as? [[String: Any]] else {
+            guard let response = try? JSONDecoder().decode(CopilotBillingTableResponse.self, from: data),
+                  let rows = response.table?.rows else {
                 logger.debug("No more data at period=\(period), page=\(page) or invalid JSON structure")
                 break
             }
@@ -213,34 +212,34 @@ class CopilotHistoryService {
 
     /// Parses table rows into DailyUsage array.
     /// Each row has 5 cells: date, included_requests, billed_requests, gross_amount, billed_amount
-    private func parseRows(_ rows: [[String: Any]]) -> [DailyUsage] {
+    private func parseRows(_ rows: [CopilotBillingRow]) -> [DailyUsage] {
         var history: [DailyUsage] = []
 
         for row in rows {
-            guard let cells = row["cells"] as? [[String: Any]],
-                  cells.count >= 5 else {
+            let cells = row.cells
+            guard cells.count >= 5 else {
                 logger.debug("Skipping row: insufficient cells")
                 continue
             }
 
             // Cell 0: Date (e.g., "Jan 29" or "Jan 29, 2026")
-            guard let dateString = cells[0]["value"] as? String else {
+            guard let dateString = cells[0].value.stringValue else {
                 logger.debug("Skipping row: no date value")
                 continue
             }
             let date = parseDate(dateString)
 
             // Cell 1: Included requests
-            let includedRequests = parseNumber(cells[1]["value"])
+            let includedRequests = parseNumber(cells[1].value)
 
             // Cell 2: Billed requests (add-on)
-            let billedRequests = parseNumber(cells[2]["value"])
+            let billedRequests = parseNumber(cells[2].value)
 
             // Cell 3: Gross amount
-            let grossAmount = parseCurrency(cells[3]["value"])
+            let grossAmount = parseCurrency(cells[3].value)
 
             // Cell 4: Billed amount (actual charge)
-            let billedAmount = parseCurrency(cells[4]["value"])
+            let billedAmount = parseCurrency(cells[4].value)
 
             let dailyUsage = DailyUsage(
                 date: date,
@@ -296,40 +295,14 @@ class CopilotHistoryService {
 
     /// Parses numeric value from API response.
     /// Handles both String and NSNumber types.
-    private func parseNumber(_ value: Any?) -> Double {
-        if let string = value as? String {
-            let cleaned = string.replacingOccurrences(of: ",", with: "")
-            return Double(cleaned) ?? 0.0
-        }
-        if let number = value as? NSNumber {
-            return number.doubleValue
-        }
-        if let intValue = value as? Int {
-            return Double(intValue)
-        }
-        if let doubleValue = value as? Double {
-            return doubleValue
-        }
-        return 0.0
+    private func parseNumber(_ value: CopilotBillingCellValue) -> Double {
+        value.doubleValue ?? 0
     }
 
     /// Parses currency value from API response.
     /// Handles "$1,234.56" format.
-    private func parseCurrency(_ value: Any?) -> Double {
-        if let string = value as? String {
-            let cleaned = string
-                .replacingOccurrences(of: "$", with: "")
-                .replacingOccurrences(of: ",", with: "")
-                .trimmingCharacters(in: .whitespaces)
-            return Double(cleaned) ?? 0.0
-        }
-        if let number = value as? NSNumber {
-            return number.doubleValue
-        }
-        if let doubleValue = value as? Double {
-            return doubleValue
-        }
-        return 0.0
+    private func parseCurrency(_ value: CopilotBillingCellValue) -> Double {
+        value.doubleValue ?? 0
     }
 
     // MARK: - Cache Management

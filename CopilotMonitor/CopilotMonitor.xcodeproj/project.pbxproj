@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		0B6CF8BEB936A2055F19AA8C /* CodexProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76783C44AA2329AE3FA7E981 /* CodexProvider.swift */; };
 		0EA5E7A5BCD47582D6C2175B /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF0C48368166F3AD0C79F92 /* TokenManager.swift */; };
+		C0A1B2C3D4E5F6A7B8C9D0E2 /* CopilotAccountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E1 /* CopilotAccountModels.swift */; };
+		C0A1B2C3D4E5F6A7B8C9D0E3 /* CopilotAccountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E1 /* CopilotAccountModels.swift */; };
+		P0A1B2C3D4E5F6A7B8C9D0E2 /* ProviderAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0A1B2C3D4E5F6A7B8C9D0E1 /* ProviderAlert.swift */; };
 		23AA5FD37F2062EACCA79F50 /* GeminiCLIProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B63B85E0F2A8C591D7E26AE2 /* GeminiCLIProviderTests.swift */; };
 		27A0B56ADAC5B75A3270F90D /* CopilotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AE672516E564CC52739BD9 /* CopilotProvider.swift */; };
 		283348F92F313096004DADE1 /* ProviderResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = PR2222222222222222222222 /* ProviderResult.swift */; };
@@ -27,7 +30,6 @@
 		6C4146861DE2C13836DE1D35 /* CopilotHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1085A77EF4A58E5B5EC71B /* CopilotHistoryService.swift */; };
 		6E20731420660405A73659A3 /* ModernApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6279E48B0F50E99C3B23C4F3 /* ModernApp.swift */; };
 		87297CDD8B65F7EF0BC5D650 /* ProviderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F40F1AC76A49A9B9DF74B0 /* ProviderManager.swift */; };
-		8EA90F9E26F29FC7938D2924 /* ViewModels/ProviderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDA856BBC854D3FF310EA51 /* ViewModels/ProviderViewModel.swift */; };
 		A14AF9AC6A646726B7C94978 /* MenuResultBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F6CE62C58ECA852F25FEF30 /* MenuResultBuilder.swift */; };
 		A1BED4A5CA1FEC2DADC461C2 /* MenuDesignTokenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */; };
 		APPPREFTESTBF11111111111 /* AppPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = APPPREFTESTFR11111111111 /* AppPreferencesTests.swift */; };
@@ -42,6 +44,14 @@
 		ISO8601CLI1111111111111 /* ISO8601DateParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = ISO8601FILE222222222222 /* ISO8601DateParsing.swift */; };
 		FLEXDECAPP111111111111 /* FlexibleDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FLEXDECFILE22222222222 /* FlexibleDecoder.swift */; };
 		FLEXDECCLI111111111111 /* FlexibleDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FLEXDECFILE22222222222 /* FlexibleDecoder.swift */; };
+		UPEFMTAPP000000000000000 /* UsagePercentDisplayFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPEFMTFILE0000000000000 /* UsagePercentDisplayFormatter.swift */; };
+		UPEFMTCLI000000000000000 /* UsagePercentDisplayFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPEFMTFILE0000000000000 /* UsagePercentDisplayFormatter.swift */; };
+		CANDDEDUPEAPP00000000000 /* CandidateDedupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CANDDEDUPEFILE000000000 /* CandidateDedupe.swift */; };
+		CANDDEDUPECLI00000000000 /* CandidateDedupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CANDDEDUPEFILE000000000 /* CandidateDedupe.swift */; };
+		APIVALPARSERAPP000000000 /* APIValueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIVALPARSERFILE0000000 /* APIValueParser.swift */; };
+		APIVALPARSERCLI000000000 /* APIValueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIVALPARSERFILE0000000 /* APIValueParser.swift */; };
+		PROVDISPAPP0000000000000 /* ProviderDisplayPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = PROVDISPFILE00000000000 /* ProviderDisplayPolicy.swift */; };
+		MODELMUSAGEAPP0000000000 /* ModelUsageGrouper.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELMUSAGEFILE000000000 /* ModelUsageGrouper.swift */; };
 		DBGLOGAPP1111111111111 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGLOGFILE222222222222 /* DebugLogger.swift */; };
 		DBGLOGCLI1111111111111 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGLOGFILE222222222222 /* DebugLogger.swift */; };
 		A55555555555555555555555 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A66666666666666666666666 /* Assets.xcassets */; };
@@ -175,7 +185,6 @@
 		54353FD130DDE0500F6B367F /* MenuResultBuilderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuResultBuilderTests.swift; sourceTree = "<group>"; };
 		6279E48B0F50E99C3B23C4F3 /* ModernApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModernApp.swift; sourceTree = "<group>"; };
 		76783C44AA2329AE3FA7E981 /* CodexProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodexProvider.swift; sourceTree = "<group>"; };
-		8BDA856BBC854D3FF310EA51 /* ViewModels/ProviderViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewModels/ProviderViewModel.swift; sourceTree = "<group>"; };
 		9B1085A77EF4A58E5B5EC71B /* CopilotHistoryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopilotHistoryService.swift; sourceTree = "<group>"; };
 		A44444444444444444444444 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A454D8C32F30548900E355E3 /* ZaiCodingPlanProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZaiCodingPlanProvider.swift; sourceTree = "<group>"; };
@@ -185,6 +194,11 @@
 		LF1111111111111111111111 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		ISO8601FILE222222222222 /* ISO8601DateParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISO8601DateParsing.swift; sourceTree = "<group>"; };
 		FLEXDECFILE22222222222 /* FlexibleDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleDecoder.swift; sourceTree = "<group>"; };
+		UPEFMTFILE0000000000000 /* UsagePercentDisplayFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsagePercentDisplayFormatter.swift; sourceTree = "<group>"; };
+		CANDDEDUPEFILE000000000 /* CandidateDedupe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateDedupe.swift; sourceTree = "<group>"; };
+		APIVALPARSERFILE0000000 /* APIValueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIValueParser.swift; sourceTree = "<group>"; };
+		PROVDISPFILE00000000000 /* ProviderDisplayPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDisplayPolicy.swift; sourceTree = "<group>"; };
+		MODELMUSAGEFILE000000000 /* ModelUsageGrouper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelUsageGrouper.swift; sourceTree = "<group>"; };
 		DBGLOGFILE222222222222 /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogger.swift; sourceTree = "<group>"; };
 		ZH1111111111111111111111 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A66666666666666666666666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -195,6 +209,8 @@
 		AM2222222222222222222222 /* AppMigrationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMigrationHelper.swift; sourceTree = "<group>"; };
 		B63B85E0F2A8C591D7E26AE2 /* GeminiCLIProviderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeminiCLIProviderTests.swift; sourceTree = "<group>"; };
 		BE39D5663A7ABADC7E54B91D /* ProviderProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProviderProtocol.swift; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E1 /* CopilotAccountModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopilotAccountModels.swift; sourceTree = "<group>"; };
+		P0A1B2C3D4E5F6A7B8C9D0E1 /* ProviderAlert.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProviderAlert.swift; sourceTree = "<group>"; };
 		C1C7C9FDB4600114F02B2915 /* MenuDesignToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignToken.swift; sourceTree = "<group>"; };
 		C8493409A9188CFF5B73D5B3 /* MenuDesignTokenTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDesignTokenTests.swift; sourceTree = "<group>"; };
 		APPPREFTESTFR11111111111 /* AppPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferencesTests.swift; sourceTree = "<group>"; };
@@ -431,6 +447,8 @@
 		E33333333333333333333333 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C0A1B2C3D4E5F6A7B8C9D0E1 /* CopilotAccountModels.swift */,
+				P0A1B2C3D4E5F6A7B8C9D0E1 /* ProviderAlert.swift */,
 				E22222222222222222222222 /* CopilotUsage.swift */,
 				E44444444444444444444444 /* UsageHistory.swift */,
 				SS2222222222222222222222 /* SubscriptionSettings.swift */,
@@ -444,7 +462,6 @@
 		EC7EB390754865EBC783E08F /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				8BDA856BBC854D3FF310EA51 /* ViewModels/ProviderViewModel.swift */,
 			);
 			name = ViewModels;
 			sourceTree = "<group>";
@@ -456,6 +473,11 @@
 				PMB222222222222222222222 /* ProviderMenuBuilder.swift */,
 				C1C7C9FDB4600114F02B2915 /* MenuDesignToken.swift */,
 				0F6CE62C58ECA852F25FEF30 /* MenuResultBuilder.swift */,
+				MODELMUSAGEFILE000000000 /* ModelUsageGrouper.swift */,
+				PROVDISPFILE00000000000 /* ProviderDisplayPolicy.swift */,
+				UPEFMTFILE0000000000000 /* UsagePercentDisplayFormatter.swift */,
+				CANDDEDUPEFILE000000000 /* CandidateDedupe.swift */,
+				APIVALPARSERFILE0000000 /* APIValueParser.swift */,
 				LF1111111111111111111111 /* L10n.swift */,
 				ISO8601FILE222222222222 /* ISO8601DateParsing.swift */,
 				FLEXDECFILE22222222222 /* FlexibleDecoder.swift */,
@@ -658,13 +680,17 @@
 	CLIAAAAAAAAAAAAAAAAAAAAA /* Sources */ = {
 		isa = PBXSourcesBuildPhase;
 		buildActionMask = 2147483647;
-		files = (
-			CLI1111111111111111111111 /* main.swift in Sources */,
-			CB3FA9AE43F3466269FA56F4 /* ProviderProtocol.swift in Sources */,
-			B248782F500D3B09E0CE5AC8 /* ProviderUsage.swift in Sources */,
-			PR1111111111111111111111 /* ProviderResult.swift in Sources */,
-			E33333333333333333333334 /* UsageHistory.swift in Sources */,
-			0EA5E7A5BCD47582D6C2175B /* TokenManager.swift in Sources */,
+			files = (
+				CLI1111111111111111111111 /* main.swift in Sources */,
+				CB3FA9AE43F3466269FA56F4 /* ProviderProtocol.swift in Sources */,
+				C0A1B2C3D4E5F6A7B8C9D0E2 /* CopilotAccountModels.swift in Sources */,
+				B248782F500D3B09E0CE5AC8 /* ProviderUsage.swift in Sources */,
+				PR1111111111111111111111 /* ProviderResult.swift in Sources */,
+				UPEFMTCLI000000000000000 /* UsagePercentDisplayFormatter.swift in Sources */,
+				CANDDEDUPECLI00000000000 /* CandidateDedupe.swift in Sources */,
+				APIVALPARSERCLI000000000 /* APIValueParser.swift in Sources */,
+				E33333333333333333333334 /* UsageHistory.swift in Sources */,
+				0EA5E7A5BCD47582D6C2175B /* TokenManager.swift in Sources */,
 			68CE796F262067298FE88469 /* BrowserCookieService.swift in Sources */,
 			CLICLAUDE11111111111111 /* ClaudeProvider.swift in Sources */,
 			CLICODEX111111111111111 /* CodexProvider.swift in Sources */,
@@ -712,6 +738,8 @@
 				AD95EBD6AE3134DF4C797577 /* ClaudeProvider.swift in Sources */,
 				0B6CF8BEB936A2055F19AA8C /* CodexProvider.swift in Sources */,
 				27A0B56ADAC5B75A3270F90D /* CopilotProvider.swift in Sources */,
+				C0A1B2C3D4E5F6A7B8C9D0E3 /* CopilotAccountModels.swift in Sources */,
+				P0A1B2C3D4E5F6A7B8C9D0E2 /* ProviderAlert.swift in Sources */,
 				OC1111111111111111111111 /* OpenCodeProvider.swift in Sources */,
 				OR1111111111111111111111 /* OpenRouterProvider.swift in Sources */,
 				390C3E920A03C8890AAA1CEE /* AntigravityProvider.swift in Sources */,
@@ -725,10 +753,14 @@
 				LL1111111111111111111111 /* L10n.swift in Sources */,
 				ISO8601APP1111111111111 /* ISO8601DateParsing.swift in Sources */,
 				FLEXDECAPP111111111111 /* FlexibleDecoder.swift in Sources */,
+				UPEFMTAPP000000000000000 /* UsagePercentDisplayFormatter.swift in Sources */,
+				CANDDEDUPEAPP00000000000 /* CandidateDedupe.swift in Sources */,
+				APIVALPARSERAPP000000000 /* APIValueParser.swift in Sources */,
+				PROVDISPAPP0000000000000 /* ProviderDisplayPolicy.swift in Sources */,
+				MODELMUSAGEAPP0000000000 /* ModelUsageGrouper.swift in Sources */,
 				DBGLOGAPP1111111111111 /* DebugLogger.swift in Sources */,
 				F08C918116D7B3024B68C81A /* MenuDesignToken.swift in Sources */,
 				A14AF9AC6A646726B7C94978 /* MenuResultBuilder.swift in Sources */,
-				8EA90F9E26F29FC7938D2924 /* ViewModels/ProviderViewModel.swift in Sources */,
 				6E20731420660405A73659A3 /* ModernApp.swift in Sources */,
 				CB4724DEB2377B892281E8CD /* ModernStatusBarIconView.swift in Sources */,
 				E92DAE297D071D146591E201 /* MultiProviderStatusBarIconView.swift in Sources */,

@@ -89,71 +89,65 @@ final class KimiProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            let decoder = JSONDecoder()
-            let kimiResponse = try decoder.decode(KimiUsageResponse.self, from: data)
+        let kimiResponse = try decodeProviderPayload(
+            KimiUsageResponse.self,
+            from: data,
+            logger: logger,
+            responseName: "Kimi response",
+            failureMessage: "Invalid Kimi response format"
+        )
 
-            guard let usage = kimiResponse.usage else {
-                logger.error("Kimi API response missing usage")
-                throw ProviderError.decodingError("Missing usage data")
-            }
-
-            let weeklyLimit = Int(usage.limit ?? "0") ?? 0
-            let weeklyRemaining = Int(usage.remaining ?? "0") ?? 0
-            let weeklyUsed = Int(usage.used ?? "0") ?? 0
-
-            func parseISO8601Date(_ string: String) -> Date? {
-                ISO8601DateParsing.parse(string)
-            }
-
-            let weeklyReset = usage.resetTime.flatMap { parseISO8601Date($0) }
-
-            var fiveHourUsage: Double?
-            var fiveHourReset: Date?
-
-            if let limits = kimiResponse.limits, !limits.isEmpty {
-                let limit = limits[0]
-                if let detail = limit.detail {
-                    let detailLimit = Double(detail.limit ?? "0") ?? 0
-                    let detailRemaining = Double(detail.remaining ?? "0") ?? 0
-                    if detailLimit > 0 {
-                        fiveHourUsage = ((detailLimit - detailRemaining) / detailLimit) * 100
-                    }
-                    fiveHourReset = detail.resetTime.flatMap { parseISO8601Date($0) }
-                }
-            }
-
-            let weeklyUsagePercent = weeklyLimit > 0 ? (Double(weeklyUsed) / Double(weeklyLimit)) * 100 : 0
-            let remainingPercent = weeklyLimit > 0 ? (Double(weeklyRemaining) / Double(weeklyLimit)) * 100 : 100
-
-            logger.info("Kimi usage fetched: weekly=\(weeklyUsagePercent)% used, 5h=\(fiveHourUsage?.description ?? "N/A")% used")
-
-            let providerUsage = ProviderUsage.quotaBased(
-                remaining: Int(remainingPercent),
-                entitlement: 100,
-                overagePermitted: false
-            )
-
-            let membershipLevel = kimiResponse.user?.membership?.level
-            let planType = membershipLevel?.replacingOccurrences(of: "LEVEL_", with: "").lowercased()
-
-            let details = DetailedUsage(
-                fiveHourUsage: fiveHourUsage,
-                fiveHourReset: fiveHourReset,
-                sevenDayUsage: weeklyUsagePercent,
-                sevenDayReset: weeklyReset,
-                planType: planType,
-                email: kimiResponse.user?.userId,
-                authSource: "~/.local/share/opencode/auth.json"
-            )
-
-            return ProviderResult(usage: providerUsage, details: details)
-        } catch let error as DecodingError {
-            logger.error("Failed to decode Kimi response: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid response format: \(error.localizedDescription)")
-        } catch {
-            logger.error("Unexpected error parsing Kimi response: \(error.localizedDescription)")
-            throw ProviderError.providerError("Failed to parse response: \(error.localizedDescription)")
+        guard let usage = kimiResponse.usage else {
+            logger.error("Kimi API response missing usage")
+            throw ProviderError.decodingError("Missing usage data")
         }
+
+        let weeklyLimit = Int(usage.limit ?? "0") ?? 0
+        let weeklyRemaining = Int(usage.remaining ?? "0") ?? 0
+        let weeklyUsed = Int(usage.used ?? "0") ?? 0
+
+        func parseISO8601Date(_ string: String) -> Date? {
+            ISO8601DateParsing.parse(string)
+        }
+
+        let weeklyReset = usage.resetTime.flatMap { parseISO8601Date($0) }
+
+        var fiveHourUsage: Double?
+        var fiveHourReset: Date?
+
+        if let limits = kimiResponse.limits, let limit = limits.first, let detail = limit.detail {
+            let detailLimit = Double(detail.limit ?? "0") ?? 0
+            let detailRemaining = Double(detail.remaining ?? "0") ?? 0
+            if detailLimit > 0 {
+                fiveHourUsage = ((detailLimit - detailRemaining) / detailLimit) * 100
+            }
+            fiveHourReset = detail.resetTime.flatMap { parseISO8601Date($0) }
+        }
+
+        let weeklyUsagePercent = weeklyLimit > 0 ? (Double(weeklyUsed) / Double(weeklyLimit)) * 100 : 0
+        let remainingPercent = weeklyLimit > 0 ? (Double(weeklyRemaining) / Double(weeklyLimit)) * 100 : 100
+
+        logger.info("Kimi usage fetched: weekly=\(weeklyUsagePercent)% used, 5h=\(fiveHourUsage?.description ?? "N/A")% used")
+
+        let providerUsage = ProviderUsage.quotaBased(
+            remaining: Int(remainingPercent),
+            entitlement: 100,
+            overagePermitted: false
+        )
+
+        let membershipLevel = kimiResponse.user?.membership?.level
+        let planType = membershipLevel?.replacingOccurrences(of: "LEVEL_", with: "").lowercased()
+
+        let details = DetailedUsage(
+            fiveHourUsage: fiveHourUsage,
+            fiveHourReset: fiveHourReset,
+            sevenDayUsage: weeklyUsagePercent,
+            sevenDayReset: weeklyReset,
+            planType: planType,
+            email: kimiResponse.user?.userId,
+            authSource: "~/.local/share/opencode/auth.json"
+        )
+
+        return ProviderResult(usage: providerUsage, details: details)
     }
 }

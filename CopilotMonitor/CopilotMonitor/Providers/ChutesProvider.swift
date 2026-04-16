@@ -48,6 +48,49 @@ struct ChutesQuotaUsage: Codable {
     let used: Int
 }
 
+enum ChutesUsageSummaryValue: Decodable {
+    case object([String: ChutesUsageSummaryValue])
+    case array([ChutesUsageSummaryValue])
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if container.decodeNil() {
+            self = .null
+        } else if let value = try? container.decode([String: ChutesUsageSummaryValue].self) {
+            self = .object(value)
+        } else if let value = try? container.decode([ChutesUsageSummaryValue].self) {
+            self = .array(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .number(value)
+        } else if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported Chutes usage summary value")
+        }
+    }
+
+    var objectValue: [String: ChutesUsageSummaryValue]? {
+        if case .object(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    var arrayValue: [ChutesUsageSummaryValue]? {
+        if case .array(let value) = self {
+            return value
+        }
+        return nil
+    }
+}
+
 // MARK: - ChutesProvider Implementation
 
 /// Provider for Chutes AI API usage tracking
@@ -175,12 +218,13 @@ final class ChutesProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            return try JSONDecoder().decode([ChutesQuotaItem].self, from: data)
-        } catch {
-            logger.error("Failed to decode quotas: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid quotas format")
-        }
+        return try decodeProviderPayload(
+            [ChutesQuotaItem].self,
+            from: data,
+            logger: logger,
+            responseName: "Chutes quotas response",
+            failureMessage: "Invalid quotas format"
+        )
     }
 
     /// Fetches usage from /users/me/quota_usage/{chute_id}
@@ -209,12 +253,13 @@ final class ChutesProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            return try JSONDecoder().decode(ChutesQuotaUsage.self, from: data)
-        } catch {
-            logger.error("Failed to decode quota_usage: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid quota_usage format")
-        }
+        return try decodeProviderPayload(
+            ChutesQuotaUsage.self,
+            from: data,
+            logger: logger,
+            responseName: "Chutes quota_usage response",
+            failureMessage: "Invalid quota_usage format"
+        )
     }
 
     private func fetchUserProfile(apiKey: String) async throws -> ChutesUserProfile {
@@ -241,15 +286,16 @@ final class ChutesProvider: ProviderProtocol {
             throw ProviderError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            return try JSONDecoder().decode(ChutesUserProfile.self, from: data)
-        } catch {
-            logger.error("Failed to decode user profile: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid user profile format")
-        }
+        return try decodeProviderPayload(
+            ChutesUserProfile.self,
+            from: data,
+            logger: logger,
+            responseName: "Chutes user profile response",
+            failureMessage: "Invalid user profile format"
+        )
     }
 
-    private func fetchMonthlyUsageSummary(apiKey: String, userId: String, startDate: String, endDate: String) async throws -> Any {
+    private func fetchMonthlyUsageSummary(apiKey: String, userId: String, startDate: String, endDate: String) async throws -> ChutesUsageSummaryValue {
         let encodedUserId = userId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? userId
         var components = URLComponents(string: "https://api.chutes.ai/users/\(encodedUserId)/usage")
         components?.queryItems = [
@@ -282,12 +328,13 @@ final class ChutesProvider: ProviderProtocol {
             throw ProviderError.networkError("Usage summary HTTP \(httpResponse.statusCode)")
         }
 
-        do {
-            return try JSONSerialization.jsonObject(with: data)
-        } catch {
-            logger.error("Failed to decode Chutes usage summary JSON: \(error.localizedDescription)")
-            throw ProviderError.decodingError("Invalid usage summary format")
-        }
+        return try decodeProviderPayload(
+            ChutesUsageSummaryValue.self,
+            from: data,
+            logger: logger,
+            responseName: "Chutes usage summary JSON",
+            failureMessage: "Invalid usage summary format"
+        )
     }
 
     private func resolveMonthlyValueUsedUSD(
@@ -361,8 +408,8 @@ final class ChutesProvider: ProviderProtocol {
         return min(max((usedUSD / capUSD) * 100.0, 0), 999)
     }
 
-    static func extractMonthlyValueUsedUSD(from json: Any) -> Double? {
-        if let dictionary = json as? [String: Any] {
+    static func extractMonthlyValueUsedUSD(from json: ChutesUsageSummaryValue) -> Double? {
+        if let dictionary = json.objectValue {
             if let aggregate = numericValue(
                 forAnyOf: [
                     "total_cost_usd", "total_cost", "cost_usd", "cost",
@@ -381,7 +428,7 @@ final class ChutesProvider: ProviderProtocol {
             }
 
             for key in ["items", "results", "data", "usage", "rows", "entries"] {
-                if let array = dictionary[key] as? [Any], let value = sumMonthlyValueUsedUSD(in: array) {
+                if let array = dictionary[key]?.arrayValue, let value = sumMonthlyValueUsedUSD(in: array) {
                     return value
                 }
             }
@@ -389,19 +436,19 @@ final class ChutesProvider: ProviderProtocol {
             return nil
         }
 
-        if let array = json as? [Any] {
+        if let array = json.arrayValue {
             return sumMonthlyValueUsedUSD(in: array)
         }
 
         return nil
     }
 
-    private static func sumMonthlyValueUsedUSD(in array: [Any]) -> Double? {
+    private static func sumMonthlyValueUsedUSD(in array: [ChutesUsageSummaryValue]) -> Double? {
         var total: Double = 0
         var found = false
 
         for element in array {
-            guard let dictionary = element as? [String: Any] else { continue }
+            guard let dictionary = element.objectValue else { continue }
             if let value = numericValue(
                 forAnyOf: [
                     "total_cost_usd", "total_cost", "cost_usd", "cost",
@@ -418,7 +465,7 @@ final class ChutesProvider: ProviderProtocol {
         return found ? total : nil
     }
 
-    private static func numericValue(forAnyOf keys: [String], in dictionary: [String: Any]) -> Double? {
+    private static func numericValue(forAnyOf keys: [String], in dictionary: [String: ChutesUsageSummaryValue]) -> Double? {
         for key in keys {
             if let value = numericValue(from: dictionary[key]) {
                 return value
@@ -427,11 +474,11 @@ final class ChutesProvider: ProviderProtocol {
         return nil
     }
 
-    private static func numericValue(from value: Any?) -> Double? {
+    private static func numericValue(from value: ChutesUsageSummaryValue?) -> Double? {
         switch value {
-        case let number as NSNumber:
-            return number.doubleValue
-        case let string as String:
+        case .number(let number):
+            return number
+        case .string(let string):
             return Double(string)
         default:
             return nil

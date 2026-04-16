@@ -1,65 +1,6 @@
 import AppKit
 import Foundation
 
-struct GroupedModelUsageWindow {
-    let models: [String]
-    let usedPercent: Double
-    let resetDate: Date?
-
-    var primaryModelForSort: String {
-        models.first ?? ""
-    }
-}
-
-enum ModelUsageGrouper {
-    private struct GroupKey: Hashable {
-        let remainingPercentBitPattern: UInt64
-        let resetEpochMillisecond: Int64?
-        // If reset time is missing, do not group models together (stricter and avoids false pooling).
-        let modelWhenNoReset: String?
-    }
-
-    static func groupedUsageWindows(
-        modelBreakdown: [String: Double],
-        modelResetTimes: [String: Date]? = nil
-    ) -> [GroupedModelUsageWindow] {
-        var modelsByKey: [GroupKey: [String]] = [:]
-        var groupDetailsByKey: [GroupKey: (remainingPercent: Double, resetDate: Date?)] = [:]
-
-        for (model, remainingPercent) in modelBreakdown {
-            let resetDate = modelResetTimes?[model]
-            // Group only when quota usage and reset window are truly identical.
-            let key = GroupKey(
-                remainingPercentBitPattern: remainingPercent.bitPattern,
-                resetEpochMillisecond: resetDate.map { Int64($0.timeIntervalSince1970 * 1000.0) },
-                modelWhenNoReset: resetDate == nil ? model : nil
-            )
-            modelsByKey[key, default: []].append(model)
-            groupDetailsByKey[key] = (remainingPercent: remainingPercent, resetDate: resetDate)
-        }
-
-        return modelsByKey
-            .map { key, models in
-                let sortedModels = models.sorted {
-                    $0.localizedStandardCompare($1) == .orderedAscending
-                }
-                let detail = groupDetailsByKey[key]
-                let remainingPercent = detail?.remainingPercent ?? 100.0
-                return GroupedModelUsageWindow(
-                    models: sortedModels,
-                    usedPercent: max(0.0, 100.0 - remainingPercent),
-                    resetDate: detail?.resetDate
-                )
-            }
-            .sorted { lhs, rhs in
-                if lhs.usedPercent != rhs.usedPercent {
-                    return lhs.usedPercent > rhs.usedPercent
-                }
-                return lhs.primaryModelForSort.localizedStandardCompare(rhs.primaryModelForSort) == .orderedAscending
-            }
-    }
-}
-
 extension StatusBarController {
 
     func createDetailSubmenu(_ details: DetailedUsage, identifier: ProviderIdentifier, accountId: String? = nil) -> NSMenu {
@@ -95,7 +36,10 @@ extension StatusBarController {
             if let models = details.modelBreakdown, !models.isEmpty {
                 submenu.addItem(NSMenuItem.separator())
                 let headerItem = NSMenuItem()
-                headerItem.view = createHeaderView(title: L("Top Models"))
+                headerItem.view = createDisabledLabelView(
+                    text: L("Top Models"),
+                    font: NSFont.systemFont(ofSize: 11, weight: .bold)
+                )
                 submenu.addItem(headerItem)
 
                 let sortedModels = models.sorted { $0.value > $1.value }.prefix(5)
@@ -108,7 +52,6 @@ extension StatusBarController {
             }
 
         case .copilot:
-            // === Usage ===
             if let used = details.copilotUsedRequests, let limit = details.copilotLimitRequests, limit > 0 {
                 let isUnlimitedPlan = limit == Int.max
                 let usageRatio = isUnlimitedPlan ? 0.0 : (Double(used) / Double(max(limit, 1)))
@@ -130,10 +73,12 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === Plan ===
             submenu.addItem(NSMenuItem.separator())
             let planHeaderItem = NSMenuItem()
-            planHeaderItem.view = createHeaderView(title: L("Plan"))
+            planHeaderItem.view = createDisabledLabelView(
+                text: L("Plan"),
+                font: NSFont.systemFont(ofSize: 11, weight: .bold)
+            )
             submenu.addItem(planHeaderItem)
 
             if let planText = resolvedPlanDisplayText(
@@ -157,33 +102,21 @@ extension StatusBarController {
                 submenu.addItem(freeItem)
             }
 
-            // === Account ===
-            submenu.addItem(NSMenuItem.separator())
-            let accountHeaderItem = NSMenuItem()
-            accountHeaderItem.view = createHeaderView(title: L("Account"))
-            submenu.addItem(accountHeaderItem)
-
+            var accountItems: [(sfSymbol: String, text: String)] = []
             if let email = details.email {
-                let emailItem = NSMenuItem()
-                emailItem.view = createDisabledLabelView(
-                    text: email,
-                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account"),
-                    multiline: false
+                accountItems.append((sfSymbol: "person.circle", text: email))
+            }
+            accountItems.append(
+                (
+                    sfSymbol: "key",
+                    text: String(format: L("Token From: %@"), details.authSource ?? "Browser Cookies (Chrome/Brave/Arc/Edge)")
                 )
-                submenu.addItem(emailItem)
+            )
+            if !accountItems.isEmpty {
+                createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
             }
 
-            let authSource = details.authSource ?? "Browser Cookies (Chrome/Brave/Arc/Edge)"
-            let authItem = NSMenuItem()
-            authItem.view = createDisabledLabelView(
-                text: String(format: L("Token From: %@"), authSource),
-                icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                multiline: true
-            )
-            submenu.addItem(authItem)
-
         case .claude:
-            // === Usage Windows ===
             if let fiveHour = details.fiveHourUsage {
                 let items = createUsageWindowRow(
                     label: L("5h"),
@@ -206,7 +139,6 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            // === Model Breakdown ===
             let hasModelBreakdown = details.sonnetUsage != nil || details.opusUsage != nil
             if hasModelBreakdown {
                 submenu.addItem(NSMenuItem.separator())
@@ -241,7 +173,6 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            // === Extra Usage ===
             if let extraUsageEnabled = details.extraUsageEnabled {
                 if details.sonnetUsage != nil || details.opusUsage != nil {
                     submenu.addItem(NSMenuItem.separator())
@@ -285,37 +216,20 @@ extension StatusBarController {
                 addPlanSection(to: submenu, planText: planText)
             }
 
-            // === Account ===
             let claudeEmail = details.email?.trimmingCharacters(in: .whitespacesAndNewlines)
             let claudeAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
             if (claudeEmail?.isEmpty == false) || (claudeAuthSource?.isEmpty == false) {
-                submenu.addItem(NSMenuItem.separator())
-                let accountHeader = NSMenuItem()
-                accountHeader.view = createHeaderView(title: L("Account"))
-                submenu.addItem(accountHeader)
-
+                var accountItems: [(sfSymbol: String, text: String)] = []
                 if let claudeEmail, !claudeEmail.isEmpty {
-                    let emailItem = NSMenuItem()
-                    emailItem.view = createDisabledLabelView(
-                        text: claudeEmail,
-                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
-                    )
-                    submenu.addItem(emailItem)
+                    accountItems.append((sfSymbol: "person.circle", text: claudeEmail))
                 }
-
                 if let claudeAuthSource, !claudeAuthSource.isEmpty {
-                    let authItem = NSMenuItem()
-                    authItem.view = createDisabledLabelView(
-                        text: String(format: L("Token From: %@"), claudeAuthSource),
-                        icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                        multiline: true
-                    )
-                    submenu.addItem(authItem)
+                    accountItems.append((sfSymbol: "key", text: String(format: L("Token From: %@"), claudeAuthSource)))
                 }
+                createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
             }
 
         case .codex:
-            // === Usage Windows ===
             let sparkLabel = {
                 guard let rawLabel = details.sparkWindowLabel else { return "Spark" }
                 let normalized = rawLabel
@@ -332,7 +246,7 @@ extension StatusBarController {
 
             var baseUsageRows: [(label: String, usage: Double, resetDate: Date?, windowHours: Int?)] = []
             if let primary = details.dailyUsage {
-                // BUGFIX: Codex primary window is 5 hours, not 24
+                // Codex primary window is 5 hours.
                 baseUsageRows.append((label: L("5h"), usage: primary, resetDate: details.primaryReset, windowHours: 5))
             }
             if let secondary = details.secondaryUsage {
@@ -375,10 +289,12 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            // === Plan ===
             submenu.addItem(NSMenuItem.separator())
             let codexPlanHeader = NSMenuItem()
-            codexPlanHeader.view = createHeaderView(title: L("Plan"))
+            codexPlanHeader.view = createDisabledLabelView(
+                text: L("Plan"),
+                font: NSFont.systemFont(ofSize: 11, weight: .bold)
+            )
             submenu.addItem(codexPlanHeader)
 
             if let planText = resolvedPlanDisplayText(
@@ -400,31 +316,17 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === Account ===
             let codexEmail = details.email ?? codexEmail(for: accountId)
             let codexAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
             if codexEmail != nil || (codexAuthSource?.isEmpty == false) {
-                submenu.addItem(NSMenuItem.separator())
-                let codexAccountHeader = NSMenuItem()
-                codexAccountHeader.view = createHeaderView(title: L("Account"))
-                submenu.addItem(codexAccountHeader)
-            }
-            if let email = codexEmail {
-                let item = NSMenuItem()
-                item.view = createDisabledLabelView(
-                    text: email,
-                    icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
-                )
-                submenu.addItem(item)
-            }
-            if let codexAuthSource, !codexAuthSource.isEmpty {
-                let authItem = NSMenuItem()
-                authItem.view = createDisabledLabelView(
-                    text: String(format: L("Token From: %@"), codexAuthSource),
-                    icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                    multiline: true
-                )
-                submenu.addItem(authItem)
+                var accountItems: [(sfSymbol: String, text: String)] = []
+                if let email = codexEmail {
+                    accountItems.append((sfSymbol: "person.circle", text: email))
+                }
+                if let codexAuthSource, !codexAuthSource.isEmpty {
+                    accountItems.append((sfSymbol: "key", text: String(format: L("Token From: %@"), codexAuthSource)))
+                }
+                createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
             }
 
         case .geminiCLI:
@@ -449,33 +351,17 @@ extension StatusBarController {
                 addPlanSection(to: submenu, planText: planText)
             }
 
-            // === Account ===
             let geminiEmail = details.email?.trimmingCharacters(in: .whitespacesAndNewlines)
             let geminiAuthSource = details.authSource?.trimmingCharacters(in: .whitespacesAndNewlines)
             if (geminiEmail?.isEmpty == false) || (geminiAuthSource?.isEmpty == false) {
-                submenu.addItem(NSMenuItem.separator())
-                let geminiAccountHeader = NSMenuItem()
-                geminiAccountHeader.view = createHeaderView(title: L("Account"))
-                submenu.addItem(geminiAccountHeader)
-
+                var accountItems: [(sfSymbol: String, text: String)] = []
                 if let geminiEmail, !geminiEmail.isEmpty {
-                    let item = NSMenuItem()
-                    item.view = createDisabledLabelView(
-                        text: geminiEmail,
-                        icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
-                    )
-                    submenu.addItem(item)
+                    accountItems.append((sfSymbol: "person.circle", text: geminiEmail))
                 }
-
                 if let geminiAuthSource, !geminiAuthSource.isEmpty {
-                    let authItem = NSMenuItem()
-                    authItem.view = createDisabledLabelView(
-                        text: String(format: L("Token From: %@"), geminiAuthSource),
-                        icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                        multiline: true
-                    )
-                    submenu.addItem(authItem)
+                    accountItems.append((sfSymbol: "key", text: String(format: L("Token From: %@"), geminiAuthSource)))
                 }
+                createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
             }
 
         case .antigravity:
@@ -490,7 +376,6 @@ extension StatusBarController {
                 )
             }
 
-            // === Plan & Account ===
             var antigravityAccountItems: [(sfSymbol: String, text: String)] = []
             if let planText = resolvedPlanDisplayText(
                 for: .antigravity,
@@ -512,7 +397,6 @@ extension StatusBarController {
             }
 
         case .kimi:
-            // === Usage Windows ===
             if let fiveHour = details.fiveHourUsage {
                 let items = createUsageWindowRow(
                     label: L("5h"),
@@ -535,11 +419,13 @@ extension StatusBarController {
                 items.forEach { submenu.addItem($0) }
             }
 
-            // === Plan ===
             if let plan = details.planType {
                 submenu.addItem(NSMenuItem.separator())
                 let kimiPlanHeader = NSMenuItem()
-                kimiPlanHeader.view = createHeaderView(title: L("Plan"))
+                kimiPlanHeader.view = createDisabledLabelView(
+                    text: L("Plan"),
+                    font: NSFont.systemFont(ofSize: 11, weight: .bold)
+                )
                 submenu.addItem(kimiPlanHeader)
 
                 let item = NSMenuItem()
@@ -589,7 +475,6 @@ extension StatusBarController {
             }
 
         case .zaiCodingPlan:
-            // === Token Usage ===
             if let tokenUsage = details.tokenUsagePercent {
                 let items = createUsageWindowRow(
                     label: L("Tokens (5h)"),
@@ -604,7 +489,6 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === MCP Usage ===
             if let mcpUsage = details.mcpUsagePercent {
                 let items = createUsageWindowRow(
                     label: L("MCP (Monthly)"),
@@ -619,7 +503,6 @@ extension StatusBarController {
                 submenu.addItem(item)
             }
 
-            // === Last 24h stats (provider-specific, keep as-is) ===
             let numberFormatter = NumberFormatter()
             numberFormatter.numberStyle = .decimal
             numberFormatter.maximumFractionDigits = 0
@@ -627,7 +510,10 @@ extension StatusBarController {
             if details.modelUsageTokens != nil || details.modelUsageCalls != nil {
                 submenu.addItem(NSMenuItem.separator())
                 let headerItem = NSMenuItem()
-                headerItem.view = createHeaderView(title: L("Last 24h"))
+                headerItem.view = createDisabledLabelView(
+                    text: L("Last 24h"),
+                    font: NSFont.systemFont(ofSize: 11, weight: .bold)
+                )
                 submenu.addItem(headerItem)
             }
 
@@ -648,7 +534,10 @@ extension StatusBarController {
             if details.toolNetworkSearchCount != nil || details.toolWebReadCount != nil || details.toolZreadCount != nil {
                 submenu.addItem(NSMenuItem.separator())
                 let headerItem = NSMenuItem()
-                headerItem.view = createHeaderView(title: L("Tool Usage (24h)"))
+                headerItem.view = createDisabledLabelView(
+                    text: L("Tool Usage (24h)"),
+                    font: NSFont.systemFont(ofSize: 11, weight: .bold)
+                )
                 submenu.addItem(headerItem)
             }
 
@@ -859,18 +748,9 @@ extension StatusBarController {
         // Providers with their own Account section: copilot, claude, codex, geminiCLI, antigravity
         let providersWithOwnAccountSection: Set<ProviderIdentifier> = [.copilot, .claude, .codex, .geminiCLI, .antigravity]
         if let authSource = details.authSource, !providersWithOwnAccountSection.contains(identifier) {
-            submenu.addItem(NSMenuItem.separator())
-            let genericAccountHeader = NSMenuItem()
-            genericAccountHeader.view = createHeaderView(title: L("Account"))
-            submenu.addItem(genericAccountHeader)
-
-            let authItem = NSMenuItem()
-            authItem.view = createDisabledLabelView(
-                text: String(format: L("Token From: %@"), authSource),
-                icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
-                multiline: true
-            )
-            submenu.addItem(authItem)
+            createAccountInfoSection(items: [
+                (sfSymbol: "key", text: String(format: L("Token From: %@"), authSource))
+            ]).forEach { submenu.addItem($0) }
         }
 
         if let authUsageSummary = details.authUsageSummary, !authUsageSummary.isEmpty {
@@ -888,13 +768,12 @@ extension StatusBarController {
         return submenu
     }
 
-    private func addHorizontalDivider(to submenu: NSMenu) {
-        submenu.addItem(NSMenuItem.separator())
-    }
-
     private func addPlanSection(to submenu: NSMenu, planText: String) {
         let headerItem = NSMenuItem()
-        headerItem.view = createHeaderView(title: L("Plan"))
+        headerItem.view = createDisabledLabelView(
+            text: L("Plan"),
+            font: NSFont.systemFont(ofSize: 11, weight: .bold)
+        )
         submenu.addItem(headerItem)
 
         let item = NSMenuItem()
@@ -1061,7 +940,7 @@ extension StatusBarController {
 
             if let resetDate = grouped.resetDate {
                 if groupIndex == 0, shouldAddWindowInfoDivider {
-                    addHorizontalDivider(to: submenu)
+                    submenu.addItem(NSMenuItem.separator())
                 }
 
                 let paceInfo = calculatePace(usage: grouped.usedPercent, resetTime: resetDate, windowHours: paceWindowHours)
@@ -1085,7 +964,7 @@ extension StatusBarController {
             }
 
             if groupIndex < groupedUsageWindows.count - 1 {
-                addHorizontalDivider(to: submenu)
+                submenu.addItem(NSMenuItem.separator())
             }
         }
     }
@@ -1101,7 +980,6 @@ extension StatusBarController {
             debugContext: "createGeminiAccountSubmenu(\(account.email))"
         )
 
-        // === Account ===
         var accountItems: [(sfSymbol: String, text: String)] = [
             (sfSymbol: "person.circle", text: account.email),
             (sfSymbol: "key", text: String(format: L("Token From: %@"), account.authSource))
@@ -1605,8 +1483,6 @@ extension StatusBarController {
         return view
     }
 
-    // MARK: - Shared UI Helpers for Unified Provider Menus
-
     /// Creates unified usage window display with optional pace indicator and reset time.
     /// Returns array of NSMenuItems: [usage row, pace row (optional), reset row (optional)]
     func createUsageWindowRow(
@@ -1690,7 +1566,10 @@ extension StatusBarController {
         menuItems.append(NSMenuItem.separator())
 
         let headerItem = NSMenuItem()
-        headerItem.view = createHeaderView(title: L("Account"))
+        headerItem.view = createDisabledLabelView(
+            text: L("Account"),
+            font: NSFont.systemFont(ofSize: 11, weight: .bold)
+        )
         menuItems.append(headerItem)
 
         for item in items {

@@ -1,12 +1,5 @@
 import AppKit
 
-// MARK: - Provider Alert
-/// Alert data for a provider with low quota
-struct ProviderAlert {
-    let identifier: ProviderIdentifier
-    let remainingPercent: Double
-}
-
 /// Multi-provider status bar icon view
 /// Displays: [$XXX 🔴ClaudeIcon 5% 🔴GeminiIcon 8%]
 final class MultiProviderStatusBarIconView: NSView {

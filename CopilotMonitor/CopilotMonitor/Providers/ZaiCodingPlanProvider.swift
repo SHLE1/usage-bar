@@ -243,11 +243,36 @@ final class ZaiCodingPlanProvider: ProviderProtocol {
     }
 
     private func decodeResponse<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
-        let decoder = JSONDecoder()
-        if let envelope = try? decoder.decode(ZaiEnvelope<T>.self, from: data), let payload = envelope.data {
+        let jsonObject = try decodeJSONObject(
+            from: data,
+            logger: logger,
+            responseName: "Z.AI response JSON",
+            failureMessage: "Invalid Z.AI response"
+        )
+
+        if let dictionary = jsonObject as? [String: Any], dictionary.keys.contains("data") {
+            let envelope = try decodeProviderPayload(
+                ZaiEnvelope<T>.self,
+                from: data,
+                logger: logger,
+                responseName: "Z.AI response envelope",
+                failureMessage: "Invalid Z.AI response"
+            )
+
+            guard let payload = envelope.data else {
+                logger.error("Z.AI response envelope missing data payload")
+                throw ProviderError.decodingError("Missing Z.AI response data")
+            }
             return payload
         }
-        return try decoder.decode(T.self, from: data)
+
+        return try decodeProviderPayload(
+            T.self,
+            from: data,
+            logger: logger,
+            responseName: "Z.AI response payload",
+            failureMessage: "Invalid Z.AI response"
+        )
     }
 
     private func dateFromMilliseconds(_ value: Int64?) -> Date? {

@@ -130,12 +130,6 @@ actor ProviderManager {
         return FetchAllResult(results: results, errors: errors)
     }
     
-    /// Legacy method for backward compatibility - returns only results
-    func fetchAllResults() async -> [ProviderIdentifier: ProviderResult] {
-        let fetchResult = await fetchAll()
-        return fetchResult.results
-    }
-
     /// Calculates total overage cost from all pay-as-you-go providers
     /// - Parameter results: Results from fetchAll()
     /// - Returns: Total cost in dollars (0.0 if no overage)
@@ -178,15 +172,10 @@ actor ProviderManager {
         return alerts
     }
 
-    /// Gets all registered providers
-    /// - Returns: Array of all provider instances
     func getAllProviders() -> [ProviderProtocol] {
         return providers
     }
 
-    /// Gets a specific provider by identifier
-    /// - Parameter identifier: The provider identifier to find
-    /// - Returns: The provider instance, or nil if not found
     func getProvider(for identifier: ProviderIdentifier) -> ProviderProtocol? {
         return providers.first { $0.identifier == identifier }
     }
