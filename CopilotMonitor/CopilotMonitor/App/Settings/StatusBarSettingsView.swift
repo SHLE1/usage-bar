@@ -147,7 +147,7 @@ struct StatusBarSettingsView: View {
 
     @ViewBuilder
     private var previewSection: some View {
-        SettingsSectionCard(
+        SettingsSecondaryCard(
             title: L("Menu Preview"),
             contentInsets: .init()
         ) {

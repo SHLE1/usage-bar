@@ -468,6 +468,7 @@ private struct SubscriptionRowView: View {
                         applyCustomAmount()
                     }
                     .controlSize(.small)
+                    .settingsPrimaryButtonStyle()
                 }
                 .padding(.leading, 2)
             }

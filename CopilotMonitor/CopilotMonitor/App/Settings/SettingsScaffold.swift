@@ -1,7 +1,15 @@
 import AppKit
 import SwiftUI
 
-private let defaultSettingsCardContentInsets = EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
+private enum SettingsSurfaceStyle {
+    static let pageSpacing: CGFloat = 14
+    static let pageHorizontalPadding: CGFloat = 22
+    static let pageVerticalPadding: CGFloat = 20
+    static let sectionSpacing: CGFloat = 5
+    static let titleSpacing: CGFloat = 2
+    static let primaryCardInsets = EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2)
+    static let secondaryCardInsets = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+}
 
 struct SettingsPage<Content: View>: View {
     let title: String?
@@ -20,7 +28,7 @@ struct SettingsPage<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: SettingsSurfaceStyle.pageSpacing) {
                 if let title, !title.isEmpty {
                     Text(title)
                         .font(.title3)
@@ -37,8 +45,8 @@ struct SettingsPage<Content: View>: View {
                 content
             }
             .frame(maxWidth: 720, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 24)
+            .padding(.horizontal, SettingsSurfaceStyle.pageHorizontalPadding)
+            .padding(.vertical, SettingsSurfaceStyle.pageVerticalPadding)
         }
         .scrollIndicators(.automatic)
     }
@@ -54,7 +62,7 @@ struct SettingsSectionCard<Content: View>: View {
     init(
         title: String,
         subtitle: String? = nil,
-        contentInsets: EdgeInsets = defaultSettingsCardContentInsets,
+        contentInsets: EdgeInsets = SettingsSurfaceStyle.primaryCardInsets,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -64,8 +72,8 @@ struct SettingsSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: SettingsSurfaceStyle.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsSurfaceStyle.titleSpacing) {
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
 
@@ -203,7 +211,7 @@ struct SettingsSecondaryCard<Content: View>: View {
     init(
         title: String,
         subtitle: String? = nil,
-        contentInsets: EdgeInsets = defaultSettingsCardContentInsets,
+        contentInsets: EdgeInsets = SettingsSurfaceStyle.secondaryCardInsets,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -213,8 +221,8 @@ struct SettingsSecondaryCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: SettingsSurfaceStyle.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsSurfaceStyle.titleSpacing) {
                 Text(title)
                     .font(.caption)
                     .fontWeight(.medium)
@@ -233,6 +241,17 @@ struct SettingsSecondaryCard<Content: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(contentInsets)
             }
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func settingsPrimaryButtonStyle() -> some View {
+        if #available(macOS 26.0, *) {
+            self.buttonStyle(.glassProminent)
+        } else {
+            self.buttonStyle(.borderedProminent)
         }
     }
 }

@@ -40,7 +40,8 @@ struct SettingsView: View {
                 min: minimumSidebarWidth,
                 ideal: SettingsSidebarMetrics.idealWidth
             )
-            .background(SettingsSidebarSplitViewBridge(minimumSidebarWidth: minimumSidebarWidth))
+            // Keep the bridge size-only so the system owns sidebar rendering.
+            .background(SettingsSidebarSizingBridge(minimumSidebarWidth: minimumSidebarWidth))
         } detail: {
             Group {
                 switch selectedTab ?? .general {
@@ -75,7 +76,7 @@ struct SettingsView: View {
     }
 }
 
-private struct SettingsSidebarSplitViewBridge: NSViewRepresentable {
+private struct SettingsSidebarSizingBridge: NSViewRepresentable {
     let minimumSidebarWidth: CGFloat
 
     func makeNSView(context: Context) -> NSView {
@@ -110,7 +111,7 @@ private struct SettingsSidebarSplitViewBridge: NSViewRepresentable {
                 splitViewController.splitView.setPosition(minimumSidebarWidth, ofDividerAt: 0)
             }
 
-            settingsViewLogger.debug("Settings sidebar minimum width set to \(Int(minimumSidebarWidth))pt")
+            settingsViewLogger.debug("Settings sidebar minimum width bridge applied at \(Int(minimumSidebarWidth))pt")
         }
     }
 

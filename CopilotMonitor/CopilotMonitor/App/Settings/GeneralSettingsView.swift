@@ -128,7 +128,7 @@ struct GeneralSettingsView: View {
                     Button(cliInstalled ? L("Uninstall") : L("Install")) {
                         performCLIAction(install: !cliInstalled)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .settingsPrimaryButtonStyle()
                 }
             }
         }
