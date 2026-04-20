@@ -165,7 +165,7 @@ struct DetailedUsage {
 
     // Authentication source info (displayed as "Token From:" or "Cookies From:")
     var authSource: String?
-    // Human-friendly source labels (displayed as "Using in:")
+    // Human-friendly source labels for account aggregation and diagnostics.
     var authUsageSummary: String?
     // Authentication failure hint for account-level fallback rows.
     var authErrorMessage: String?

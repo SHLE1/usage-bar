@@ -8,6 +8,7 @@ struct AdvancedProviderSettingsView: View {
     @ObservedObject private var prefs = AppPreferences.shared
 
     @State private var accountOptions: [CodexStatusBarAccountOption] = []
+    @State private var currentCodexPreview = TokenManager.shared.currentCodexAccountPreview()
 
     var body: some View {
         SettingsPage {
@@ -15,9 +16,41 @@ struct AdvancedProviderSettingsView: View {
                 title: L("Codex")
             ) {
                 VStack(spacing: 0) {
+                    SettingsRow(
+                        title: L("Current Login"),
+                        description: L(currentCodexPreview.statusText)
+                    ) {
+                        Text(L(currentCodexPreview.displayName))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Divider()
+                        .padding(.vertical, 8)
+
+                    SettingsRow(
+                        title: L("Saved Accounts"),
+                        description: L("Save multiple Codex accounts here. This does not affect your official Codex settings.")
+                    ) {
+                        HStack(spacing: 8) {
+                            Button(L("Save Current Login")) {
+                                addCurrentAccount()
+                            }
+                            .disabled(!currentCodexPreview.canAdd)
+
+                            Button(L("Remove Saved Account")) {
+                                removeSelectedStoredAccount()
+                            }
+                            .disabled(resolvedSelectedAccount?.storedAccountID == nil)
+                        }
+                    }
+
+                    Divider()
+                        .padding(.vertical, 8)
+
                     if accountOptions.isEmpty {
                         SettingsRow(
-                            title: L("Status Bar Account")
+                            title: L("Selected Account"),
+                            description: L("Choose which Codex account the status bar shows.")
                         ) {
                             Text(L("No Codex accounts detected yet."))
                                 .font(.subheadline)
@@ -25,14 +58,16 @@ struct AdvancedProviderSettingsView: View {
                         }
                     } else if accountOptions.count == 1, let option = accountOptions.first {
                         SettingsRow(
-                            title: L("Selected Account")
+                            title: L("Selected Account"),
+                            description: L("The status bar follows the only available Codex account.")
                         ) {
                             Text(option.displayName)
                                 .foregroundStyle(.secondary)
                         }
                     } else {
                         SettingsRow(
-                            title: L("Selected Account")
+                            title: L("Selected Account"),
+                            description: L("Choose which Codex account the status bar shows.")
                         ) {
                             AdaptiveWidthSettingsPopupPicker(
                                 options: accountOptions.map {
@@ -108,9 +143,40 @@ struct AdvancedProviderSettingsView: View {
 
     private func reloadAccounts() {
         let discoveredAccounts = TokenManager.shared.getOpenAIAccounts()
+        currentCodexPreview = TokenManager.shared.currentCodexAccountPreview()
         accountOptions = Self.makeAccountOptions(from: discoveredAccounts)
         advancedProviderSettingsLogger.debug("Reloaded \(accountOptions.count) Codex account option(s) for advanced settings")
         normalizeSelectedAccountIfNeeded()
+    }
+
+    private func addCurrentAccount() {
+        do {
+            _ = try TokenManager.shared.addCurrentCodexAccountToStore()
+            advancedProviderSettingsLogger.info("Added current Codex account to UsageBar-managed storage from settings")
+            reloadAccounts()
+        } catch {
+            advancedProviderSettingsLogger.error("Failed to add current Codex account from settings: \(error.localizedDescription, privacy: .public)")
+            reloadAccounts()
+        }
+    }
+
+    private func removeSelectedStoredAccount() {
+        guard let selected = resolvedSelectedAccount,
+              let storedAccountID = selected.storedAccountID else {
+            return
+        }
+
+        do {
+            try TokenManager.shared.removeStoredCodexAccount(accountID: storedAccountID)
+            if prefs.codexStatusBarAccountSelectionKey == selected.selectionKey {
+                prefs.codexStatusBarAccountSelectionKey = nil
+            }
+            advancedProviderSettingsLogger.info("Removed stored Codex account \(storedAccountID, privacy: .public) from settings")
+            reloadAccounts()
+        } catch {
+            advancedProviderSettingsLogger.error("Failed to remove stored Codex account \(storedAccountID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            reloadAccounts()
+        }
     }
 
     private func normalizeSelectedAccountIfNeeded() {
@@ -144,7 +210,8 @@ struct AdvancedProviderSettingsView: View {
             let displayName = displayName(for: account, emailCounts: emailCounts, fallbackIndex: index)
             return CodexStatusBarAccountOption(
                 selectionKey: selectionKey,
-                displayName: displayName
+                displayName: displayName,
+                storedAccountID: account.storedCodexAccountID
             )
         }
     }
@@ -190,6 +257,7 @@ struct AdvancedProviderSettingsView: View {
 private struct CodexStatusBarAccountOption: Identifiable, Equatable {
     let selectionKey: String
     let displayName: String
+    let storedAccountID: String?
 
     var id: String { selectionKey }
 }

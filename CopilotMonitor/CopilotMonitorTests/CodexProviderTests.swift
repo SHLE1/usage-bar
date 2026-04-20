@@ -504,8 +504,8 @@ final class CodexProviderTests: XCTestCase {
             endpointConfiguration: configuration
         )
 
-        XCTAssertEqual(payload.details.codexSecondaryWindowLabel, "30d")
-        XCTAssertEqual(payload.details.codexSecondaryWindowHours, 720)
+        XCTAssertEqual(payload.details.codexPrimaryWindowLabel, "30d")
+        XCTAssertEqual(payload.details.codexPrimaryWindowHours, 720)
     }
 
     func testDecodeUsagePayloadKeepsTwentyNineDayWindowAsTwentyNineDays() throws {
@@ -543,8 +543,8 @@ final class CodexProviderTests: XCTestCase {
             endpointConfiguration: configuration
         )
 
-        XCTAssertEqual(payload.details.codexSecondaryWindowLabel, "29d")
-        XCTAssertEqual(payload.details.codexSecondaryWindowHours, 696)
+        XCTAssertEqual(payload.details.codexPrimaryWindowLabel, "29d")
+        XCTAssertEqual(payload.details.codexPrimaryWindowHours, 696)
     }
 
     func testDecodeUsagePayloadHandlesMissingLimitsKeyGracefully() throws {
@@ -593,153 +593,141 @@ final class CodexProviderTests: XCTestCase {
         return json
     }
 
-    // MARK: - Codex Multi Auth Account Discovery Tests
+    // MARK: - UsageBar Codex Account Store Tests
 
-    func testCodexMultiAuthAccountParsesV3Storage() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
+    func testStoredCodexAccountMetadataRoundTripsAndSortsByAddedAt() throws {
+        let (store, backend, cleanup) = makeCodexAccountStore()
+        defer { cleanup() }
 
-        let accountsJSON = """
-        {
-            "version": 3,
-            "activeIndex": 0,
-            "accounts": [
-                {
-                    "accountId": "user-abc123",
-                    "email": "user@example.com",
-                    "refreshToken": "refresh-token-1",
-                    "accessToken": "access-token-1",
-                    "enabled": true,
-                    "addedAt": 1680000000000,
-                    "lastUsed": 1712000000000
-                },
-                {
-                    "accountId": "user-def456",
-                    "email": "user2@example.com",
-                    "refreshToken": "refresh-token-2",
-                    "accessToken": "access-token-2",
-                    "addedAt": 1680000000000,
-                    "lastUsed": 1712000000000
-                }
-            ]
-        }
-        """
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try accountsJSON.write(to: filePath, atomically: true, encoding: .utf8)
+        let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let newerDate = olderDate.addingTimeInterval(60)
 
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertEqual(accounts.count, 2)
-        XCTAssertEqual(accounts[0].accountId, "user-abc123")
-        XCTAssertEqual(accounts[0].email, "user@example.com")
-        XCTAssertEqual(accounts[0].accessToken, "access-token-1")
-        XCTAssertEqual(accounts[0].source, .codexMultiAuth)
-        XCTAssertEqual(accounts[0].credentialType, .oauthBearer)
-        XCTAssertEqual(accounts[0].sourceLabels, ["Codex Multi Auth"])
-        XCTAssertEqual(accounts[1].accountId, "user-def456")
-        XCTAssertEqual(accounts[1].email, "user2@example.com")
+        _ = try store.upsert(
+            email: "later@example.com",
+            accountId: "acc-later",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-later",
+                refreshToken: "refresh-later",
+                idToken: "id-later",
+                expiresAt: newerDate
+            )
+        )
+        Thread.sleep(forTimeInterval: 1.1)
+        _ = try store.upsert(
+            email: "earlier@example.com",
+            accountId: "acc-earlier",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-earlier",
+                refreshToken: "refresh-earlier",
+                idToken: "id-earlier",
+                expiresAt: olderDate
+            )
+        )
+
+        let records = store.loadRecords()
+        XCTAssertEqual(records.count, 2)
+        XCTAssertEqual(records[0].metadata.email, "later@example.com")
+        XCTAssertEqual(records[1].metadata.email, "earlier@example.com")
+        XCTAssertEqual(backend.savedAccountIDs.count, 2)
     }
 
-    func testCodexMultiAuthSkipsDisabledAccounts() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
+    func testStoredCodexAccountUpsertUpdatesExistingRecordInsteadOfDuplicating() throws {
+        let (store, _, cleanup) = makeCodexAccountStore()
+        defer { cleanup() }
 
-        let accountsJSON = """
-        {
-            "version": 3,
-            "activeIndex": 0,
-            "accounts": [
-                {
-                    "accountId": "active-user",
-                    "refreshToken": "rt1",
-                    "accessToken": "at1",
-                    "enabled": true,
-                    "addedAt": 1000,
-                    "lastUsed": 2000
-                },
-                {
-                    "accountId": "disabled-user",
-                    "refreshToken": "rt2",
-                    "accessToken": "at2",
-                    "enabled": false,
-                    "addedAt": 1000,
-                    "lastUsed": 2000
-                }
-            ]
-        }
-        """
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try accountsJSON.write(to: filePath, atomically: true, encoding: .utf8)
+        let firstMetadata = try store.upsert(
+            email: "user@example.com",
+            accountId: "acc-1",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-1",
+                refreshToken: "refresh-1",
+                idToken: "id-1",
+                expiresAt: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        )
 
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertEqual(accounts.count, 1)
-        XCTAssertEqual(accounts[0].accountId, "active-user")
+        let secondMetadata = try store.upsert(
+            email: "user@example.com",
+            accountId: "acc-1",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-2",
+                refreshToken: "refresh-2",
+                idToken: "id-2",
+                expiresAt: Date(timeIntervalSince1970: 1_700_000_100)
+            )
+        )
+
+        let records = store.loadRecords()
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(firstMetadata.id, secondMetadata.id)
+        XCTAssertEqual(records[0].secrets.accessToken, "access-2")
+        XCTAssertEqual(records[0].secrets.refreshToken, "refresh-2")
     }
 
-    func testCodexMultiAuthSkipsAccountsWithoutAccessToken() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
+    func testStoredCodexAccountRemovalDeletesMetadataAndSecrets() throws {
+        let (store, backend, cleanup) = makeCodexAccountStore()
+        defer { cleanup() }
 
-        let accountsJSON = """
-        {
-            "version": 3,
-            "activeIndex": 0,
-            "accounts": [
-                {
-                    "accountId": "has-token",
-                    "refreshToken": "rt1",
-                    "accessToken": "valid-token",
-                    "addedAt": 1000,
-                    "lastUsed": 2000
-                },
-                {
-                    "accountId": "no-token",
-                    "refreshToken": "rt2",
-                    "addedAt": 1000,
-                    "lastUsed": 2000
-                },
-                {
-                    "accountId": "empty-token",
-                    "refreshToken": "rt3",
-                    "accessToken": "",
-                    "addedAt": 1000,
-                    "lastUsed": 2000
-                }
-            ]
-        }
-        """
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try accountsJSON.write(to: filePath, atomically: true, encoding: .utf8)
+        let metadata = try store.upsert(
+            email: "remove@example.com",
+            accountId: "acc-remove",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-remove",
+                refreshToken: "refresh-remove",
+                idToken: "id-remove",
+                expiresAt: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        )
 
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertEqual(accounts.count, 1)
-        XCTAssertEqual(accounts[0].accountId, "has-token")
+        XCTAssertNotNil(backend.storage[metadata.id])
+
+        try store.remove(accountID: metadata.id)
+
+        XCTAssertTrue(store.loadRecords().isEmpty)
+        XCTAssertNil(backend.storage[metadata.id])
     }
 
-    func testCodexMultiAuthSkipsUnreadableFiles() {
-        let bogusPath = URL(fileURLWithPath: "/tmp/nonexistent-codex-multi-auth-\(UUID().uuidString)/openai-codex-accounts.json")
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [bogusPath])
-        XCTAssertTrue(accounts.isEmpty)
+    func testStoredCodexAccountRefreshFailureIsPersisted() throws {
+        let (store, _, cleanup) = makeCodexAccountStore()
+        defer { cleanup() }
+
+        let metadata = try store.upsert(
+            email: "failure@example.com",
+            accountId: "acc-failure",
+            authSourceSnapshot: "~/.codex/auth.json",
+            secrets: StoredCodexAccountSecrets(
+                accessToken: "access-failure",
+                refreshToken: "refresh-failure",
+                idToken: "id-failure",
+                expiresAt: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        )
+
+        store.markRefreshFailure(accountID: metadata.id, reason: "HTTP 401 during preflight")
+
+        let record = try XCTUnwrap(store.loadRecords().first)
+        XCTAssertNotNil(record.metadata.lastRefreshFailureAt)
+        XCTAssertEqual(record.metadata.lastRefreshFailureReason, "HTTP 401 during preflight")
     }
 
-    func testCodexMultiAuthSourcePriorityHigherThanOthers() {
-        // codexMultiAuth (4) > opencodeAuth (3) > openCodeMultiAuth (2) > codexLB (1) > codexAuth (0)
-        let codexMultiAuthAccount = OpenAIAuthAccount(
-            accessToken: "token-cma",
+    func testStoredCodexSourcePriorityHigherThanNativeCodex() {
+        let storedAccount = OpenAIAuthAccount(
+            accessToken: "token-stored",
             accountId: "shared-id",
             externalUsageAccountId: nil,
             email: "user@example.com",
-            authSource: "~/.codex/multi-auth/openai-codex-accounts.json",
-            sourceLabels: ["Codex Multi Auth"],
-            source: .codexMultiAuth,
-            credentialType: .oauthBearer
+            authSource: "UsageBar Codex Accounts",
+            sourceLabels: ["UsageBar Codex Accounts"],
+            source: .usageBarCodexAccounts,
+            credentialType: .oauthBearer,
+            storedCodexAccountID: "stored-1"
         )
-        let codexAuthAccount = OpenAIAuthAccount(
+        let nativeAccount = OpenAIAuthAccount(
             accessToken: "token-native",
             accountId: "shared-id",
             externalUsageAccountId: nil,
@@ -750,242 +738,248 @@ final class CodexProviderTests: XCTestCase {
             credentialType: .oauthBearer
         )
 
-        // After dedup, codexMultiAuth should win because it has higher priority
-        // We verify by checking the source label propagation through the provider
-        let provider = CodexProvider()
-        // Verify priority ordering consistency
-        XCTAssertTrue(codexMultiAuthAccount.source == .codexMultiAuth)
-        XCTAssertTrue(codexAuthAccount.source == .codexAuth)
-        XCTAssertNotNil(provider)
+        let storedSelectionKey = TokenManager.shared.codexStatusBarSelectionKey(for: storedAccount, index: 0)
+        let nativeSelectionKey = TokenManager.shared.codexStatusBarSelectionKey(for: nativeAccount, index: 1)
+
+        XCTAssertEqual(storedSelectionKey, nativeSelectionKey)
+        XCTAssertEqual(storedAccount.source, .usageBarCodexAccounts)
+        XCTAssertEqual(nativeAccount.source, .codexAuth)
     }
 
-    // MARK: - Quota Cache Tests
-
-    func testQuotaCacheParsesValidJSON() throws {
-        let cacheJSON = """
-        {
-            "version": 1,
-            "byAccountId": {
-                "acc_1": {
-                    "updatedAt": 1712345678000,
-                    "status": 200,
-                    "model": "gpt-5-codex",
-                    "planType": "plus",
-                    "primary": {
-                        "usedPercent": 40,
-                        "windowMinutes": 300,
-                        "resetAtMs": 1712350000000
-                    },
-                    "secondary": {
-                        "usedPercent": 20,
-                        "windowMinutes": 10080,
-                        "resetAtMs": 1712700000000
-                    }
-                }
-            },
-            "byEmail": {
-                "user@example.com": {
-                    "updatedAt": 1712345678000,
-                    "status": 200,
-                    "model": "gpt-5-codex",
-                    "primary": {
-                        "usedPercent": 40,
-                        "windowMinutes": 300
-                    },
-                    "secondary": {
-                        "usedPercent": 20,
-                        "windowMinutes": 10080
-                    }
-                }
-            }
+    func testExpiredStoredCodexAccountRefreshesBeforeUsageRequest() async throws {
+        let session = makeMockSession()
+        let previousSession = TokenManager.shared.codexOAuthSession
+        TokenManager.shared.codexOAuthSession = session
+        defer {
+            TokenManager.shared.codexOAuthSession = previousSession
+            MockURLProtocol.requestHandler = nil
         }
-        """
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-quota-cache-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
 
-        let cachePath = tmpDir.appendingPathComponent("quota-cache.json")
-        try cacheJSON.write(to: cachePath, atomically: true, encoding: .utf8)
+        var refreshRequests = 0
+        var usageRequests = 0
+        MockURLProtocol.requestHandler = { request in
+            if request.url?.host == "auth.openai.com" {
+                refreshRequests += 1
+                let response = HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let body = """
+                {
+                  "access_token": "refreshed-access-token",
+                  "refresh_token": "refreshed-refresh-token",
+                  "expires_in": 3600,
+                  "id_token": "refreshed-id-token"
+                }
+                """
+                return (response, Data(body.utf8))
+            }
 
-        // Parse directly to verify structure
-        let data = try Data(contentsOf: cachePath)
-        let json = try JSONSerialization.jsonObject(with: data, options: [])
-        guard let dict = json as? [String: Any] else {
-            XCTFail("Expected dictionary")
+            usageRequests += 1
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer refreshed-access-token")
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let body = """
+            {
+              "plan_type": "plus",
+              "rate_limit": {
+                "primary_window": {
+                  "used_percent": 20,
+                  "limit_window_seconds": 18000,
+                  "reset_after_seconds": 60
+                }
+              }
+            }
+            """
+            return (response, Data(body.utf8))
+        }
+
+        let provider = CodexProvider(session: session)
+        let account = OpenAIAuthAccount(
+            accessToken: "expired-access-token",
+            accountId: "account-id",
+            externalUsageAccountId: nil,
+            email: "user@example.com",
+            refreshToken: "refresh-token",
+            idToken: "id-token",
+            expiresAt: Date().addingTimeInterval(-60),
+            authSource: "UsageBar Codex Accounts",
+            sourceLabels: ["UsageBar Codex Accounts"],
+            source: .usageBarCodexAccounts,
+            credentialType: .oauthBearer,
+            storedCodexAccountID: "stored-account-id"
+        )
+
+        let candidate = try await provider.fetchUsageForAccount(account, index: 0)
+
+        XCTAssertEqual(refreshRequests, 1)
+        XCTAssertEqual(usageRequests, 1)
+        XCTAssertEqual(candidate.details.authUsageSummary, "UsageBar Codex Accounts")
+        XCTAssertEqual(candidate.usage.remainingQuota, 80)
+    }
+
+    func testStoredCodexAccountUsage401RetriesRefreshOnlyOnce() async throws {
+        let session = makeMockSession()
+        let previousSession = TokenManager.shared.codexOAuthSession
+        TokenManager.shared.codexOAuthSession = session
+        defer {
+            TokenManager.shared.codexOAuthSession = previousSession
+            MockURLProtocol.requestHandler = nil
+        }
+
+        var refreshRequests = 0
+        var usageRequests = 0
+        MockURLProtocol.requestHandler = { request in
+            if request.url?.host == "auth.openai.com" {
+                refreshRequests += 1
+                let response = HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let body = """
+                {
+                  "access_token": "retry-access-token",
+                  "refresh_token": "retry-refresh-token",
+                  "expires_in": 3600,
+                  "id_token": "retry-id-token"
+                }
+                """
+                return (response, Data(body.utf8))
+            }
+
+            usageRequests += 1
+            let authHeader = request.value(forHTTPHeaderField: "Authorization")
+            if usageRequests == 1 {
+                XCTAssertEqual(authHeader, "Bearer initial-access-token")
+                let response = HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 401,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Data("{}".utf8))
+            }
+
+            XCTAssertEqual(authHeader, "Bearer retry-access-token")
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let body = """
+            {
+              "plan_type": "plus",
+              "rate_limit": {
+                "primary_window": {
+                  "used_percent": 10,
+                  "limit_window_seconds": 18000,
+                  "reset_after_seconds": 60
+                }
+              }
+            }
+            """
+            return (response, Data(body.utf8))
+        }
+
+        let provider = CodexProvider(session: session)
+        let account = OpenAIAuthAccount(
+            accessToken: "initial-access-token",
+            accountId: "account-id",
+            externalUsageAccountId: nil,
+            email: "user@example.com",
+            refreshToken: "refresh-token",
+            idToken: "id-token",
+            expiresAt: Date().addingTimeInterval(3600),
+            authSource: "UsageBar Codex Accounts",
+            sourceLabels: ["UsageBar Codex Accounts"],
+            source: .usageBarCodexAccounts,
+            credentialType: .oauthBearer,
+            storedCodexAccountID: "stored-account-id"
+        )
+
+        let candidate = try await provider.fetchUsageForAccount(account, index: 0)
+
+        XCTAssertEqual(refreshRequests, 1)
+        XCTAssertEqual(usageRequests, 2)
+        XCTAssertEqual(candidate.usage.remainingQuota, 90)
+    }
+
+    private func makeCodexAccountStore() -> (CodexAccountStore, InMemoryCodexAccountSecretsBackend, () -> Void) {
+        let suiteName = "CodexAccountStoreTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        let backend = InMemoryCodexAccountSecretsBackend()
+        let store = CodexAccountStore(
+            defaults: defaults,
+            secretsBackend: backend
+        )
+        let cleanup = {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        return (store, backend, cleanup)
+    }
+
+    private func makeMockSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
+}
+
+private final class InMemoryCodexAccountSecretsBackend: CodexAccountSecretsBackend {
+    var storage: [String: Data] = [:]
+
+    var savedAccountIDs: [String] {
+        Array(storage.keys).sorted()
+    }
+
+    func read(accountID: String) -> Data? {
+        storage[accountID]
+    }
+
+    func write(_ data: Data, accountID: String) throws {
+        storage[accountID] = data
+    }
+
+    func delete(accountID: String) throws {
+        storage.removeValue(forKey: accountID)
+    }
+}
+
+private final class MockURLProtocol: URLProtocol {
+    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
 
-        XCTAssertNotNil(dict["byAccountId"])
-        XCTAssertNotNil(dict["byEmail"])
-
-        let byAccountId = dict["byAccountId"] as? [String: Any]
-        XCTAssertNotNil(byAccountId?["acc_1"])
-    }
-
-    func testQuotaCacheLookupPrefersEmailOverAccountId() {
-        let entry = TokenManager.CodexMultiAuthQuotaCacheEntry(
-            updatedAt: 1712345678000,
-            status: 200,
-            model: "gpt-5-codex",
-            planType: "plus",
-            primary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 40, windowMinutes: 300, resetAtMs: 1712350000000),
-            secondary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 20, windowMinutes: 10080, resetAtMs: 1712700000000)
-        )
-        let entryByAccount = TokenManager.CodexMultiAuthQuotaCacheEntry(
-            updatedAt: 1712345678000,
-            status: 200,
-            model: "gpt-5-codex",
-            planType: "pro",
-            primary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 65, windowMinutes: 300, resetAtMs: nil),
-            secondary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 45, windowMinutes: 10080, resetAtMs: nil)
-        )
-        let cache = TokenManager.CodexMultiAuthQuotaCache(
-            byAccountId: ["acc_1": entryByAccount],
-            byEmail: ["user@example.com": entry]
-        )
-
-        // Should match by email first
-        let result = TokenManager.shared.lookupQuotaCacheEntry(
-            cache: cache,
-            email: "user@example.com",
-            accountId: "acc_1"
-        )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.planType, "plus") // email entry, not accountId entry
-    }
-
-    func testQuotaCacheLookupFallsBackToAccountId() {
-        let entry = TokenManager.CodexMultiAuthQuotaCacheEntry(
-            updatedAt: 1712345678000,
-            status: 200,
-            model: "gpt-5-codex",
-            planType: "pro",
-            primary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 65, windowMinutes: 300, resetAtMs: nil),
-            secondary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 45, windowMinutes: 10080, resetAtMs: nil)
-        )
-        let cache = TokenManager.CodexMultiAuthQuotaCache(
-            byAccountId: ["acc_1": entry],
-            byEmail: [:]
-        )
-
-        let result = TokenManager.shared.lookupQuotaCacheEntry(
-            cache: cache,
-            email: nil,
-            accountId: "acc_1"
-        )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.planType, "pro")
-    }
-
-    func testQuotaCacheLookupReturnsNilForNoMatch() {
-        let cache = TokenManager.CodexMultiAuthQuotaCache(
-            byAccountId: [:],
-            byEmail: [:]
-        )
-
-        let result = TokenManager.shared.lookupQuotaCacheEntry(
-            cache: cache,
-            email: "unknown@example.com",
-            accountId: "unknown-id"
-        )
-        XCTAssertNil(result)
-    }
-
-    func testBuildCandidateFromQuotaCacheProducesCorrectDetails() {
-        let cacheEntry = TokenManager.CodexMultiAuthQuotaCacheEntry(
-            updatedAt: 1712345678000,
-            status: 200,
-            model: "gpt-5-codex",
-            planType: "plus",
-            primary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 40, windowMinutes: 300, resetAtMs: 1712350000000),
-            secondary: TokenManager.CodexMultiAuthQuotaWindow(usedPercent: 20, windowMinutes: 10080, resetAtMs: 1712700000000)
-        )
-
-        let account = OpenAIAuthAccount(
-            accessToken: "test-token",
-            accountId: "acc_1",
-            externalUsageAccountId: nil,
-            email: "user@example.com",
-            authSource: "~/.codex/multi-auth/openai-codex-accounts.json",
-            sourceLabels: ["Codex Multi Auth"],
-            source: .codexMultiAuth,
-            credentialType: .oauthBearer
-        )
-
-        // Use reflection-free approach: directly call the provider's internal method
-        // The method is private, so we verify the quota cache window label logic instead
-        let provider = CodexProvider()
-
-        // Verify the provider's type is still correct after codex-multi-auth changes
-        XCTAssertEqual(provider.type, .quotaBased)
-
-        // Verify window label derivation (300 minutes = 5 hours)
-        XCTAssertEqual(cacheEntry.primary.windowMinutes, 300)
-        XCTAssertEqual(cacheEntry.secondary.windowMinutes, 10080) // 7 days = 10080 minutes
-
-        // Verify reset date conversion
-        let primaryResetDate = Date(timeIntervalSince1970: TimeInterval(cacheEntry.primary.resetAtMs!) / 1000.0)
-        XCTAssertNotNil(primaryResetDate)
-
-        // Verify usage calculation
-        let remaining = max(0, Int(100 - (cacheEntry.primary.usedPercent ?? 0)))
-        XCTAssertEqual(remaining, 60)
-
-        // Verify cache entry metadata
-        XCTAssertEqual(cacheEntry.planType, "plus")
-        XCTAssertTrue(account.sourceLabels.contains("Codex Multi Auth"))
-    }
-
-    func testCodexMultiAuthHandlesEmptyAccountsArray() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
-
-        let accountsJSON = """
-        {
-            "version": 3,
-            "activeIndex": 0,
-            "accounts": []
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
         }
-        """
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try accountsJSON.write(to: filePath, atomically: true, encoding: .utf8)
-
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertTrue(accounts.isEmpty)
     }
 
-    func testCodexMultiAuthHandlesInvalidJSON() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
-
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try "not valid json".write(to: filePath, atomically: true, encoding: .utf8)
-
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertTrue(accounts.isEmpty)
-    }
-
-    func testCodexMultiAuthHandlesMissingAccountsKey() throws {
-        let tmpDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("codex-multi-auth-test-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmpDir) }
-
-        let accountsJSON = """
-        {
-            "version": 3,
-            "activeIndex": 0
-        }
-        """
-        let filePath = tmpDir.appendingPathComponent("openai-codex-accounts.json")
-        try accountsJSON.write(to: filePath, atomically: true, encoding: .utf8)
-
-        let accounts = TokenManager.shared.readCodexMultiAuthFiles(at: [filePath])
-        XCTAssertTrue(accounts.isEmpty)
-    }
+    override func stopLoading() {}
 }

@@ -84,7 +84,7 @@ UsageBar automatically finds and authenticates with your AI providers:
 - **Editor configs** — VS Code / Cursor Copilot settings
 - **Browser cookies** — Chrome, Brave, Arc, Edge (GitHub Copilot only)
 - **OpenCode plugins** — Multi-account support for ChatGPT, Antigravity, Gemini, Claude
-- **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — Native multi-account support for ChatGPT (highest priority source)
+- **UsageBar-managed Codex accounts** — Add the current official `codex` login manually and keep multiple ChatGPT accounts inside UsageBar
 
 Multi-source accounts are automatically deduplicated by email.
 
@@ -238,13 +238,15 @@ Verify OpenCode is installed and authenticated. The app searches for `auth.json`
 2. `~/.local/share/opencode/auth.json` (default)
 3. `~/Library/Application Support/opencode/auth.json` (macOS fallback)
 
-For ChatGPT multi-account setups, the app checks (in priority order):
-1. **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — `~/.codex/multi-auth/*.json` (or `$CODEX_MULTI_AUTH_DIR`)
+For ChatGPT account discovery, the app checks (in priority order):
+1. **UsageBar Codex Accounts** — Stored via **Settings → Advanced Providers → Codex → Save Current Login**
 2. OpenCode auth — `auth.json` with `openai` provider entry
 3. OpenCode multi-auth — `~/.opencode/auth/openai.json`
 4. OpenCode legacy — `~/.opencode/openai-codex-accounts.json` and `~/.opencode/projects/*/openai-codex-accounts.json`
+5. `codex-lb` — `~/.codex-lb/store.db` + `~/.codex-lb/encryption.key`
+6. Official Codex login — `~/.codex/auth.json`
 
-Install [codex-multi-auth](https://github.com/ndycode/codex-multi-auth) to add multiple ChatGPT accounts and have UsageBar automatically track all of them.
+To keep multiple ChatGPT accounts in UsageBar, sign in with the official `codex` CLI first, then add the current account from **Settings → Advanced Providers → Codex**. UsageBar stores those accounts locally and refreshes them without changing `~/.codex/auth.json`.
 
 </details>
 

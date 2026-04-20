@@ -1007,6 +1007,9 @@ extension StatusBarController {
 
             switch provider {
             case .codex:
+                if lowercased.contains("usagebar codex accounts") {
+                    return "UsageBar Codex Accounts"
+                }
                 if lowercased.contains(".codex-lb") || lowercased.contains("/codex-lb/") || lowercased.contains("codex lb") {
                     return "Codex LB"
                 }
@@ -1167,18 +1170,20 @@ extension StatusBarController {
     private func unavailableUsageSuffix(for account: ProviderAccountResult, identifier: ProviderIdentifier) -> String? {
         guard (account.usage.totalEntitlement ?? 0) == 0 else { return nil }
 
-        if identifier == .claude,
-           let authErrorMessage = account.details?.authErrorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !authErrorMessage.isEmpty,
-           authErrorMessage.lowercased().contains("token expired") {
-            return L("Token expired")
-        }
+        if let authErrorMessage = account.details?.authErrorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !authErrorMessage.isEmpty {
+            let lowercased = authErrorMessage.lowercased()
+            if lowercased.contains("token expired")
+                || lowercased.contains("refresh")
+                || lowercased.contains("auth")
+                || lowercased.contains("401")
+                || lowercased.contains("403") {
+                return L("Token expired")
+            }
 
-        if identifier == .claude,
-           let authErrorMessage = account.details?.authErrorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !authErrorMessage.isEmpty,
-           authErrorMessage.lowercased().contains("rate limited") {
-            return L("Rate limited")
+            if identifier == .claude, lowercased.contains("rate limited") {
+                return L("Rate limited")
+            }
         }
 
         return L("No usage data")

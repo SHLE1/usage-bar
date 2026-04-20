@@ -84,7 +84,7 @@ UsageBar 自动查找并认证你的 AI 服务商：
 - **编辑器配置** — VS Code / Cursor 的 Copilot 配置
 - **浏览器 Cookie** — Chrome、Brave、Arc、Edge（仅限 GitHub Copilot）
 - **OpenCode 插件** — ChatGPT、Antigravity、Gemini、Claude 的多账号支持
-- **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — ChatGPT 原生多账号支持（最高优先级来源）
+- **UsageBar 自管的 Codex 账号** — 手动加入当前官方 `codex` 登录，把多个 ChatGPT 账号长期保存在 UsageBar 内
 
 多来源账号会按邮箱自动去重合并。
 
@@ -239,13 +239,15 @@ OpenRouter            Pay-as-you-go    -           $37.42 spent
 2. `~/.local/share/opencode/auth.json`（默认路径）
 3. `~/Library/Application Support/opencode/auth.json`（macOS 后备路径）
 
-对于 ChatGPT 多账号配置，应用按以下优先级顺序搜索：
-1. **[codex-multi-auth](https://github.com/ndycode/codex-multi-auth)** — `~/.codex/multi-auth/*.json`（或 `$CODEX_MULTI_AUTH_DIR` 环境变量指定路径）
+对于 ChatGPT 账号发现，应用按以下优先级顺序搜索：
+1. **UsageBar Codex Accounts** — 通过 **Settings → Advanced Providers → Codex → Save Current Login** 手动保存的账号
 2. OpenCode auth — `auth.json` 中的 `openai` Provider 条目
 3. OpenCode multi-auth — `~/.opencode/auth/openai.json`
 4. OpenCode 旧版 — `~/.opencode/openai-codex-accounts.json` 和 `~/.opencode/projects/*/openai-codex-accounts.json`
+5. `codex-lb` — `~/.codex-lb/store.db` 与 `~/.codex-lb/encryption.key`
+6. 官方 Codex 登录 — `~/.codex/auth.json`
 
-安装 [codex-multi-auth](https://github.com/ndycode/codex-multi-auth) 可添加多个 ChatGPT 账号，UsageBar 将自动追踪所有账号的用量。
+如需在 UsageBar 中长期保留多个 ChatGPT 账号，先用官方 `codex` CLI 登录，再到 **Settings → Advanced Providers → Codex** 手动加入当前账号。UsageBar 会在本地保存并续期这些账号，不会改动 `~/.codex/auth.json`。
 
 </details>
 

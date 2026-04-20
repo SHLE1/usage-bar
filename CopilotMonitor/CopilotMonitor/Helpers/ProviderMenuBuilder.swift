@@ -753,18 +753,6 @@ extension StatusBarController {
             ]).forEach { submenu.addItem($0) }
         }
 
-        if let authUsageSummary = details.authUsageSummary, !authUsageSummary.isEmpty {
-            if details.authSource == nil {
-                submenu.addItem(NSMenuItem.separator())
-            }
-            let usageItem = NSMenuItem()
-            usageItem.view = createDisabledLabelView(
-                text: String(format: L("Using in: %@"), authUsageSummary),
-                icon: NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: "Auth Usage")
-            )
-            submenu.addItem(usageItem)
-        }
-
         return submenu
     }
 
@@ -986,9 +974,6 @@ extension StatusBarController {
         ]
         if let accountId = account.accountId, !accountId.isEmpty {
             accountItems.insert((sfSymbol: "number.circle", text: String(format: L("Account ID: %@"), accountId)), at: 1)
-        }
-        if let authUsageSummary = account.authUsageSummary, !authUsageSummary.isEmpty {
-            accountItems.append((sfSymbol: "arrow.triangle.branch", text: String(format: L("Using in: %@"), authUsageSummary)))
         }
         createAccountInfoSection(items: accountItems).forEach { submenu.addItem($0) }
 

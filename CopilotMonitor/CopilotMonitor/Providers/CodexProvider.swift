@@ -6,6 +6,11 @@ private let logger = Logger(subsystem: "com.opencodeproviders", category: "Codex
 final class CodexProvider: ProviderProtocol {
     let identifier: ProviderIdentifier = .codex
     let type: ProviderType = .quotaBased
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
 
     struct DecodedUsagePayload {
         let usage: ProviderUsage
@@ -300,33 +305,20 @@ final class CodexProvider: ProviderProtocol {
         }
 
         var candidates: [CodexAccountCandidate] = []
-        var failedAccounts: [(account: OpenAIAuthAccount, index: Int)] = []
         for (index, account) in accounts.enumerated() {
             do {
                 let candidate = try await fetchUsageForAccount(account, index: index)
                 candidates.append(candidate)
             } catch {
                 logger.warning("Codex account fetch failed (\(account.authSource)): \(error.localizedDescription)")
-                failedAccounts.append((account, index))
-            }
-        }
-
-        // Quota-cache fallback for accounts where live fetch failed
-        if !failedAccounts.isEmpty,
-           let quotaCache = TokenManager.shared.readCodexMultiAuthQuotaCache() {
-            for (account, index) in failedAccounts {
-                if let cacheEntry = TokenManager.shared.lookupQuotaCacheEntry(
-                    cache: quotaCache,
-                    email: account.email,
-                    accountId: account.accountId
-                ) {
-                    let candidate = buildCandidateFromQuotaCache(
-                        cacheEntry: cacheEntry,
-                        account: account,
-                        index: index
+                if account.source == .usageBarCodexAccounts {
+                    candidates.append(
+                        unavailableCandidate(
+                            for: account,
+                            index: index,
+                            errorMessage: error.localizedDescription
+                        )
                     )
-                    logger.info("Codex quota-cache fallback used for \(account.email ?? account.accountId ?? "unknown")")
-                    candidates.append(candidate)
                 }
             }
         }
@@ -357,7 +349,10 @@ final class CodexProvider: ProviderProtocol {
             )
         }
 
-        let minRemaining = accountResults.compactMap { $0.usage.remainingQuota }.min() ?? 0
+        let minRemaining = accountResults
+            .filter { ($0.usage.totalEntitlement ?? 0) > 0 }
+            .compactMap { $0.usage.remainingQuota }
+            .min() ?? 0
         let usage = ProviderUsage.quotaBased(remaining: minRemaining, entitlement: 100, overagePermitted: false)
 
         return ProviderResult(
@@ -367,7 +362,7 @@ final class CodexProvider: ProviderProtocol {
         )
     }
 
-    private struct CodexAccountCandidate {
+    struct CodexAccountCandidate {
         let accountId: String?
         let usage: ProviderUsage
         let details: DetailedUsage
@@ -378,7 +373,7 @@ final class CodexProvider: ProviderProtocol {
 
     private func sourcePriority(_ source: OpenAIAuthSource) -> Int {
         switch source {
-        case .codexMultiAuth:
+        case .usageBarCodexAccounts:
             return 4
         case .opencodeAuth:
             return 3
@@ -393,8 +388,8 @@ final class CodexProvider: ProviderProtocol {
 
     private func sourceLabel(_ source: OpenAIAuthSource) -> String {
         switch source {
-        case .codexMultiAuth:
-            return "Codex Multi Auth"
+        case .usageBarCodexAccounts:
+            return "UsageBar Codex Accounts"
         case .opencodeAuth:
             return "OpenCode"
         case .openCodeMultiAuth:
@@ -447,83 +442,20 @@ final class CodexProvider: ProviderProtocol {
         )
     }
 
-    // MARK: - Codex Multi Auth Quota Cache Fallback
-
-    private func buildCandidateFromQuotaCache(
-        cacheEntry: TokenManager.CodexMultiAuthQuotaCacheEntry,
-        account: OpenAIAuthAccount,
-        index: Int
-    ) -> CodexAccountCandidate {
-        let primaryUsedPercent = cacheEntry.primary.usedPercent ?? 0
-        let secondaryUsedPercent = cacheEntry.secondary.usedPercent
-        let remaining = max(0, Int(100 - primaryUsedPercent))
-
-        let primaryResetDate = quotaCacheResetDate(ms: cacheEntry.primary.resetAtMs)
-        let secondaryResetDate = quotaCacheResetDate(ms: cacheEntry.secondary.resetAtMs)
-
-        let primaryLabel = quotaCacheWindowLabel(minutes: cacheEntry.primary.windowMinutes, fallback: "5h")
-        let secondaryLabel = quotaCacheWindowLabel(minutes: cacheEntry.secondary.windowMinutes, fallback: "Weekly")
-        let primaryHours = cacheEntry.primary.windowMinutes.map { $0 / 60 }
-        let secondaryHours = cacheEntry.secondary.windowMinutes.map { $0 / 60 }
-
-        let sourceLabels = account.sourceLabels.isEmpty ? [sourceLabel(account.source)] : account.sourceLabels
-        let authUsageSummary = sourceSummary(sourceLabels, fallback: "Unknown") + " [cached]"
-
-        let details = DetailedUsage(
-            dailyUsage: primaryUsedPercent,
-            secondaryUsage: secondaryUsedPercent,
-            secondaryReset: secondaryResetDate,
-            primaryReset: primaryResetDate,
-            codexPrimaryWindowLabel: primaryLabel,
-            codexPrimaryWindowHours: primaryHours,
-            codexSecondaryWindowLabel: secondaryLabel,
-            codexSecondaryWindowHours: secondaryHours,
-            planType: cacheEntry.planType,
-            email: account.email,
-            authSource: account.authSource,
-            authUsageSummary: authUsageSummary
-        )
-
-        logger.debug(
-            """
-            Codex quota-cache fallback: \
-            email=\(account.email ?? "unknown"), \
-            primary=\(primaryUsedPercent)%, \
-            secondary=\(secondaryUsedPercent.map { String(format: "%.1f%%", $0) } ?? "none"), \
-            plan=\(cacheEntry.planType ?? "unknown"), \
-            updatedAt=\(Date(timeIntervalSince1970: TimeInterval(cacheEntry.updatedAt) / 1000.0))
-            """
-        )
-
-        return CodexAccountCandidate(
-            accountId: account.accountId,
-            usage: ProviderUsage.quotaBased(remaining: remaining, entitlement: 100, overagePermitted: false),
-            details: details,
-            sourceLabels: sourceLabels,
-            source: account.source,
-            selectionKey: TokenManager.shared.codexStatusBarSelectionKey(for: account, index: index)
+    func fetchUsageForAccount(_ account: OpenAIAuthAccount, index: Int) async throws -> CodexAccountCandidate {
+        let refreshedAccount = await TokenManager.shared.refreshStoredCodexAccountIfNeeded(account)
+        return try await fetchUsageForAccount(
+            refreshedAccount,
+            index: index,
+            didRetryAfterRefresh: false
         )
     }
 
-    private func quotaCacheResetDate(ms: Int64?) -> Date? {
-        guard let ms, ms > 0 else { return nil }
-        return Date(timeIntervalSince1970: TimeInterval(ms) / 1000.0)
-    }
-
-    private func quotaCacheWindowLabel(minutes: Int?, fallback: String) -> String {
-        guard let minutes, minutes > 0 else { return fallback }
-        let hours = minutes / 60
-        if hours <= 0 { return fallback }
-        if hours % (24 * 7) == 0 { return "Weekly" }
-        if hours % 24 == 0 {
-            let days = hours / 24
-            if days == 1 { return "Daily" }
-            return "\(days)d"
-        }
-        return "\(hours)h"
-    }
-
-    private func fetchUsageForAccount(_ account: OpenAIAuthAccount, index: Int) async throws -> CodexAccountCandidate {
+    func fetchUsageForAccount(
+        _ account: OpenAIAuthAccount,
+        index: Int,
+        didRetryAfterRefresh: Bool
+    ) async throws -> CodexAccountCandidate {
         let endpointConfiguration = TokenManager.shared.getCodexEndpointConfiguration()
         let url = try codexUsageURL(for: endpointConfiguration, account: account)
 
@@ -540,11 +472,23 @@ final class CodexProvider: ProviderProtocol {
             )
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             logger.error("Invalid response type from Codex API")
             throw ProviderError.networkError("Invalid response type")
+        }
+
+        if httpResponse.isAuthError,
+           account.source == .usageBarCodexAccounts,
+           !didRetryAfterRefresh,
+           let refreshedAccount = await TokenManager.shared.refreshStoredCodexAccount(account, reason: "usage_401_retry") {
+            logger.info("Retrying Codex usage request after refresh for \(account.email ?? account.accountId ?? "unknown", privacy: .public)")
+            return try await fetchUsageForAccount(
+                refreshedAccount,
+                index: index,
+                didRetryAfterRefresh: true
+            )
         }
 
         guard httpResponse.isSuccess else {
@@ -562,6 +506,30 @@ final class CodexProvider: ProviderProtocol {
             usage: decodedPayload.usage,
             details: decodedPayload.details,
             sourceLabels: account.sourceLabels.isEmpty ? [sourceLabel(account.source)] : account.sourceLabels,
+            source: account.source,
+            selectionKey: TokenManager.shared.codexStatusBarSelectionKey(for: account, index: index)
+        )
+    }
+
+    private func unavailableCandidate(
+        for account: OpenAIAuthAccount,
+        index: Int,
+        errorMessage: String
+    ) -> CodexAccountCandidate {
+        let sourceLabels = account.sourceLabels.isEmpty ? [sourceLabel(account.source)] : account.sourceLabels
+        let details = DetailedUsage(
+            planType: nil,
+            email: account.email,
+            authSource: account.authSource,
+            authUsageSummary: sourceSummary(sourceLabels, fallback: sourceLabel(account.source)),
+            authErrorMessage: errorMessage
+        )
+
+        return CodexAccountCandidate(
+            accountId: account.accountId,
+            usage: .quotaBased(remaining: 0, entitlement: 0, overagePermitted: false),
+            details: details,
+            sourceLabels: sourceLabels,
             source: account.source,
             selectionKey: TokenManager.shared.codexStatusBarSelectionKey(for: account, index: index)
         )

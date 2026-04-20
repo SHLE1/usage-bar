@@ -349,11 +349,13 @@ struct CodexAuth: Codable {
     }
 
     let openaiAPIKey: String?
+    let email: String?
     let tokens: Tokens?
     let lastRefresh: String?
 
     enum CodingKeys: String, CodingKey {
         case openaiAPIKey = "OPENAI_API_KEY"
+        case email
         case tokens
         case lastRefresh = "last_refresh"
     }
@@ -374,7 +376,7 @@ struct CodexLBEncryptedAccount {
 
 /// Auth source types for OpenAI (Codex) account discovery
 enum OpenAIAuthSource {
-    case codexMultiAuth
+    case usageBarCodexAccounts
     case opencodeAuth
     case openCodeMultiAuth
     case codexLB
@@ -392,10 +394,355 @@ struct OpenAIAuthAccount {
     let accountId: String?
     let externalUsageAccountId: String?
     let email: String?
+    let refreshToken: String?
+    let idToken: String?
+    let expiresAt: Date?
     let authSource: String
     let sourceLabels: [String]
     let source: OpenAIAuthSource
     let credentialType: OpenAICredentialType
+    let storedCodexAccountID: String?
+
+    init(
+        accessToken: String,
+        accountId: String?,
+        externalUsageAccountId: String?,
+        email: String?,
+        refreshToken: String? = nil,
+        idToken: String? = nil,
+        expiresAt: Date? = nil,
+        authSource: String,
+        sourceLabels: [String],
+        source: OpenAIAuthSource,
+        credentialType: OpenAICredentialType,
+        storedCodexAccountID: String? = nil
+    ) {
+        self.accessToken = accessToken
+        self.accountId = accountId
+        self.externalUsageAccountId = externalUsageAccountId
+        self.email = email
+        self.refreshToken = refreshToken
+        self.idToken = idToken
+        self.expiresAt = expiresAt
+        self.authSource = authSource
+        self.sourceLabels = sourceLabels
+        self.source = source
+        self.credentialType = credentialType
+        self.storedCodexAccountID = storedCodexAccountID
+    }
+}
+
+struct StoredCodexAccountMetadata: Codable, Equatable {
+    let id: String
+    let email: String?
+    let accountId: String?
+    let authSourceSnapshot: String
+    let addedAt: Date
+    let updatedAt: Date
+    let lastRefreshFailureAt: Date?
+    let lastRefreshFailureReason: String?
+}
+
+struct StoredCodexAccountSecrets: Codable, Equatable {
+    let accessToken: String
+    let refreshToken: String
+    let idToken: String?
+    let expiresAt: Date?
+}
+
+struct StoredCodexAccountRecord: Equatable {
+    let metadata: StoredCodexAccountMetadata
+    let secrets: StoredCodexAccountSecrets
+}
+
+struct CurrentCodexAccountPreview: Equatable {
+    let displayName: String
+    let email: String?
+    let accountId: String?
+    let hasRefreshToken: Bool
+    let canAdd: Bool
+    let statusText: String
+}
+
+protocol CodexAccountSecretsBackend {
+    func read(accountID: String) -> Data?
+    func write(_ data: Data, accountID: String) throws
+    func delete(accountID: String) throws
+}
+
+enum CodexAccountStoreError: LocalizedError {
+    case missingNativeAuth
+    case missingRefreshToken
+    case missingAccessToken
+    case keychainFailure(OSStatus)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingNativeAuth:
+            return "Codex auth.json is not available"
+        case .missingRefreshToken:
+            return "Codex auth.json does not contain a refresh token"
+        case .missingAccessToken:
+            return "Codex auth.json does not contain an access token"
+        case .keychainFailure(let status):
+            return "Keychain operation failed with status \(status)"
+        }
+    }
+}
+
+final class SystemCodexAccountSecretsBackend: CodexAccountSecretsBackend {
+    private let service = "io.github.SHLE1.UsageBar.codex-accounts"
+
+    func read(accountID: String) -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: accountID,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess else {
+            if status != errSecItemNotFound {
+                logger.warning("Stored Codex account Keychain read failed for \(accountID, privacy: .public): \(status)")
+            }
+            return nil
+        }
+
+        return result as? Data
+    }
+
+    func write(_ data: Data, accountID: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: accountID
+        ]
+
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+        ]
+
+        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return
+        }
+
+        if updateStatus != errSecItemNotFound {
+            logger.warning("Stored Codex account Keychain update failed for \(accountID, privacy: .public): \(updateStatus)")
+        }
+
+        var addQuery = query
+        attributes.forEach { addQuery[$0.key] = $0.value }
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else {
+            logger.error("Stored Codex account Keychain add failed for \(accountID, privacy: .public): \(addStatus)")
+            throw CodexAccountStoreError.keychainFailure(addStatus)
+        }
+    }
+
+    func delete(accountID: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: accountID
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            logger.error("Stored Codex account Keychain delete failed for \(accountID, privacy: .public): \(status)")
+            throw CodexAccountStoreError.keychainFailure(status)
+        }
+    }
+}
+
+final class CodexAccountStore {
+    static let shared = CodexAccountStore()
+
+    private let metadataKey = "provider.codex.storedAccounts.metadata"
+    private let defaults: UserDefaults
+    private let secretsBackend: CodexAccountSecretsBackend
+    private let queue = DispatchQueue(label: "com.opencodeproviders.CodexAccountStore")
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    init(
+        defaults: UserDefaults = .standard,
+        secretsBackend: CodexAccountSecretsBackend = SystemCodexAccountSecretsBackend()
+    ) {
+        self.defaults = defaults
+        self.secretsBackend = secretsBackend
+        encoder.dateEncodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .iso8601
+    }
+
+    func loadRecords() -> [StoredCodexAccountRecord] {
+        queue.sync {
+            let metadata = loadMetadata()
+            let records = metadata.compactMap { item -> StoredCodexAccountRecord? in
+                guard let data = secretsBackend.read(accountID: item.id),
+                      let secrets = try? decoder.decode(StoredCodexAccountSecrets.self, from: data) else {
+                    logger.warning("Stored Codex account secrets missing or invalid for \(item.id, privacy: .public)")
+                    return nil
+                }
+                return StoredCodexAccountRecord(metadata: item, secrets: secrets)
+            }
+            return records.sorted { lhs, rhs in
+                if lhs.metadata.addedAt != rhs.metadata.addedAt {
+                    return lhs.metadata.addedAt < rhs.metadata.addedAt
+                }
+                return lhs.metadata.id.localizedStandardCompare(rhs.metadata.id) == .orderedAscending
+            }
+        }
+    }
+
+    func upsert(
+        email: String?,
+        accountId: String?,
+        authSourceSnapshot: String,
+        secrets: StoredCodexAccountSecrets
+    ) throws -> StoredCodexAccountMetadata {
+        try queue.sync {
+            var metadata = loadMetadata()
+            let now = Date()
+            let normalizedEmail = email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let normalizedAccountId = accountId?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedSnapshot = authSourceSnapshot.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let existingIndex = metadata.firstIndex { item in
+                let storedEmail = item.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if let normalizedEmail, !normalizedEmail.isEmpty, storedEmail == normalizedEmail {
+                    return true
+                }
+
+                let storedAccountId = item.accountId?.trimmingCharacters(in: .whitespacesAndNewlines)
+                if normalizedEmail == nil,
+                   let normalizedAccountId, !normalizedAccountId.isEmpty,
+                   storedAccountId == normalizedAccountId {
+                    return true
+                }
+
+                return normalizedEmail == nil
+                    && normalizedAccountId == nil
+                    && item.authSourceSnapshot == normalizedSnapshot
+            }
+
+            let nextMetadata: StoredCodexAccountMetadata
+            if let existingIndex {
+                let existing = metadata[existingIndex]
+                nextMetadata = StoredCodexAccountMetadata(
+                    id: existing.id,
+                    email: normalizedEmail ?? existing.email,
+                    accountId: normalizedAccountId ?? existing.accountId,
+                    authSourceSnapshot: normalizedSnapshot,
+                    addedAt: existing.addedAt,
+                    updatedAt: now,
+                    lastRefreshFailureAt: nil,
+                    lastRefreshFailureReason: nil
+                )
+                metadata[existingIndex] = nextMetadata
+            } else {
+                nextMetadata = StoredCodexAccountMetadata(
+                    id: UUID().uuidString,
+                    email: normalizedEmail,
+                    accountId: normalizedAccountId,
+                    authSourceSnapshot: normalizedSnapshot,
+                    addedAt: now,
+                    updatedAt: now,
+                    lastRefreshFailureAt: nil,
+                    lastRefreshFailureReason: nil
+                )
+                metadata.append(nextMetadata)
+            }
+
+            let encodedSecrets = try encoder.encode(secrets)
+            try secretsBackend.write(encodedSecrets, accountID: nextMetadata.id)
+            saveMetadata(metadata)
+            logger.info("Stored Codex account saved for \(normalizedEmail ?? normalizedAccountId ?? nextMetadata.id, privacy: .public)")
+            return nextMetadata
+        }
+    }
+
+    func updateSecrets(
+        accountID: String,
+        secrets: StoredCodexAccountSecrets,
+        refreshFailureReason: String? = nil
+    ) throws {
+        try queue.sync {
+            var metadata = loadMetadata()
+            guard let index = metadata.firstIndex(where: { $0.id == accountID }) else {
+                return
+            }
+
+            let existing = metadata[index]
+            metadata[index] = StoredCodexAccountMetadata(
+                id: existing.id,
+                email: existing.email,
+                accountId: existing.accountId,
+                authSourceSnapshot: existing.authSourceSnapshot,
+                addedAt: existing.addedAt,
+                updatedAt: Date(),
+                lastRefreshFailureAt: refreshFailureReason == nil ? nil : Date(),
+                lastRefreshFailureReason: refreshFailureReason
+            )
+
+            let encodedSecrets = try encoder.encode(secrets)
+            try secretsBackend.write(encodedSecrets, accountID: accountID)
+            saveMetadata(metadata)
+        }
+    }
+
+    func markRefreshFailure(accountID: String, reason: String) {
+        queue.sync {
+            var metadata = loadMetadata()
+            guard let index = metadata.firstIndex(where: { $0.id == accountID }) else {
+                return
+            }
+
+            let existing = metadata[index]
+            metadata[index] = StoredCodexAccountMetadata(
+                id: existing.id,
+                email: existing.email,
+                accountId: existing.accountId,
+                authSourceSnapshot: existing.authSourceSnapshot,
+                addedAt: existing.addedAt,
+                updatedAt: existing.updatedAt,
+                lastRefreshFailureAt: Date(),
+                lastRefreshFailureReason: reason
+            )
+            saveMetadata(metadata)
+            logger.warning("Stored Codex account refresh failed for \(accountID, privacy: .public): \(reason, privacy: .public)")
+        }
+    }
+
+    func remove(accountID: String) throws {
+        try queue.sync {
+            var metadata = loadMetadata()
+            metadata.removeAll { $0.id == accountID }
+            saveMetadata(metadata)
+            try secretsBackend.delete(accountID: accountID)
+            logger.info("Stored Codex account removed: \(accountID, privacy: .public)")
+        }
+    }
+
+    private func loadMetadata() -> [StoredCodexAccountMetadata] {
+        guard let data = defaults.data(forKey: metadataKey),
+              let decoded = try? decoder.decode([StoredCodexAccountMetadata].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+
+    private func saveMetadata(_ metadata: [StoredCodexAccountMetadata]) {
+        guard let encoded = try? encoder.encode(metadata) else {
+            logger.error("Failed to encode stored Codex account metadata")
+            return
+        }
+        defaults.set(encoded, forKey: metadataKey)
+    }
 }
 
 enum CodexEndpointMode: Equatable {
@@ -695,6 +1042,7 @@ final class TokenManager: @unchecked Sendable {
     
     /// Serial queue for thread-safe file access
     private let queue = DispatchQueue(label: "com.opencodeproviders.TokenManager")
+    var codexOAuthSession: URLSession = .shared
     
     /// Cached auth data with timestamp
     private var cachedAuth: OpenCodeAuth?
@@ -729,13 +1077,6 @@ final class TokenManager: @unchecked Sendable {
 
     /// Paths where oc-chatgpt-multi-auth account files were found
     private(set) var lastFoundOpenCodeMultiAuthPaths: [URL] = []
-
-    /// Cached codex-multi-auth OpenAI accounts
-    private var cachedCodexMultiAuthAccounts: [OpenAIAuthAccount]?
-    private var codexMultiAuthAccountsCacheTimestamp: Date?
-
-    /// Paths where codex-multi-auth account files were found
-    private(set) var lastFoundCodexMultiAuthPaths: [URL] = []
 
     /// Cached GitHub Copilot token accounts (OpenCode + VS Code)
     private var cachedCopilotAccounts: [CopilotAuthAccount]?
@@ -1242,9 +1583,10 @@ final class TokenManager: @unchecked Sendable {
     private(set) var lastFoundCodexLBStorePath: URL?
     private(set) var lastFoundCodexLBKeyPath: URL?
 
-    func readCodexAuth() -> CodexAuth? {
+    func readCodexAuth(forceRefresh: Bool = false) -> CodexAuth? {
         return queue.sync {
-            if let cached = cachedCodexAuth,
+            if !forceRefresh,
+               let cached = cachedCodexAuth,
                let timestamp = codexCacheTimestamp,
                Date().timeIntervalSince(timestamp) < cacheValiditySeconds {
                 return cached
@@ -1765,8 +2107,8 @@ final class TokenManager: @unchecked Sendable {
 
     private func openAISourceLabel(for source: OpenAIAuthSource) -> String {
         switch source {
-        case .codexMultiAuth:
-            return "Codex Multi Auth"
+        case .usageBarCodexAccounts:
+            return "UsageBar Codex Accounts"
         case .opencodeAuth:
             return "OpenCode"
         case .openCodeMultiAuth:
@@ -1873,7 +2215,7 @@ final class TokenManager: @unchecked Sendable {
     private func dedupeOpenAIAccounts(_ accounts: [OpenAIAuthAccount]) -> [OpenAIAuthAccount] {
         func priority(for source: OpenAIAuthSource) -> Int {
             switch source {
-            case .codexMultiAuth: return 4
+            case .usageBarCodexAccounts: return 4
             case .opencodeAuth: return 3
             case .openCodeMultiAuth: return 2
             case .codexLB: return 1
@@ -1962,10 +2304,14 @@ final class TokenManager: @unchecked Sendable {
             accountId: (primaryAccountId?.isEmpty == false) ? primaryAccountId : fallbackAccountId,
             externalUsageAccountId: normalizedNonEmpty(primary.externalUsageAccountId) ?? normalizedNonEmpty(fallback.externalUsageAccountId),
             email: (primaryEmail?.isEmpty == false) ? primaryEmail : fallbackEmail,
+            refreshToken: normalizedNonEmpty(primary.refreshToken) ?? normalizedNonEmpty(fallback.refreshToken),
+            idToken: normalizedNonEmpty(primary.idToken) ?? normalizedNonEmpty(fallback.idToken),
+            expiresAt: primary.expiresAt ?? fallback.expiresAt,
             authSource: primary.authSource,
             sourceLabels: mergedSourceLabels,
             source: primary.source,
-            credentialType: primary.credentialType
+            credentialType: primary.credentialType,
+            storedCodexAccountID: normalizedNonEmpty(primary.storedCodexAccountID) ?? normalizedNonEmpty(fallback.storedCodexAccountID)
         )
     }
 
@@ -2226,309 +2572,268 @@ final class TokenManager: @unchecked Sendable {
         return nil
     }
 
-    // MARK: - Codex Multi Auth Account Discovery
+    // MARK: - Stored Codex Accounts
 
-    /// Resolves the codex-multi-auth root directory.
-    /// Priority: CODEX_MULTI_AUTH_DIR env var > ~/.codex/multi-auth
-    private func codexMultiAuthRoot() -> URL? {
-        let fileManager = FileManager.default
-        if let envDir = ProcessInfo.processInfo.environment["CODEX_MULTI_AUTH_DIR"],
-           !envDir.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let envURL = URL(fileURLWithPath: envDir, isDirectory: true)
-            if fileManager.fileExists(atPath: envURL.path) {
-                logger.info("codex-multi-auth root from CODEX_MULTI_AUTH_DIR: \(envURL.path)")
-                return envURL
-            }
-            logger.warning("CODEX_MULTI_AUTH_DIR set but does not exist: \(envDir)")
-        }
-
-        let homeDir = fileManager.homeDirectoryForCurrentUser
-        let defaultRoot = homeDir
-            .appendingPathComponent(".codex", isDirectory: true)
-            .appendingPathComponent("multi-auth", isDirectory: true)
-        if fileManager.fileExists(atPath: defaultRoot.path) {
-            logger.info("codex-multi-auth root at default path: \(defaultRoot.path)")
-            return defaultRoot
-        }
-
-        return nil
-    }
-
-    /// Returns all codex-multi-auth account file paths in priority order.
-    private func codexMultiAuthPaths() -> [URL] {
-        guard let root = codexMultiAuthRoot() else {
-            return []
-        }
-
-        let fileManager = FileManager.default
-        var paths: [URL] = [
-            root.appendingPathComponent("openai-codex-accounts.json")
-        ]
-
-        let projectsDir = root.appendingPathComponent("projects", isDirectory: true)
-        if let projectDirectories = try? fileManager.contentsOfDirectory(
-            at: projectsDir,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) {
-            let projectFiles = projectDirectories
-                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-                .map { $0.appendingPathComponent("openai-codex-accounts.json") }
-            paths.append(contentsOf: projectFiles)
-        }
-
-        var deduped: [URL] = []
-        var visited = Set<String>()
-        for path in paths {
-            let normalizedPath = path.standardizedFileURL.path
-            if visited.insert(normalizedPath).inserted {
-                deduped.append(path)
-            }
-        }
-        return deduped
-    }
-
-    /// Reads codex-multi-auth V3 account storage and returns OpenAIAuthAccount entries.
-    func readCodexMultiAuthFiles(at paths: [URL]) -> [OpenAIAuthAccount] {
-        var accounts: [OpenAIAuthAccount] = []
-        let fileManager = FileManager.default
-
-        for path in paths {
-            guard fileManager.fileExists(atPath: path.path) else {
-                continue
-            }
-            guard fileManager.isReadableFile(atPath: path.path) else {
-                logger.warning("codex-multi-auth file not readable: \(path.path)")
-                continue
-            }
-
-            guard let data = try? Data(contentsOf: path) else {
-                logger.warning("codex-multi-auth file could not be read: \(path.path)")
-                continue
-            }
-
-            guard let json = try? JSONSerialization.jsonObject(with: data, options: []),
-                  let dict = json as? [String: Any] else {
-                logger.warning("codex-multi-auth file is not valid JSON: \(path.path)")
-                continue
-            }
-
-            guard let rawAccounts = dict["accounts"] as? [[String: Any]] else {
-                logger.warning("codex-multi-auth file missing 'accounts' array: \(path.path)")
-                continue
-            }
-
-            var pathAccounts: [OpenAIAuthAccount] = []
-            for accountDict in rawAccounts {
-                // Skip disabled accounts
-                if let enabled = accountDict["enabled"] as? Bool, !enabled {
-                    logger.info("codex-multi-auth: skipping disabled account in \(path.path)")
-                    continue
-                }
-
-                let accessToken = (accountDict["accessToken"] as? String)?
-                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let accountId = (accountDict["accountId"] as? String)?
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                let email = (accountDict["email"] as? String)?
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-
-                // Accounts without usable access token are skipped for live fetch
-                // but may still be used for quota-cache identity matching later.
-                guard !accessToken.isEmpty else {
-                    logger.info("codex-multi-auth: skipping account without access token (accountId=\(accountId ?? "nil"), email=\(email ?? "nil")) in \(path.path)")
-                    continue
-                }
-
-                // Try to extract accountId and email from the access token payload if not stored
-                let tokenPayload = decodeOpenAIAccessTokenPayload(accessToken)
-                let resolvedAccountId = normalizedNonEmpty(accountId)
-                    ?? normalizedNonEmpty(tokenPayload?.auth?.chatGPTAccountId)
-                let resolvedEmail = normalizedNonEmpty(email)
-                    ?? normalizedNonEmpty(tokenPayload?.profile?.email)
-
-                pathAccounts.append(
-                    OpenAIAuthAccount(
-                        accessToken: accessToken,
-                        accountId: resolvedAccountId,
-                        externalUsageAccountId: nil,
-                        email: resolvedEmail,
-                        authSource: path.path,
-                        sourceLabels: [openAISourceLabel(for: .codexMultiAuth)],
-                        source: .codexMultiAuth,
-                        credentialType: .oauthBearer
-                    )
-                )
-            }
-
-            if !pathAccounts.isEmpty {
-                logger.info("Loaded \(pathAccounts.count) codex-multi-auth account(s) from \(path.path)")
-                accounts.append(contentsOf: pathAccounts)
-            }
-        }
-
-        return accounts
-    }
-
-    /// Reads and caches codex-multi-auth accounts from discovered paths.
-    private func readCodexMultiAuthAccounts() -> [OpenAIAuthAccount] {
-        return queue.sync {
-            if let cached = cachedCodexMultiAuthAccounts,
-               let timestamp = codexMultiAuthAccountsCacheTimestamp,
-               Date().timeIntervalSince(timestamp) < cacheValiditySeconds {
-                return cached
-            }
-
-            let fileManager = FileManager.default
-            let paths = codexMultiAuthPaths()
-            let accounts = readCodexMultiAuthFiles(at: paths)
-            let existingPaths = paths.filter { fileManager.fileExists(atPath: $0.path) }
-
-            cachedCodexMultiAuthAccounts = accounts
-            codexMultiAuthAccountsCacheTimestamp = Date()
-            lastFoundCodexMultiAuthPaths = existingPaths
-            return accounts
+    func getStoredCodexAccounts() -> [OpenAIAuthAccount] {
+        let records = CodexAccountStore.shared.loadRecords()
+        return records.map { record in
+            OpenAIAuthAccount(
+                accessToken: record.secrets.accessToken,
+                accountId: normalizedNonEmpty(record.metadata.accountId),
+                externalUsageAccountId: nil,
+                email: normalizedNonEmpty(record.metadata.email),
+                refreshToken: normalizedNonEmpty(record.secrets.refreshToken),
+                idToken: normalizedNonEmpty(record.secrets.idToken),
+                expiresAt: record.secrets.expiresAt,
+                authSource: openAISourceLabel(for: .usageBarCodexAccounts),
+                sourceLabels: [openAISourceLabel(for: .usageBarCodexAccounts)],
+                source: .usageBarCodexAccounts,
+                credentialType: .oauthBearer,
+                storedCodexAccountID: record.metadata.id
+            )
         }
     }
 
-    // MARK: - Codex Multi Auth Quota Cache
+    func currentCodexAccountPreview() -> CurrentCodexAccountPreview {
+        let noAccountDetected = "No Codex login detected"
+        let runCodexLoginFirst = "Run `codex login` to make the current account available here."
+        let currentCodexAccountTitle = "Current Codex login"
+        let missingRefreshToken = "This account can't be saved — no refresh token was found."
+        let missingAccessToken = "This account can't be saved — no access token was found."
+        let readyToAddCurrentAccount = "Ready to save this account in UsageBar."
 
-    /// Window entry in codex-multi-auth quota-cache.json
-    struct CodexMultiAuthQuotaWindow {
-        let usedPercent: Double?
-        let windowMinutes: Int?
-        let resetAtMs: Int64?
-    }
-
-    /// Single entry in codex-multi-auth quota-cache.json
-    struct CodexMultiAuthQuotaCacheEntry {
-        let updatedAt: Int64
-        let status: Int
-        let model: String?
-        let planType: String?
-        let primary: CodexMultiAuthQuotaWindow
-        let secondary: CodexMultiAuthQuotaWindow
-    }
-
-    /// Complete codex-multi-auth quota cache
-    struct CodexMultiAuthQuotaCache {
-        let byAccountId: [String: CodexMultiAuthQuotaCacheEntry]
-        let byEmail: [String: CodexMultiAuthQuotaCacheEntry]
-    }
-
-    /// Reads codex-multi-auth quota-cache.json from discovered paths.
-    /// Checks CODEX_MULTI_AUTH_DIR/quota-cache.json first, then ~/.codex/multi-auth/quota-cache.json.
-    func readCodexMultiAuthQuotaCache() -> CodexMultiAuthQuotaCache? {
-        let fileManager = FileManager.default
-        var paths: [URL] = []
-
-        if let envDir = ProcessInfo.processInfo.environment["CODEX_MULTI_AUTH_DIR"],
-           !envDir.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            paths.append(URL(fileURLWithPath: envDir, isDirectory: true)
-                .appendingPathComponent("quota-cache.json"))
-        }
-
-        let homeDir = fileManager.homeDirectoryForCurrentUser
-        paths.append(homeDir
-            .appendingPathComponent(".codex", isDirectory: true)
-            .appendingPathComponent("multi-auth", isDirectory: true)
-            .appendingPathComponent("quota-cache.json"))
-
-        for path in paths {
-            guard fileManager.fileExists(atPath: path.path) else {
-                continue
-            }
-            guard fileManager.isReadableFile(atPath: path.path) else {
-                logger.warning("codex-multi-auth quota-cache.json not readable: \(path.path)")
-                continue
-            }
-
-            guard let data = try? Data(contentsOf: path) else {
-                logger.warning("codex-multi-auth quota-cache.json could not be read: \(path.path)")
-                continue
-            }
-
-            guard let json = try? JSONSerialization.jsonObject(with: data, options: []),
-                  let dict = json as? [String: Any] else {
-                logger.warning("codex-multi-auth quota-cache.json is not valid JSON: \(path.path)")
-                continue
-            }
-
-            let byAccountId = parseQuotaCacheEntries(dict["byAccountId"] as? [String: Any])
-            let byEmail = parseQuotaCacheEntries(dict["byEmail"] as? [String: Any])
-
-            if byAccountId.isEmpty && byEmail.isEmpty {
-                logger.info("codex-multi-auth quota-cache.json has no entries: \(path.path)")
-                continue
-            }
-
-            logger.info("Loaded codex-multi-auth quota-cache.json from \(path.path): \(byAccountId.count) byAccountId, \(byEmail.count) byEmail")
-            return CodexMultiAuthQuotaCache(byAccountId: byAccountId, byEmail: byEmail)
-        }
-
-        return nil
-    }
-
-    private func parseQuotaCacheEntries(_ dict: [String: Any]?) -> [String: CodexMultiAuthQuotaCacheEntry] {
-        guard let dict else { return [:] }
-        var entries: [String: CodexMultiAuthQuotaCacheEntry] = [:]
-
-        for (key, value) in dict {
-            guard let entryDict = value as? [String: Any] else { continue }
-            guard let updatedAt = (entryDict["updatedAt"] as? NSNumber)?.int64Value else {
-                logger.info("codex-multi-auth quota cache: skipping entry '\(key)' missing updatedAt")
-                continue
-            }
-            let status = (entryDict["status"] as? NSNumber)?.intValue ?? 0
-            let model = entryDict["model"] as? String
-            let planType = entryDict["planType"] as? String
-            let primary = parseQuotaWindow(entryDict["primary"] as? [String: Any])
-            let secondary = parseQuotaWindow(entryDict["secondary"] as? [String: Any])
-
-            entries[key] = CodexMultiAuthQuotaCacheEntry(
-                updatedAt: updatedAt,
-                status: status,
-                model: model,
-                planType: planType,
-                primary: primary,
-                secondary: secondary
+        guard let auth = readCodexAuth(forceRefresh: true) else {
+            return CurrentCodexAccountPreview(
+                displayName: noAccountDetected,
+                email: nil,
+                accountId: nil,
+                hasRefreshToken: false,
+                canAdd: false,
+                statusText: runCodexLoginFirst
             )
         }
 
-        return entries
-    }
+        let idTokenPayload = decodeOpenAIIDTokenPayload(auth.tokens?.idToken)
+        let accessPayload = decodeOpenAIAccessTokenPayload(auth.tokens?.accessToken)
+        let email = normalizedNonEmpty(idTokenPayload?.email)
+            ?? normalizedNonEmpty(accessPayload?.profile?.email)
+            ?? normalizedNonEmpty(auth.email)
+        let accountId = normalizedNonEmpty(auth.tokens?.accountId)
+            ?? normalizedNonEmpty(accessPayload?.auth?.chatGPTAccountId)
+        let hasRefreshToken = normalizedNonEmpty(auth.tokens?.refreshToken) != nil
+        let hasAccessToken = normalizedNonEmpty(auth.tokens?.accessToken) != nil
+        let displayName = email ?? accountId ?? currentCodexAccountTitle
 
-    private func parseQuotaWindow(_ dict: [String: Any]?) -> CodexMultiAuthQuotaWindow {
-        guard let dict else {
-            return CodexMultiAuthQuotaWindow(usedPercent: nil, windowMinutes: nil, resetAtMs: nil)
+        if !hasRefreshToken {
+            return CurrentCodexAccountPreview(
+                displayName: displayName,
+                email: email,
+                accountId: accountId,
+                hasRefreshToken: false,
+                canAdd: false,
+                statusText: missingRefreshToken
+            )
         }
-        let usedPercent = (dict["usedPercent"] as? NSNumber)?.doubleValue
-        let windowMinutes = (dict["windowMinutes"] as? NSNumber)?.intValue
-        let resetAtMs = (dict["resetAtMs"] as? NSNumber)?.int64Value
-        return CodexMultiAuthQuotaWindow(
-            usedPercent: usedPercent,
-            windowMinutes: windowMinutes,
-            resetAtMs: resetAtMs
+
+        if !hasAccessToken {
+            return CurrentCodexAccountPreview(
+                displayName: displayName,
+                email: email,
+                accountId: accountId,
+                hasRefreshToken: true,
+                canAdd: false,
+                statusText: missingAccessToken
+            )
+        }
+
+        return CurrentCodexAccountPreview(
+            displayName: displayName,
+            email: email,
+            accountId: accountId,
+            hasRefreshToken: true,
+            canAdd: true,
+            statusText: readyToAddCurrentAccount
         )
     }
 
-    /// Looks up a quota cache entry by email first, then accountId (email-first stability rule).
-    func lookupQuotaCacheEntry(
-        cache: CodexMultiAuthQuotaCache,
-        email: String?,
-        accountId: String?
-    ) -> CodexMultiAuthQuotaCacheEntry? {
-        if let normalizedEmail = normalizedNonEmpty(email)?.lowercased(),
-           let entry = cache.byEmail[normalizedEmail] {
-            logger.info("codex-multi-auth quota cache matched by email: \(normalizedEmail)")
-            return entry
+    @discardableResult
+    func addCurrentCodexAccountToStore() throws -> StoredCodexAccountMetadata {
+        guard let auth = readCodexAuth(forceRefresh: true) else {
+            throw CodexAccountStoreError.missingNativeAuth
         }
-        if let normalizedAccountId = normalizedNonEmpty(accountId),
-           let entry = cache.byAccountId[normalizedAccountId] {
-            logger.info("codex-multi-auth quota cache matched by accountId: \(normalizedAccountId)")
-            return entry
+
+        guard let accessToken = normalizedNonEmpty(auth.tokens?.accessToken) else {
+            throw CodexAccountStoreError.missingAccessToken
+        }
+
+        guard let refreshToken = normalizedNonEmpty(auth.tokens?.refreshToken) else {
+            throw CodexAccountStoreError.missingRefreshToken
+        }
+
+        let idTokenPayload = decodeOpenAIIDTokenPayload(auth.tokens?.idToken)
+        let accessPayload = decodeOpenAIAccessTokenPayload(accessToken)
+        let metadata = try CodexAccountStore.shared.upsert(
+            email: normalizedNonEmpty(idTokenPayload?.email)
+                ?? normalizedNonEmpty(accessPayload?.profile?.email)
+                ?? normalizedNonEmpty(auth.email),
+            accountId: normalizedNonEmpty(auth.tokens?.accountId)
+                ?? normalizedNonEmpty(accessPayload?.auth?.chatGPTAccountId),
+            authSourceSnapshot: FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".codex")
+                .appendingPathComponent("auth.json")
+                .path,
+            secrets: StoredCodexAccountSecrets(
+                accessToken: accessToken,
+                refreshToken: refreshToken,
+                idToken: normalizedNonEmpty(auth.tokens?.idToken),
+                expiresAt: auth.tokens?.accessToken.flatMap { accessTokenExpiresAt($0) }
+            )
+        )
+
+        logger.info("Added current Codex account to UsageBar-managed storage")
+        return metadata
+    }
+
+    func removeStoredCodexAccount(accountID: String) throws {
+        try CodexAccountStore.shared.remove(accountID: accountID)
+    }
+
+    func refreshStoredCodexAccountIfNeeded(_ account: OpenAIAuthAccount) async -> OpenAIAuthAccount {
+        guard account.source == .usageBarCodexAccounts else {
+            return account
+        }
+
+        guard let expiry = account.expiresAt else {
+            return account
+        }
+
+        if expiry.timeIntervalSinceNow > 300 {
+            return account
+        }
+
+        if let refreshed = await refreshStoredCodexAccount(account, reason: "preflight") {
+            return refreshed
+        }
+
+        return account
+    }
+
+    func refreshStoredCodexAccount(
+        _ account: OpenAIAuthAccount,
+        reason: String
+    ) async -> OpenAIAuthAccount? {
+        guard account.source == .usageBarCodexAccounts,
+              let accountID = normalizedNonEmpty(account.storedCodexAccountID),
+              let refreshToken = normalizedNonEmpty(account.refreshToken) else {
+            return nil
+        }
+
+        guard let url = URL(string: "https://auth.openai.com/oauth/token") else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var components = URLComponents()
+        components.queryItems = [
+            URLQueryItem(name: "grant_type", value: "refresh_token"),
+            URLQueryItem(name: "refresh_token", value: refreshToken),
+            URLQueryItem(name: "client_id", value: "app_EMoamEEZ73f0CkXaXp7hrann")
+        ]
+        request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
+
+        do {
+            let (data, response) = try await codexOAuthSession.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.isSuccess else {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let failure = "HTTP \(status) during \(reason)"
+                CodexAccountStore.shared.markRefreshFailure(accountID: accountID, reason: failure)
+                logger.warning("Stored Codex account refresh failed for \(accountID, privacy: .public): \(failure, privacy: .public)")
+                return nil
+            }
+
+            struct RefreshResponse: Decodable {
+                let access_token: String
+                let refresh_token: String?
+                let expires_in: Int?
+                let id_token: String?
+            }
+
+            let payload = try JSONDecoder().decode(RefreshResponse.self, from: data)
+            let nextSecrets = StoredCodexAccountSecrets(
+                accessToken: payload.access_token,
+                refreshToken: normalizedNonEmpty(payload.refresh_token) ?? refreshToken,
+                idToken: normalizedNonEmpty(payload.id_token),
+                expiresAt: payload.expires_in.map { Date().addingTimeInterval(TimeInterval($0)) }
+                    ?? accessTokenExpiresAt(payload.access_token)
+            )
+            try CodexAccountStore.shared.updateSecrets(accountID: accountID, secrets: nextSecrets)
+
+            logger.info("Stored Codex account refresh succeeded for \(accountID, privacy: .public)")
+            return OpenAIAuthAccount(
+                accessToken: nextSecrets.accessToken,
+                accountId: account.accountId,
+                externalUsageAccountId: account.externalUsageAccountId,
+                email: account.email,
+                refreshToken: nextSecrets.refreshToken,
+                idToken: nextSecrets.idToken,
+                expiresAt: nextSecrets.expiresAt,
+                authSource: account.authSource,
+                sourceLabels: account.sourceLabels,
+                source: account.source,
+                credentialType: account.credentialType,
+                storedCodexAccountID: account.storedCodexAccountID
+            )
+        } catch {
+            let failure = "\(error.localizedDescription) during \(reason)"
+            CodexAccountStore.shared.markRefreshFailure(accountID: accountID, reason: failure)
+            logger.warning("Stored Codex account refresh threw for \(accountID, privacy: .public): \(failure, privacy: .public)")
+            return nil
+        }
+    }
+
+    private func accessTokenExpiresAt(_ token: String) -> Date? {
+        guard let payload = decodeJWTBody(token) else {
+            return nil
+        }
+        if let exp = payload["exp"] as? NSNumber {
+            return Date(timeIntervalSince1970: exp.doubleValue)
+        }
+        if let exp = payload["exp"] as? Double {
+            return Date(timeIntervalSince1970: exp)
+        }
+        if let exp = payload["exp"] as? Int {
+            return Date(timeIntervalSince1970: TimeInterval(exp))
         }
         return nil
+    }
+
+    private func decodeJWTBody(_ token: String) -> [String: Any]? {
+        let segments = token.split(separator: ".")
+        guard segments.count == 3 else {
+            return nil
+        }
+
+        var payload = String(segments[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = payload.count % 4
+        if remainder == 2 {
+            payload += "=="
+        } else if remainder == 3 {
+            payload += "="
+        } else if remainder == 1 {
+            payload += "==="
+        }
+
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data, options: []),
+              let dict = json as? [String: Any] else {
+            return nil
+        }
+
+        return dict
     }
 
     private func openCodeMultiAuthPaths() -> [URL] {
@@ -3436,10 +3741,10 @@ final class TokenManager: @unchecked Sendable {
     func getOpenAIAccounts() -> [OpenAIAuthAccount] {
         var accounts: [OpenAIAuthAccount] = []
 
-        // Priority 1: codex-multi-auth (highest priority)
-        let codexMultiAuthAccounts = readCodexMultiAuthAccounts()
-        if !codexMultiAuthAccounts.isEmpty {
-            accounts.append(contentsOf: codexMultiAuthAccounts)
+        // Priority 1: UsageBar-managed stored Codex accounts
+        let storedCodexAccounts = getStoredCodexAccounts()
+        if !storedCodexAccounts.isEmpty {
+            accounts.append(contentsOf: storedCodexAccounts)
         }
 
         // Priority 2: OpenCode direct OAuth
@@ -3454,6 +3759,9 @@ final class TokenManager: @unchecked Sendable {
                     accountId: metadata.accountId,
                     externalUsageAccountId: metadata.overrideAccountId != metadata.accountId ? metadata.overrideAccountId : nil,
                     email: metadata.email,
+                    refreshToken: normalizedNonEmpty(auth.openai?.refresh),
+                    idToken: normalizedNonEmpty(auth.openai?.idToken),
+                    expiresAt: dateFromEpoch(auth.openai?.expires),
                     authSource: authSource,
                     sourceLabels: [openAISourceLabel(for: .opencodeAuth)],
                     source: .opencodeAuth,
@@ -3506,6 +3814,9 @@ final class TokenManager: @unchecked Sendable {
                     accountId: codexAuth.tokens?.accountId,
                     externalUsageAccountId: nil,
                     email: codexEmail,
+                    refreshToken: normalizedNonEmpty(codexAuth.tokens?.refreshToken),
+                    idToken: normalizedNonEmpty(codexAuth.tokens?.idToken),
+                    expiresAt: accessTokenExpiresAt(access),
                     authSource: authSource,
                     sourceLabels: [openAISourceLabel(for: .codexAuth)],
                     source: .codexAuth,
@@ -4347,6 +4658,19 @@ final class TokenManager: @unchecked Sendable {
             lines.append("  Codex auth.json (\(shortPath(codexAuthPath.path))): NOT FOUND")
         }
 
+        let storedCodexAccounts = CodexAccountStore.shared.loadRecords()
+        lines.append("  UsageBar Codex Accounts: \(storedCodexAccounts.count) stored account(s)")
+        for record in storedCodexAccounts.prefix(5) {
+            let identifier = record.metadata.email ?? record.metadata.accountId ?? record.metadata.id
+            let failureSuffix: String
+            if let reason = normalizedNonEmpty(record.metadata.lastRefreshFailureReason) {
+                failureSuffix = " (refresh failed: \(reason))"
+            } else {
+                failureSuffix = ""
+            }
+            lines.append("    - \(identifier)\(failureSuffix)")
+        }
+
         let codexLBAccounts = readCodexLBOpenAIAccounts()
         let codexLBCandidates = codexLBStorageCandidates()
         let codexLBExistingCandidate = codexLBCandidates.first {
@@ -4596,7 +4920,7 @@ final class TokenManager: @unchecked Sendable {
             debugLines.append("  [Gemini oauth_creds] NOT CONFIGURED")
         }
 
-        // 5. Codex native auth (~/.codex/auth.json) - fallback for OpenAI token
+        // 5. Codex native auth (~/.codex/auth.json) - current official Codex login
         debugLines.append("")
         debugLines.append("Codex Native Auth (~/.codex/auth.json):")
         let codexAuthPath = homeDir.appendingPathComponent(".codex").appendingPathComponent("auth.json")
@@ -4604,13 +4928,29 @@ final class TokenManager: @unchecked Sendable {
             if let codexAuth = readCodexAuth() {
                 let hasToken = codexAuth.tokens?.accessToken != nil
                 let hasAccountId = codexAuth.tokens?.accountId != nil
+                let hasRefreshToken = codexAuth.tokens?.refreshToken != nil
                 let hasAPIKey = codexAuth.openaiAPIKey != nil
-                debugLines.append("  [EXISTS] token: \(hasToken ? "YES" : "NO"), accountId: \(hasAccountId ? "YES" : "NO"), apiKey: \(hasAPIKey ? "YES" : "NO")")
+                debugLines.append("  [EXISTS] token: \(hasToken ? "YES" : "NO"), refreshToken: \(hasRefreshToken ? "YES" : "NO"), accountId: \(hasAccountId ? "YES" : "NO"), apiKey: \(hasAPIKey ? "YES" : "NO"), email: \(normalizedNonEmpty(codexAuth.email) ?? "nil")")
             } else {
                 debugLines.append("  [PARSE FAILED]")
             }
         } else {
             debugLines.append("  [NOT FOUND]")
+        }
+
+        debugLines.append("")
+        debugLines.append("UsageBar Codex Accounts:")
+        let storedCodexAccounts = CodexAccountStore.shared.loadRecords()
+        if storedCodexAccounts.isEmpty {
+            debugLines.append("  [EMPTY]")
+        } else {
+            debugLines.append("  [ACCOUNTS] \(storedCodexAccounts.count) stored account(s)")
+            for record in storedCodexAccounts {
+                debugLines.append("  - Email: \(record.metadata.email ?? "nil")")
+                debugLines.append("  - Account ID: \(record.metadata.accountId ?? "nil")")
+                debugLines.append("  - Source Snapshot: \(record.metadata.authSourceSnapshot)")
+                debugLines.append("  - Last Refresh Failure: \(record.metadata.lastRefreshFailureReason ?? "none")")
+            }
         }
 
         // 6. codex-lb multi-account auth (~/.codex-lb/store.db + encryption.key)
@@ -4942,6 +5282,7 @@ final class TokenManager: @unchecked Sendable {
                 } else {
                     debugLines.append("  - Tokens: nil")
                 }
+                debugLines.append("  - Email: \(normalizedNonEmpty(codexAuth.email) ?? "nil")")
                 debugLines.append("  - OPENAI_API_KEY: \(codexAuth.openaiAPIKey != nil ? "SET" : "nil")")
                 debugLines.append("  - Last Refresh: \(codexAuth.lastRefresh ?? "nil")")
             } else {
@@ -4951,7 +5292,22 @@ final class TokenManager: @unchecked Sendable {
             debugLines.append("[Codex Auth] NOT FOUND at \(codexAuthPath.path)")
         }
 
-        // 8. oc-chatgpt-multi-auth (~/.opencode/*.json)
+        // 8. UsageBar-managed Codex accounts
+        debugLines.append("---------- UsageBar Codex Accounts ----------")
+        let storedCodexAccounts = CodexAccountStore.shared.loadRecords()
+        if storedCodexAccounts.isEmpty {
+            debugLines.append("[UsageBar Codex Accounts] EMPTY")
+        } else {
+            debugLines.append("[UsageBar Codex Accounts] \(storedCodexAccounts.count) stored account(s)")
+            for record in storedCodexAccounts {
+                debugLines.append("  - Email: \(record.metadata.email ?? "nil")")
+                debugLines.append("  - Account ID: \(record.metadata.accountId ?? "nil")")
+                debugLines.append("  - Source Snapshot: \(record.metadata.authSourceSnapshot)")
+                debugLines.append("  - Refresh Failure: \(record.metadata.lastRefreshFailureReason ?? "none")")
+            }
+        }
+
+        // 9. oc-chatgpt-multi-auth (~/.opencode/*.json)
         debugLines.append("---------- oc-chatgpt-multi-auth ----------")
         let openCodeMultiAuthPaths = openCodeMultiAuthPaths()
         let openCodeMultiAuthAccounts = readOpenAIMultiAuthFiles()
@@ -4967,7 +5323,7 @@ final class TokenManager: @unchecked Sendable {
             debugLines.append("[oc-chatgpt-multi-auth] Total parsed accounts: \(openCodeMultiAuthAccounts.count)")
         }
 
-        // 9. codex-lb auth (~/.codex-lb/store.db + encryption.key)
+        // 10. codex-lb auth (~/.codex-lb/store.db + encryption.key)
         debugLines.append("---------- codex-lb Auth ----------")
         let codexLBAccounts = readCodexLBOpenAIAccounts()
         if let storePath = lastFoundCodexLBStorePath,
