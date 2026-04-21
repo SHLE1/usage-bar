@@ -23,6 +23,67 @@ final class AppPreferencesTests: XCTestCase {
         prefs.appAppearanceMode = originalMode
     }
 
+    func testPrivacyModeDefaultsToOffWhenNoPreferenceIsStored() {
+        let originalObject = UserDefaults.standard.object(forKey: "app.privacyModeEnabled")
+        defer {
+            if let originalObject {
+                UserDefaults.standard.set(originalObject, forKey: "app.privacyModeEnabled")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "app.privacyModeEnabled")
+            }
+        }
+
+        UserDefaults.standard.removeObject(forKey: "app.privacyModeEnabled")
+
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: "app.privacyModeEnabled"))
+    }
+
+    func testChangingPrivacyModePostsNotificationAndPersistsSelection() {
+        let prefs = AppPreferences.shared
+        let originalValue = prefs.privacyModeEnabled
+        let targetValue = !originalValue
+
+        let expectation = expectation(forNotification: AppPreferences.privacyModeDidChange, object: nil)
+
+        prefs.privacyModeEnabled = targetValue
+
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertEqual(UserDefaults.standard.bool(forKey: "app.privacyModeEnabled"), targetValue)
+
+        prefs.privacyModeEnabled = originalValue
+    }
+
+    func testPrivacyRedactorMasksSensitiveValuesWhenEnabled() {
+        let prefs = AppPreferences.shared
+        let originalValue = prefs.privacyModeEnabled
+        prefs.privacyModeEnabled = true
+
+        XCTAssertEqual(PrivacyRedactor.display("abcd@abc.com"), "a***com")
+        XCTAssertEqual(PrivacyRedactor.display("account-123456"), "a***456")
+        XCTAssertEqual(PrivacyRedactor.display("abc"), "a***")
+        XCTAssertEqual(PrivacyRedactor.display(""), "")
+        XCTAssertEqual(
+            PrivacyRedactor.displayLabeledValue("Token From: ~/.local/share/opencode/auth.json"),
+            "Token From: ~***son"
+        )
+
+        prefs.privacyModeEnabled = originalValue
+    }
+
+    func testPrivacyRedactorKeepsValuesWhenDisabled() {
+        let prefs = AppPreferences.shared
+        let originalValue = prefs.privacyModeEnabled
+        prefs.privacyModeEnabled = false
+
+        XCTAssertEqual(PrivacyRedactor.display("abcd@abc.com"), "abcd@abc.com")
+        XCTAssertEqual(
+            PrivacyRedactor.displayLabeledValue("Token From: ~/.local/share/opencode/auth.json"),
+            "Token From: ~/.local/share/opencode/auth.json"
+        )
+
+        prefs.privacyModeEnabled = originalValue
+    }
+
     func testRememberedStatusBarOrderMovesDisabledProviderToTopOfDisabledGroup() {
         let providers: [ProviderIdentifier] = [.copilot, .kimi, .codex, .claude]
         let enabledProviders: Set<ProviderIdentifier> = [.copilot, .kimi]

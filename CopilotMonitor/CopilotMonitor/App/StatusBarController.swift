@@ -1351,6 +1351,7 @@ final class StatusBarController: NSObject {
         errorLogText += "\n"
         errorLogText += TokenManager.shared.getDebugEnvironmentInfo()
         errorLogText += "\n"
+        errorLogText = PrivacyRedactor.redactSensitiveContentIfNeeded(errorLogText)
         
         let alert = NSAlert()
         alert.messageText = L("Provider Errors Detected")
@@ -1909,7 +1910,7 @@ final class StatusBarController: NSObject {
         submenu.addItem(NSMenuItem.separator())
         let authItem = NSMenuItem()
         authItem.view = createDisabledLabelView(
-            text: String(format: L("Token From: %@"), "~/.local/share/opencode/auth.json"),
+            text: String(format: L("Token From: %@"), PrivacyRedactor.display("~/.local/share/opencode/auth.json")),
             icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
             multiline: true
         )

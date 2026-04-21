@@ -445,7 +445,7 @@ extension StatusBarController {
 
             if let email = details.email {
                 submenu.addItem(createDisabledMenuItem(
-                    text: String(format: L("Account: %@"), email),
+                    text: String(format: L("Account: %@"), PrivacyRedactor.display(email)),
                     icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Account")
                 ))
             }
@@ -453,7 +453,7 @@ extension StatusBarController {
             if let authSource = details.authSource {
                 let authItem = NSMenuItem()
                 authItem.view = createDisabledLabelView(
-                    text: String(format: L("Token From: %@"), authSource),
+                    text: String(format: L("Token From: %@"), PrivacyRedactor.display(authSource)),
                     icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
                     multiline: true
                 )
@@ -598,14 +598,15 @@ extension StatusBarController {
                     }
 
                     if let accountEmail {
+                        let displayEmail = PrivacyRedactor.display(accountEmail)
                         if accounts.count > 1 {
-                            displayName += " (\(accountEmail))"
+                            displayName += " (\(displayEmail))"
                         } else {
-                            displayName = "\(baseName) (\(accountEmail))"
+                            displayName = "\(baseName) (\(displayEmail))"
                         }
                     } else if accounts.count > 1, showAuthLabel {
                         let sourceLabel = authSourceLabel(for: account.details?.authSource, provider: identifier) ?? "Unknown"
-                        displayName += " (\(sourceLabel))"
+                        displayName += " (\(PrivacyRedactor.display(sourceLabel)))"
                     }
 
                     let unavailableLabel = unavailableUsageSuffix(for: account, identifier: identifier)
@@ -707,14 +708,14 @@ extension StatusBarController {
                 hasQuota = true
                 let accountIdentifier: String
                 if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines), !accountId.isEmpty {
-                    accountIdentifier = accountId
+                    accountIdentifier = PrivacyRedactor.display(accountId)
                 } else {
                     accountIdentifier = "#\(account.accountIndex + 1)"
                 }
                 var displayName = accounts.count > 1 ? "\(baseName) (\(accountIdentifier))" : baseName
                 if accounts.count > 1, showCopilotAuthLabel {
                     let sourceLabel = authSourceLabel(for: account.details?.authSource, provider: .copilot) ?? L("Unknown")
-                    displayName += " - \(sourceLabel)"
+                    displayName += " - \(PrivacyRedactor.display(sourceLabel))"
                 }
                 let unavailableLabel = unavailableUsageSuffix(for: account, identifier: .copilot)
                 if let unavailableLabel {
@@ -794,14 +795,14 @@ extension StatusBarController {
 
                 if let email = providerResults[.copilot]?.details?.email {
                     submenu.addItem(createDisabledMenuItem(
-                        text: String(format: L("Email: %@"), email),
+                        text: String(format: L("Email: %@"), PrivacyRedactor.display(email)),
                         icon: NSImage(systemSymbolName: "person.circle", accessibilityDescription: "User Email")
                     ))
                 }
 
                 let authItem = NSMenuItem()
                 authItem.view = createDisabledLabelView(
-                    text: String(format: L("Token From: %@"), "Browser Cookies (Chrome/Brave/Arc/Edge)"),
+                    text: String(format: L("Token From: %@"), PrivacyRedactor.display("Browser Cookies (Chrome/Brave/Arc/Edge)")),
                     icon: NSImage(systemSymbolName: "key", accessibilityDescription: "Auth Source"),
                     multiline: true
                 )
@@ -857,11 +858,11 @@ extension StatusBarController {
                 var displayName = "Gemini CLI"
 
                 if !normalizedEmail.isEmpty, normalizedEmail.lowercased() != "unknown" {
-                    displayName = "Gemini CLI (\(normalizedEmail))"
+                    displayName = "Gemini CLI (\(PrivacyRedactor.display(normalizedEmail)))"
                 } else if geminiAccounts.count > 1, showGeminiAuthLabel {
                     displayName = "Gemini CLI #\(accountNumber)"
                     let sourceLabel = authSourceLabel(for: account.authSource, provider: .geminiCLI) ?? L("Unknown")
-                    displayName += " (\(sourceLabel))"
+                    displayName += " (\(PrivacyRedactor.display(sourceLabel)))"
                 } else if geminiAccounts.count > 1 {
                     displayName = "Gemini CLI #\(accountNumber)"
                 }

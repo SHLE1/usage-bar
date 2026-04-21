@@ -113,6 +113,18 @@ struct GeneralSettingsView: View {
                             .labelsHidden()
                             .toggleStyle(.switch)
                     }
+
+                    Divider()
+                        .padding(.vertical, 8)
+
+                    SettingsRow(
+                        title: L("Privacy Mode"),
+                        description: L("Mask emails, account IDs, and token sources for screenshots.")
+                    ) {
+                        Toggle("", isOn: $prefs.privacyModeEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
                 }
             }
 

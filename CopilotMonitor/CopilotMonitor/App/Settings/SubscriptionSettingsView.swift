@@ -326,26 +326,26 @@ struct SubscriptionSettingsView: View {
         if let trimmedEmail {
             if duplicateEmailCounts[normalizedEmail, default: 0] > 1 {
                 if let accountId = normalizedNonEmpty(fallbackId) {
-                    return "\(trimmedEmail) (\(accountId))"
+                    return "\(PrivacyRedactor.display(trimmedEmail)) (\(PrivacyRedactor.display(accountId)))"
                 }
 
                 if let sourceLabel = sourceLabels
                     .compactMap({ normalizedNonEmpty($0) })
                     .first {
-                    return "\(trimmedEmail) (\(sourceLabel))"
+                    return "\(PrivacyRedactor.display(trimmedEmail)) (\(PrivacyRedactor.display(sourceLabel)))"
                 }
             }
-            return trimmedEmail
+            return PrivacyRedactor.display(trimmedEmail)
         }
 
         if let fallbackId = normalizedNonEmpty(fallbackId) {
-            return fallbackId
+            return PrivacyRedactor.display(fallbackId)
         }
 
         if let sourceLabel = sourceLabels
             .compactMap({ normalizedNonEmpty($0) })
             .first {
-            return sourceLabel
+            return PrivacyRedactor.display(sourceLabel)
         }
 
         return "Account #\(fallbackIndex + 1)"
@@ -381,18 +381,22 @@ struct SubscriptionRow: Identifiable {
     }
 
     var displayName: String {
+        let rawDisplayName: String
         if let displayNameOverride, !displayNameOverride.isEmpty {
-            return displayNameOverride
+            rawDisplayName = displayNameOverride
+        } else {
+            guard let provider = provider else { return PrivacyRedactor.display(key) }
+            let base = provider.displayName
+            // If key has an account suffix, show it
+            let providerRaw = provider.rawValue
+            if key.count > providerRaw.count + 1 && key.hasPrefix(providerRaw + ".") {
+                let account = String(key.dropFirst(providerRaw.count + 1))
+                rawDisplayName = "\(base) (\(PrivacyRedactor.display(account)))"
+            } else {
+                rawDisplayName = base
+            }
         }
-        guard let provider = provider else { return key }
-        let base = provider.displayName
-        // If key has an account suffix, show it
-        let providerRaw = provider.rawValue
-        if key.count > providerRaw.count + 1 && key.hasPrefix(providerRaw + ".") {
-            let account = String(key.dropFirst(providerRaw.count + 1))
-            return "\(base) (\(account))"
-        }
-        return base
+        return PrivacyRedactor.displayParentheticalSuffix(rawDisplayName)
     }
 }
 

@@ -183,6 +183,8 @@
 "Open UsageBar automatically when you sign in to macOS." = "Open UsageBar automatically when you sign in to macOS.";
 "Critical Badge" = "Critical Badge";
 "Show an attention badge when a provider reaches a critical state." = "Show an attention badge when a provider reaches a critical state.";
+"Privacy Mode" = "Privacy Mode";
+"Mask emails, account IDs, and token sources for screenshots." = "Mask emails, account IDs, and token sources for screenshots.";
 "Command Line Tool" = "Command Line Tool";
 "Install the usagebar command so you can use UsageBar data from Terminal." = "Install the usagebar command so you can use UsageBar data from Terminal.";
 "Installed" = "Installed";

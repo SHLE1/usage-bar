@@ -1557,8 +1557,19 @@ extension StatusBarController {
         for item in items {
             let menuItem = NSMenuItem()
             let needsMultiline = item.sfSymbol == "key"
+            let displayText: String
+            switch item.sfSymbol {
+            case "key", "number.circle":
+                displayText = PrivacyRedactor.displayLabeledValue(item.text)
+            case "person.circle":
+                displayText = item.text.contains(": ")
+                    ? PrivacyRedactor.displayLabeledValue(item.text)
+                    : PrivacyRedactor.display(item.text)
+            default:
+                displayText = item.text
+            }
             menuItem.view = createDisabledLabelView(
-                text: item.text,
+                text: displayText,
                 icon: NSImage(systemSymbolName: item.sfSymbol, accessibilityDescription: nil),
                 multiline: needsMultiline
             )

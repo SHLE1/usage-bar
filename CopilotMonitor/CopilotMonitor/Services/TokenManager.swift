@@ -1369,7 +1369,7 @@ final class TokenManager: @unchecked Sendable {
             let envName = String(value[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
             guard !envName.isEmpty else { return nil }
             let envValue = ProcessInfo.processInfo.environment[envName]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            return (envValue?.isEmpty == false) ? envValue : nil
+            return envValue?.nilIfEmpty
         }
 
         return value.isEmpty ? nil : value
@@ -1996,18 +1996,11 @@ final class TokenManager: @unchecked Sendable {
         accessToken: String,
         authSourcePath: String
     ) -> OpenAIAuthAccount {
-        let normalizedAccountId = encryptedAccount.accountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedChatGPTAccountId = encryptedAccount.chatGPTAccountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedEmail = encryptedAccount.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
         return OpenAIAuthAccount(
             accessToken: accessToken,
-            accountId: normalizedAccountId?.isEmpty == true ? nil : normalizedAccountId,
-            externalUsageAccountId: normalizedChatGPTAccountId?.isEmpty == true ? nil : normalizedChatGPTAccountId,
-            email: normalizedEmail?.isEmpty == true ? nil : normalizedEmail,
+            accountId: normalizedNonEmpty(encryptedAccount.accountId),
+            externalUsageAccountId: normalizedNonEmpty(encryptedAccount.chatGPTAccountId),
+            email: normalizedNonEmpty(encryptedAccount.email),
             authSource: authSourcePath,
             sourceLabels: [openAISourceLabel(for: .codexLB)],
             source: .codexLB,
@@ -2289,26 +2282,16 @@ final class TokenManager: @unchecked Sendable {
     }
 
     private func mergeOpenAIAccount(primary: OpenAIAuthAccount, fallback: OpenAIAuthAccount) -> OpenAIAuthAccount {
-        let primaryAccountId = primary.accountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackAccountId = fallback.accountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let primaryEmail = primary.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackEmail = fallback.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let mergedSourceLabels = mergeSourceLabels(primary.sourceLabels, fallback.sourceLabels)
-
         return OpenAIAuthAccount(
             accessToken: primary.accessToken,
-            accountId: (primaryAccountId?.isEmpty == false) ? primaryAccountId : fallbackAccountId,
+            accountId: normalizedNonEmpty(primary.accountId) ?? normalizedNonEmpty(fallback.accountId),
             externalUsageAccountId: normalizedNonEmpty(primary.externalUsageAccountId) ?? normalizedNonEmpty(fallback.externalUsageAccountId),
-            email: (primaryEmail?.isEmpty == false) ? primaryEmail : fallbackEmail,
+            email: normalizedNonEmpty(primary.email) ?? normalizedNonEmpty(fallback.email),
             refreshToken: normalizedNonEmpty(primary.refreshToken) ?? normalizedNonEmpty(fallback.refreshToken),
             idToken: normalizedNonEmpty(primary.idToken) ?? normalizedNonEmpty(fallback.idToken),
             expiresAt: primary.expiresAt ?? fallback.expiresAt,
             authSource: primary.authSource,
-            sourceLabels: mergedSourceLabels,
+            sourceLabels: mergeSourceLabels(primary.sourceLabels, fallback.sourceLabels),
             source: primary.source,
             credentialType: primary.credentialType,
             storedCodexAccountID: normalizedNonEmpty(primary.storedCodexAccountID) ?? normalizedNonEmpty(fallback.storedCodexAccountID)
@@ -2595,21 +2578,14 @@ final class TokenManager: @unchecked Sendable {
     }
 
     func currentCodexAccountPreview() -> CurrentCodexAccountPreview {
-        let noAccountDetected = "No Codex login detected"
-        let runCodexLoginFirst = "Run `codex login` to make the current account available here."
-        let currentCodexAccountTitle = "Current Codex login"
-        let missingRefreshToken = "This account can't be saved — no refresh token was found."
-        let missingAccessToken = "This account can't be saved — no access token was found."
-        let readyToAddCurrentAccount = "Ready to save this account in UsageBar."
-
         guard let auth = readCodexAuth(forceRefresh: true) else {
             return CurrentCodexAccountPreview(
-                displayName: noAccountDetected,
+                displayName: L("No Codex login detected"),
                 email: nil,
                 accountId: nil,
                 hasRefreshToken: false,
                 canAdd: false,
-                statusText: runCodexLoginFirst
+                statusText: L("Run `codex login` to make the current account available here.")
             )
         }
 
@@ -2622,7 +2598,7 @@ final class TokenManager: @unchecked Sendable {
             ?? normalizedNonEmpty(accessPayload?.auth?.chatGPTAccountId)
         let hasRefreshToken = normalizedNonEmpty(auth.tokens?.refreshToken) != nil
         let hasAccessToken = normalizedNonEmpty(auth.tokens?.accessToken) != nil
-        let displayName = email ?? accountId ?? currentCodexAccountTitle
+        let displayName = email ?? accountId ?? L("Current Codex login")
 
         if !hasRefreshToken {
             return CurrentCodexAccountPreview(
@@ -2631,7 +2607,7 @@ final class TokenManager: @unchecked Sendable {
                 accountId: accountId,
                 hasRefreshToken: false,
                 canAdd: false,
-                statusText: missingRefreshToken
+                statusText: L("This account can't be saved — no refresh token was found.")
             )
         }
 
@@ -2642,7 +2618,7 @@ final class TokenManager: @unchecked Sendable {
                 accountId: accountId,
                 hasRefreshToken: true,
                 canAdd: false,
-                statusText: missingAccessToken
+                statusText: L("This account can't be saved — no access token was found.")
             )
         }
 
@@ -2652,7 +2628,7 @@ final class TokenManager: @unchecked Sendable {
             accountId: accountId,
             hasRefreshToken: true,
             canAdd: true,
-            statusText: readyToAddCurrentAccount
+            statusText: L("Ready to save this account in UsageBar.")
         )
     }
 
@@ -3486,19 +3462,6 @@ final class TokenManager: @unchecked Sendable {
     }
 
     private func mergeClaudeAccount(primary: ClaudeAuthAccount, fallback: ClaudeAuthAccount) -> ClaudeAuthAccount {
-        let primaryAccountId = primary.accountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackAccountId = fallback.accountId?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let primaryEmail = primary.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackEmail = fallback.email?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let mergedSourceLabels = mergeSourceLabels(primary.sourceLabels, fallback.sourceLabels)
-        let primaryRefreshToken = normalizedNonEmpty(primary.refreshToken)
-        let fallbackRefreshToken = normalizedNonEmpty(fallback.refreshToken)
-        let mergedRefreshToken = primaryRefreshToken ?? fallbackRefreshToken
-
         let mergedExpiresAt: Date?
         if let primaryExpires = primary.expiresAt,
            let fallbackExpires = fallback.expiresAt {
@@ -3509,12 +3472,12 @@ final class TokenManager: @unchecked Sendable {
 
         return ClaudeAuthAccount(
             accessToken: primary.accessToken,
-            accountId: (primaryAccountId?.isEmpty == false) ? primaryAccountId : fallbackAccountId,
-            email: (primaryEmail?.isEmpty == false) ? primaryEmail : fallbackEmail,
-            refreshToken: mergedRefreshToken,
+            accountId: normalizedNonEmpty(primary.accountId) ?? normalizedNonEmpty(fallback.accountId),
+            email: normalizedNonEmpty(primary.email) ?? normalizedNonEmpty(fallback.email),
+            refreshToken: normalizedNonEmpty(primary.refreshToken) ?? normalizedNonEmpty(fallback.refreshToken),
             expiresAt: mergedExpiresAt,
             authSource: primary.authSource,
-            sourceLabels: mergedSourceLabels,
+            sourceLabels: mergeSourceLabels(primary.sourceLabels, fallback.sourceLabels),
             source: primary.source
         )
     }

@@ -55,6 +55,10 @@ extension StatusBarController {
             self, selector: #selector(handlePayAsYouGoOrderChange),
             name: AppPreferences.payAsYouGoOrderDidChange, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handlePrivacyModeChange),
+            name: AppPreferences.privacyModeDidChange, object: nil
+        )
     }
 
     @objc func handleRefreshIntervalChange() {
@@ -133,6 +137,12 @@ extension StatusBarController {
 
     @objc func handlePayAsYouGoOrderChange() {
         debugLog("🔔 Settings: pay-as-you-go order changed")
+        updateMultiProviderMenu()
+        updateStatusBarText()
+    }
+
+    @objc func handlePrivacyModeChange() {
+        debugLog("Settings: privacyMode changed")
         updateMultiProviderMenu()
         updateStatusBarText()
     }

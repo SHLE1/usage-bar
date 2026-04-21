@@ -79,6 +79,7 @@ final class AppPreferences: ObservableObject {
     static let copilotAddOnDidChange = Notification.Name("AppPreferences.copilotAddOnDidChange")
     static let statusBarOrderDidChange = Notification.Name("AppPreferences.statusBarOrderDidChange")
     static let payAsYouGoOrderDidChange = Notification.Name("AppPreferences.payAsYouGoOrderDidChange")
+    static let privacyModeDidChange = Notification.Name("AppPreferences.privacyModeDidChange")
 
     private let defaults = UserDefaults.standard
 
@@ -125,6 +126,13 @@ final class AppPreferences: ObservableObject {
         didSet {
             defaults.set(appAppearanceMode.rawValue, forKey: "app.appearanceMode")
             NotificationCenter.default.post(name: Self.appAppearanceDidChange, object: nil)
+        }
+    }
+
+    @Published var privacyModeEnabled: Bool {
+        didSet {
+            defaults.set(privacyModeEnabled, forKey: "app.privacyModeEnabled")
+            NotificationCenter.default.post(name: Self.privacyModeDidChange, object: nil)
         }
     }
 
@@ -365,6 +373,8 @@ final class AppPreferences: ObservableObject {
             self.appAppearanceMode = .system
         }
 
+        self.privacyModeEnabled = UserDefaults.standard.bool(forKey: "app.privacyModeEnabled")
+
         if UserDefaults.standard.object(forKey: StatusBarDisplayPreferences.criticalBadgeKey) != nil {
             self.criticalBadge = UserDefaults.standard.bool(forKey: StatusBarDisplayPreferences.criticalBadgeKey)
         } else {
@@ -410,5 +420,128 @@ final class AppPreferences: ObservableObject {
         if launchAtLogin != current {
             launchAtLogin = current
         }
+    }
+}
+
+enum PrivacyRedactor {
+    static var isEnabled: Bool {
+        AppPreferences.shared.privacyModeEnabled
+    }
+
+    static func display(_ value: String?) -> String? {
+        guard let value else { return nil }
+        return display(value)
+    }
+
+    static func display(_ value: String) -> String {
+        guard isEnabled else { return value }
+        return masked(value)
+    }
+
+    static func displayLabeledValue(_ text: String) -> String {
+        guard isEnabled else { return text }
+
+        guard let separatorRange = text.range(of: ": ") else {
+            return masked(text)
+        }
+
+        let label = String(text[..<separatorRange.upperBound])
+        let value = String(text[separatorRange.upperBound...])
+        return label + masked(value)
+    }
+
+    static func displayParentheticalSuffix(_ text: String) -> String {
+        guard isEnabled else { return text }
+        guard text.hasSuffix(")"),
+              let openIndex = text.lastIndex(of: "("),
+              openIndex < text.index(before: text.endIndex) else {
+            return text
+        }
+
+        let prefix = String(text[...openIndex])
+        let suffixStart = text.index(after: openIndex)
+        let suffixEnd = text.index(before: text.endIndex)
+        let value = String(text[suffixStart..<suffixEnd])
+        return prefix + masked(value) + ")"
+    }
+
+    static func redactSensitiveContentIfNeeded(_ text: String) -> String {
+        guard isEnabled else { return text }
+
+        var redacted = replaceMatches(
+            in: text,
+            pattern: #"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#,
+            options: [.caseInsensitive]
+        ) { masked($0) }
+
+        redacted = replaceMatches(
+            in: redacted,
+            pattern: #"((?:~|/Users)/[^\s,;:)]+)"#
+        ) { masked($0) }
+
+        redacted = replaceLabeledMatches(
+            in: redacted,
+            labels: [
+                "Account ID",
+                "accountId",
+                "Account Override",
+                "Email",
+                "Source Snapshot",
+                "Using auth from",
+                "Path"
+            ]
+        )
+
+        return redacted
+    }
+
+    private static func masked(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return value }
+        guard let first = trimmed.first else { return value }
+
+        if trimmed.count <= 4 {
+            return "\(first)***"
+        }
+
+        return "\(first)***\(trimmed.suffix(3))"
+    }
+
+    private static func replaceLabeledMatches(in text: String, labels: [String]) -> String {
+        labels.reduce(text) { current, label in
+            replaceMatches(
+                in: current,
+                pattern: #"(\#(NSRegularExpression.escapedPattern(for: label)):\s*)([^\n,)]*)"#
+            ) { match in
+                guard let separatorRange = match.range(of: ":") else { return match }
+                let labelEnd = match.index(after: separatorRange.lowerBound)
+                let prefix = String(match[..<labelEnd])
+                let value = String(match[labelEnd...]).trimmingCharacters(in: .whitespaces)
+                return prefix + " " + masked(value)
+            }
+        }
+    }
+
+    private static func replaceMatches(
+        in text: String,
+        pattern: String,
+        options: NSRegularExpression.Options = [],
+        replacement: (String) -> String
+    ) -> String {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else {
+            return text
+        }
+
+        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+        let matches = regex.matches(in: text, options: [], range: nsRange)
+        guard !matches.isEmpty else { return text }
+
+        var result = text
+        for match in matches.reversed() {
+            guard let range = Range(match.range, in: result) else { continue }
+            let original = String(result[range])
+            result.replaceSubrange(range, with: replacement(original))
+        }
+        return result
     }
 }

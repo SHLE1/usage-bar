@@ -20,7 +20,7 @@ struct AdvancedProviderSettingsView: View {
                         title: L("Current Login"),
                         description: L(currentCodexPreview.statusText)
                     ) {
-                        Text(L(currentCodexPreview.displayName))
+                        Text(currentCodexDisplayName)
                             .foregroundStyle(.secondary)
                     }
 
@@ -113,6 +113,9 @@ struct AdvancedProviderSettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: AppPreferences.enabledProvidersDidChange)) { _ in
             reloadAccounts()
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppPreferences.privacyModeDidChange)) { _ in
+            reloadAccounts()
+        }
         .onChange(of: prefs.codexStatusBarAccountSelectionKey) { newValue in
             advancedProviderSettingsLogger.debug(
                 "Selected Codex status bar account \(newValue ?? "none", privacy: .public)"
@@ -131,6 +134,20 @@ struct AdvancedProviderSettingsView: View {
 
     private var selectedAccountTitle: String {
         resolvedSelectedAccount?.displayName ?? accountOptions.first?.displayName ?? L("No Codex accounts detected")
+    }
+
+    private var currentCodexDisplayName: String {
+        if let email = currentCodexPreview.email?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !email.isEmpty {
+            return PrivacyRedactor.display(email)
+        }
+
+        if let accountId = currentCodexPreview.accountId?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !accountId.isEmpty {
+            return String(format: L("Account %@"), PrivacyRedactor.display(accountId))
+        }
+
+        return L(currentCodexPreview.displayName)
     }
 
     private var resolvedSelectedAccount: CodexStatusBarAccountOption? {
@@ -228,26 +245,26 @@ struct AdvancedProviderSettingsView: View {
             if emailCounts[normalizedEmail, default: 0] > 1 {
                 if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines),
                    !accountId.isEmpty {
-                    return "\(trimmedEmail) (\(accountId))"
+                    return "\(PrivacyRedactor.display(trimmedEmail)) (\(PrivacyRedactor.display(accountId)))"
                 }
 
                 if let sourceLabel = account.sourceLabels.first?.trimmingCharacters(in: .whitespacesAndNewlines),
                    !sourceLabel.isEmpty {
-                    return "\(trimmedEmail) (\(sourceLabel))"
+                    return "\(PrivacyRedactor.display(trimmedEmail)) (\(PrivacyRedactor.display(sourceLabel)))"
                 }
             }
 
-            return trimmedEmail
+            return PrivacyRedactor.display(trimmedEmail)
         }
 
         if let accountId = account.accountId?.trimmingCharacters(in: .whitespacesAndNewlines),
            !accountId.isEmpty {
-            return String(format: L("Account %@"), accountId)
+            return String(format: L("Account %@"), PrivacyRedactor.display(accountId))
         }
 
         if let sourceLabel = account.sourceLabels.first?.trimmingCharacters(in: .whitespacesAndNewlines),
            !sourceLabel.isEmpty {
-            return sourceLabel
+            return PrivacyRedactor.display(sourceLabel)
         }
 
         return String(format: L("Account #%d"), fallbackIndex + 1)

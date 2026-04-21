@@ -183,6 +183,8 @@
 "Open UsageBar automatically when you sign in to macOS." = "在您登录 macOS 时自动启动 UsageBar。";
 "Critical Badge" = "紧急徽标";
 "Show an attention badge when a provider reaches a critical state." = "当某个 Provider 进入紧急状态时显示提醒徽标。";
+"Privacy Mode" = "隐私模式";
+"Mask emails, account IDs, and token sources for screenshots." = "为截图遮罩邮箱、账号 ID 和 Token 来源。";
 "Command Line Tool" = "命令行工具";
 "Install the usagebar command so you can use UsageBar data from Terminal." = "安装 usagebar 命令，便于在终端中使用 UsageBar 数据。";
 "Installed" = "已安装";
