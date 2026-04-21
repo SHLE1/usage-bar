@@ -2580,12 +2580,12 @@ final class TokenManager: @unchecked Sendable {
     func currentCodexAccountPreview() -> CurrentCodexAccountPreview {
         guard let auth = readCodexAuth(forceRefresh: true) else {
             return CurrentCodexAccountPreview(
-                displayName: L("No Codex login detected"),
+                displayName: "No Codex login detected",
                 email: nil,
                 accountId: nil,
                 hasRefreshToken: false,
                 canAdd: false,
-                statusText: L("Run `codex login` to make the current account available here.")
+                statusText: "Run `codex login` to make the current account available here."
             )
         }
 
@@ -2598,7 +2598,7 @@ final class TokenManager: @unchecked Sendable {
             ?? normalizedNonEmpty(accessPayload?.auth?.chatGPTAccountId)
         let hasRefreshToken = normalizedNonEmpty(auth.tokens?.refreshToken) != nil
         let hasAccessToken = normalizedNonEmpty(auth.tokens?.accessToken) != nil
-        let displayName = email ?? accountId ?? L("Current Codex login")
+        let displayName = email ?? accountId ?? "Current Codex login"
 
         if !hasRefreshToken {
             return CurrentCodexAccountPreview(
@@ -2607,7 +2607,7 @@ final class TokenManager: @unchecked Sendable {
                 accountId: accountId,
                 hasRefreshToken: false,
                 canAdd: false,
-                statusText: L("This account can't be saved — no refresh token was found.")
+                statusText: "This account can't be saved — no refresh token was found."
             )
         }
 
@@ -2618,7 +2618,7 @@ final class TokenManager: @unchecked Sendable {
                 accountId: accountId,
                 hasRefreshToken: true,
                 canAdd: false,
-                statusText: L("This account can't be saved — no access token was found.")
+                statusText: "This account can't be saved — no access token was found."
             )
         }
 
@@ -2628,7 +2628,7 @@ final class TokenManager: @unchecked Sendable {
             accountId: accountId,
             hasRefreshToken: true,
             canAdd: true,
-            statusText: L("Ready to save this account in UsageBar.")
+            statusText: "Ready to save this account in UsageBar."
         )
     }
 
