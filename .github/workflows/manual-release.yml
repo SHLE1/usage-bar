@@ -197,6 +197,78 @@ jobs:
             echo "dmg_sha=$DMG_SHA"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Locate Sparkle Tools
+        id: sparkle_tools
+        run: |
+          SIGN_UPDATE=$(find "$HOME/Library/Developer/Xcode/DerivedData" \
+            -path '*/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update' \
+            -type f \
+            | head -n 1)
+
+          if [ -z "$SIGN_UPDATE" ]; then
+            echo "Sparkle sign_update tool was not found in DerivedData."
+            exit 1
+          fi
+
+          echo "sign_update=$SIGN_UPDATE" >> "$GITHUB_OUTPUT"
+          echo "Found Sparkle sign_update tool."
+
+      - name: Create Sparkle Appcast
+        id: appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          if [ -z "${SPARKLE_ED_PRIVATE_KEY:-}" ]; then
+            echo "SPARKLE_ED_PRIVATE_KEY is not set. Add the Sparkle EdDSA private key as a GitHub Actions secret."
+            exit 1
+          fi
+
+          VERSION_TAG="${{ steps.release_version.outputs.version_tag }}"
+          VERSION_NUMBER="${{ steps.release_version.outputs.version_number }}"
+          DIST_DIR="$RUNNER_TEMP/release-dist"
+          ZIP_NAME="${{ steps.package.outputs.zip_name }}"
+          ZIP_PATH="$DIST_DIR/$ZIP_NAME"
+          APPCAST_PATH="$DIST_DIR/appcast.xml"
+          SIGN_UPDATE="${{ steps.sparkle_tools.outputs.sign_update }}"
+          RELEASE_NOTES_URL="https://github.com/${{ github.repository }}/releases/tag/$VERSION_TAG"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/$VERSION_TAG/$ZIP_NAME"
+          PUB_DATE=$(LC_ALL=C TZ=UTC date -R)
+
+          SIGN_OUTPUT=$(printf '%s\n' "$SPARKLE_ED_PRIVATE_KEY" | "$SIGN_UPDATE" --ed-key-file - "$ZIP_PATH")
+          ED_SIGNATURE=$(printf '%s\n' "$SIGN_OUTPUT" | sed -nE 's/.*sparkle:edSignature="([^"]+)".*/\1/p')
+          ZIP_LENGTH=$(printf '%s\n' "$SIGN_OUTPUT" | sed -nE 's/.*(sparkle:)?length="([^"]+)".*/\2/p')
+
+          if [ -z "$ED_SIGNATURE" ] || [ -z "$ZIP_LENGTH" ]; then
+            echo "Failed to parse Sparkle signature output:"
+            printf '%s\n' "$SIGN_OUTPUT"
+            exit 1
+          fi
+
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="utf-8"?>' \
+            '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">' \
+            '  <channel>' \
+            '    <title>UsageBar Updates</title>' \
+            '    <description>UsageBar release updates</description>' \
+            '    <language>en</language>' \
+            "    <link>https://github.com/${{ github.repository }}/releases</link>" \
+            '    <item>' \
+            "      <title>UsageBar $VERSION_TAG</title>" \
+            "      <sparkle:version>$VERSION_NUMBER</sparkle:version>" \
+            "      <sparkle:shortVersionString>$VERSION_NUMBER</sparkle:shortVersionString>" \
+            '      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>' \
+            "      <pubDate>$PUB_DATE</pubDate>" \
+            "      <sparkle:releaseNotesLink>$RELEASE_NOTES_URL</sparkle:releaseNotesLink>" \
+            "      <enclosure url=\"$DOWNLOAD_URL\" sparkle:edSignature=\"$ED_SIGNATURE\" length=\"$ZIP_LENGTH\" type=\"application/octet-stream\" />" \
+            '    </item>' \
+            '  </channel>' \
+            '</rss>' \
+            > "$APPCAST_PATH"
+
+          xmllint --noout "$APPCAST_PATH"
+          echo "appcast_path=$APPCAST_PATH" >> "$GITHUB_OUTPUT"
+          echo "appcast_name=appcast.xml" >> "$GITHUB_OUTPUT"
+
       - name: Generate Release Notes Body
         id: generated_notes
         env:
@@ -219,6 +291,7 @@ jobs:
           PREVIOUS_TAG="${{ steps.release_version.outputs.previous_tag }}"
           ZIP_NAME="${{ steps.package.outputs.zip_name }}"
           DMG_NAME="${{ steps.package.outputs.dmg_name }}"
+          APPCAST_NAME="${{ steps.appcast.outputs.appcast_name }}"
           ZIP_SHA="${{ steps.package.outputs.zip_sha }}"
           DMG_SHA="${{ steps.package.outputs.dmg_sha }}"
           GENERATED_BODY_FILE="$RUNNER_TEMP/generated-release-notes-body.md"
@@ -231,6 +304,8 @@ jobs:
             printf '%s\n' "  - SHA256: \`$ZIP_SHA\`"
             printf '%s\n' "- \`$DMG_NAME\`"
             printf '%s\n' "  - SHA256: \`$DMG_SHA\`"
+            printf '%s\n' "- \`$APPCAST_NAME\`"
+            printf '%s\n' '  - Sparkle update feed used by Check for Updates...'
             printf '\n%s\n' '## Notice'
             printf '%s\n' 'These artifacts are unsigned and not notarized, so macOS Gatekeeper may require manual override before opening.'
             printf '\n%s\n' 'After moving the app to Applications, run:'
@@ -259,18 +334,19 @@ jobs:
           VERSION_TAG="${{ steps.release_version.outputs.version_tag }}"
           ZIP_PATH="${{ runner.temp }}/release-dist/${{ steps.package.outputs.zip_name }}"
           DMG_PATH="${{ runner.temp }}/release-dist/${{ steps.package.outputs.dmg_name }}"
+          APPCAST_PATH="${{ steps.appcast.outputs.appcast_path }}"
           RELEASE_NAME="UsageBar ${VERSION_TAG}"
           NOTES_FILE="${{ runner.temp }}/release-notes.md"
 
           if gh release view "$VERSION_TAG" >/dev/null 2>&1; then
-            gh release upload "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" --clobber
+            gh release upload "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" "$APPCAST_PATH" --clobber
             gh release edit "$VERSION_TAG" --title "$RELEASE_NAME" --notes-file "$NOTES_FILE"
           else
             CREATE_ARGS=()
             if [ "${{ inputs.prerelease }}" = "true" ]; then
               CREATE_ARGS+=(--prerelease)
             fi
-            gh release create "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" \
+            gh release create "$VERSION_TAG" "$DMG_PATH" "$ZIP_PATH" "$APPCAST_PATH" \
               --title "$RELEASE_NAME" \
               --notes-file "$NOTES_FILE" \
               "${CREATE_ARGS[@]}"
@@ -322,5 +398,6 @@ jobs:
           path: |
             ${{ runner.temp }}/release-dist/*.zip
             ${{ runner.temp }}/release-dist/*.dmg
+            ${{ runner.temp }}/release-dist/appcast.xml
             ${{ runner.temp }}/release-notes.md
           retention-days: 30

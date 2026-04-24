@@ -44,6 +44,12 @@ brew install --cask SHLE1/tap/usage-bar
 
 Download the latest `.dmg` from the [**Releases**](https://github.com/SHLE1/usage-bar/releases/latest) page, open it, and drag **UsageBar** to your Applications folder.
 
+UsageBar can check for new versions from the menu via **Check for Updates...**. Releases are currently unsigned, so macOS Gatekeeper may require manual approval after installing an update:
+
+```bash
+xattr -cr "/Applications/UsageBar.app"
+```
+
 ## Features
 
 ### 🔍 Unified Dashboard
@@ -138,6 +144,10 @@ Set your subscription tier per provider (preset or custom monthly cost). The `Qu
 ### 🖥️ Multi-Provider Status Bar
 
 The macOS status bar can display a compact row of quota-based provider icons with remaining percentages. Configure which providers appear via **Settings > Status Bar**.
+
+### ⬇️ In-App Updates
+
+Use **Check for Updates...** from the menu to download new GitHub Releases through Sparkle. Until UsageBar has an Apple Developer certificate, update downloads remain unsigned and may still require the Gatekeeper command shown above.
 
 ### ⌨️ CLI
 
@@ -330,6 +340,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 - [opgginc/opencode-bar](https://github.com/opgginc/opencode-bar)
 - [ndycode/codex-multi-auth](https://github.com/ndycode/codex-multi-auth)
 - [anomalyco/opencode](https://github.com/anomalyco/opencode)
+- [Sparkle](https://sparkle-project.org)
 
 ---
 

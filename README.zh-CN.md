@@ -44,6 +44,12 @@ brew install --cask SHLE1/tap/usage-bar
 
 从 [**Releases**](https://github.com/SHLE1/usage-bar/releases/latest) 页面下载最新的 `.dmg` 文件，打开后将 **UsageBar** 拖入「应用程序」文件夹即可。
 
+UsageBar 可通过菜单中的 **Check for Updates...** 检查新版本。当前发布包未签名，安装更新后 macOS Gatekeeper 可能仍需手动允许：
+
+```bash
+xattr -cr "/Applications/UsageBar.app"
+```
+
 ## 功能
 
 ### 🔍 统一看板
@@ -138,6 +144,10 @@ UsageBar 自动查找并认证你的 AI 服务商：
 ### 🖥️ 多服务商状态栏
 
 macOS 状态栏可以紧凑地展示多个配额制服务商的图标和剩余百分比。通过 **设置 > 状态栏** 配置显示哪些服务商。
+
+### ⬇️ App 内更新
+
+通过菜单中的 **Check for Updates...** 可使用 Sparkle 从 GitHub Releases 下载新版本。在 UsageBar 拥有 Apple Developer 证书之前，下载的更新包仍是未签名版本，可能需要执行上方的 Gatekeeper 命令。
 
 ### ⌨️ CLI 命令行工具
 
@@ -333,6 +343,7 @@ MIT License — 详见 [LICENSE](LICENSE) 文件。
 - [opgginc/opencode-bar](https://github.com/opgginc/opencode-bar)
 - [ndycode/codex-multi-auth](https://github.com/ndycode/codex-multi-auth)
 - [anomalyco/opencode](https://github.com/anomalyco/opencode)
+- [Sparkle](https://sparkle-project.org)
 
 ---
 
