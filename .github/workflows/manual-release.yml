@@ -107,18 +107,18 @@ jobs:
       - name: Update Version Files
         run: |
           VERSION="${{ steps.release_version.outputs.version_number }}"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" CopilotMonitor/CopilotMonitor/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" CopilotMonitor/CopilotMonitor/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" UsageBar/UsageBar/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" UsageBar/UsageBar/Info.plist
           perl -0pi -e 's/UsageBar v\d+\.\d+\.\d+/UsageBar v'"$VERSION"'/g' README.md README.zh-CN.md
 
       - name: Build Unsigned Archive
         run: |
-          cd CopilotMonitor
-          xcodebuild -project CopilotMonitor.xcodeproj \
-            -scheme CopilotMonitor \
+          cd UsageBar
+          xcodebuild -project UsageBar.xcodeproj \
+            -scheme UsageBar \
             -configuration Release \
             -destination "generic/platform=macOS" \
-            -archivePath build/CopilotMonitor.xcarchive \
+            -archivePath build/UsageBar.xcarchive \
             archive \
             ARCHS="arm64 x86_64" \
             ONLY_ACTIVE_ARCH=NO \
@@ -128,12 +128,12 @@ jobs:
 
       - name: Export App
         run: |
-          mkdir -p CopilotMonitor/build/export
-          cp -R "CopilotMonitor/build/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" CopilotMonitor/build/export/
+          mkdir -p UsageBar/build/export
+          cp -R "UsageBar/build/UsageBar.xcarchive/Products/Applications/UsageBar.app" UsageBar/build/export/
 
       - name: Verify Universal Binary
         run: |
-          APP_PATH="CopilotMonitor/build/export/UsageBar.app"
+          APP_PATH="UsageBar/build/export/UsageBar.app"
           MAIN_BIN="$APP_PATH/Contents/MacOS/UsageBar"
           CLI_BIN="$APP_PATH/Contents/MacOS/usagebar-cli"
 
@@ -167,7 +167,7 @@ jobs:
         run: |
           VERSION_TAG="${{ steps.release_version.outputs.version_tag }}"
           DIST_DIR="$RUNNER_TEMP/release-dist"
-          APP_PATH="CopilotMonitor/build/export/UsageBar.app"
+          APP_PATH="UsageBar/build/export/UsageBar.app"
           ZIP_NAME="UsageBar-${VERSION_TAG}-unsigned.zip"
           DMG_NAME="UsageBar-${VERSION_TAG}-unsigned.dmg"
           DMG_STAGING="$RUNNER_TEMP/dmg_staging"
@@ -322,7 +322,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CopilotMonitor/CopilotMonitor/Info.plist README.md README.zh-CN.md
+          git add UsageBar/UsageBar/Info.plist README.md README.zh-CN.md
           git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.release_version.outputs.version_number }}"
           git tag "${{ steps.release_version.outputs.version_tag }}"
           git push origin HEAD:main "${{ steps.release_version.outputs.version_tag }}"

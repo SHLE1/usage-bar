@@ -1,6 +1,6 @@
 //
 //  UsagePredictor.swift
-//  CopilotMonitor
+//  UsageBar
 //
 //  Created by opencode on 2026-01-18.
 //

@@ -20,7 +20,7 @@ This document describes the current **unsigned release** workflow for **UsageBar
 - `HOMEBREW_TAP_GITHUB_TOKEN` available for workflow-based releases
 - `SPARKLE_ED_PRIVATE_KEY` available as a GitHub Actions secret
   - This is the Sparkle EdDSA private key, not an Apple Developer certificate.
-  - Its public key must match `SUPublicEDKey` in `CopilotMonitor/CopilotMonitor/Info.plist`.
+  - Its public key must match `SUPublicEDKey` in `UsageBar/UsageBar/Info.plist`.
 
 If the matching private key is unavailable, generate a new Sparkle key pair, update `SUPublicEDKey`, and save the exported private key as the `SPARKLE_ED_PRIVATE_KEY` repository secret:
 
@@ -51,7 +51,7 @@ Both artifacts must be built as **universal binaries**:
 
 Update these files to the new version:
 
-- `CopilotMonitor/CopilotMonitor/Info.plist`
+- `UsageBar/UsageBar/Info.plist`
   - `CFBundleShortVersionString`
   - `CFBundleVersion`
 - `README.md`
@@ -60,19 +60,19 @@ Update these files to the new version:
 Example:
 
 ```bash
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.0.7" CopilotMonitor/CopilotMonitor/Info.plist
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion 0.0.7" CopilotMonitor/CopilotMonitor/Info.plist
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.0.7" UsageBar/UsageBar/Info.plist
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion 0.0.7" UsageBar/UsageBar/Info.plist
 ```
 
 ## 2. Build Unsigned Release Archive
 
 ```bash
-cd CopilotMonitor
-xcodebuild -project CopilotMonitor.xcodeproj \
-  -scheme CopilotMonitor \
+cd UsageBar
+xcodebuild -project UsageBar.xcodeproj \
+  -scheme UsageBar \
   -configuration Release \
   -destination "generic/platform=macOS" \
-  -archivePath build/CopilotMonitor.xcarchive \
+  -archivePath build/UsageBar.xcarchive \
   archive \
   ARCHS="arm64 x86_64" \
   ONLY_ACTIVE_ARCH=NO \
@@ -85,7 +85,7 @@ xcodebuild -project CopilotMonitor.xcodeproj \
 
 ```bash
 mkdir -p build/export
-cp -R "build/CopilotMonitor.xcarchive/Products/Applications/UsageBar.app" build/export/
+cp -R "build/UsageBar.xcarchive/Products/Applications/UsageBar.app" build/export/
 ```
 
 ## 4. Verify Universal Binary Slices

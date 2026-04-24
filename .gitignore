@@ -43,6 +43,7 @@ package-lock.json
 
 # VSCode local settings
 .vscode/settings.local.json
+.vscode/.debug/
 
 # Local runtime artifacts
 data/
@@ -56,4 +57,6 @@ nohup.out
 .pi
 .pi-lens
 .claude
+.conductor/
+.sc/
 .mcp.json

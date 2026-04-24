@@ -302,12 +302,12 @@ make setup    # Configure git hooks (SwiftLint + action-validator)
 
 ```bash
 # Build
-xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj \
-  -scheme CopilotMonitor -configuration Debug build
+xcodebuild -project UsageBar/UsageBar.xcodeproj \
+  -scheme UsageBar -configuration Debug build
 
 # Run (auto-detect build path)
-open "$(xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj \
-  -scheme CopilotMonitor -configuration Debug -showBuildSettings 2>/dev/null \
+open "$(xcodebuild -project UsageBar/UsageBar.xcodeproj \
+  -scheme UsageBar -configuration Debug -showBuildSettings 2>/dev/null \
   | sed -n 's/^[[:space:]]*BUILT_PRODUCTS_DIR = //p' | head -n 1)/UsageBar.app"
 ```
 
