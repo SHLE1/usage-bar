@@ -8,12 +8,12 @@ jobs:
     runs-on: macos-26
     env:
       XCODE_VERSION: '26.4'
-      PROJECT_FILE: CopilotMonitor.xcodeproj
-      SCHEME: CopilotMonitor
+      PROJECT_FILE: UsageBar.xcodeproj
+      SCHEME: UsageBar
       APP_BUNDLE_NAME: UsageBar.app
     defaults:
       run:
-        working-directory: CopilotMonitor
+        working-directory: UsageBar
 
     steps:
       - name: Checkout
@@ -27,7 +27,7 @@ jobs:
       - name: Read Version
         id: version
         run: |
-          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' CopilotMonitor/Info.plist)
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' UsageBar/Info.plist)
           echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_number=${VERSION}" >> "$GITHUB_OUTPUT"
 
@@ -37,7 +37,7 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Release \
             -destination "generic/platform=macOS" \
-            -archivePath build/CopilotMonitor.xcarchive \
+            -archivePath build/UsageBar.xcarchive \
             archive \
             ARCHS="arm64 x86_64" \
             ONLY_ACTIVE_ARCH=NO \
@@ -48,7 +48,7 @@ jobs:
       - name: Export App
         run: |
           mkdir -p build/export
-          cp -R "build/CopilotMonitor.xcarchive/Products/Applications/${APP_BUNDLE_NAME}" build/export/
+          cp -R "build/UsageBar.xcarchive/Products/Applications/${APP_BUNDLE_NAME}" build/export/
 
       - name: Verify Universal Binary
         run: |

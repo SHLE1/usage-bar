@@ -152,7 +152,7 @@
 			containerPortal = B44444444444444444444444 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = AFFFFFFFFFFFFFFFFFFFFF;
-			remoteInfo = CopilotMonitor;
+			remoteInfo = UsageBar;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -203,7 +203,7 @@
 		ZH1111111111111111111111 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A66666666666666666666666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A77777777777777777777777 /* UsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "UsageBar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A88888888888888888888888 /* CopilotMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CopilotMonitor.entitlements; sourceTree = "<group>"; };
+		A88888888888888888888888 /* UsageBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UsageBar.entitlements; sourceTree = "<group>"; };
 		A99999999999999999999999 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD0CA52627AF05BD67B56E /* StatusBarIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarIconView.swift; sourceTree = "<group>"; };
 		AM2222222222222222222222 /* AppMigrationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMigrationHelper.swift; sourceTree = "<group>"; };
@@ -254,7 +254,7 @@
 		AGVTESTFR111111111111111 /* AntigravityProviderVarintTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntigravityProviderVarintTests.swift; sourceTree = "<group>"; };
 		CLIFMTTESTFR1111111111111 /* CLIFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIFormatterTests.swift; sourceTree = "<group>"; };
 		OCAUTHTESTFR1111111111111 /* OpenCodeAuthDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCodeAuthDecodingTests.swift; sourceTree = "<group>"; };
-		TDDDDDDDDDDDDDDDDDDDDDD /* CopilotMonitorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CopilotMonitorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		TDDDDDDDDDDDDDDDDDDDDDD /* UsageBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UsageBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		SETFR111111111111111111111 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		SETFR222222222222222222222 /* CLIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIService.swift; sourceTree = "<group>"; };
 		SETFR333333333333333333333 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -297,12 +297,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1D81BD5EF6E11EA1F43B6746 /* CopilotMonitor */ = {
+		1D81BD5EF6E11EA1F43B6746 /* UsageBar */ = {
 			isa = PBXGroup;
 			children = (
 				EC7EB390754865EBC783E08F /* ViewModels */,
 			);
-			name = CopilotMonitor;
+			name = UsageBar;
 			sourceTree = "<group>";
 		};
 		3FEE31A8C4560737353C8578 /* SwiftUI */ = {
@@ -336,15 +336,15 @@
 		ABBBBBBBBBBBBBBBBBBBBBBB = {
 			isa = PBXGroup;
 			children = (
-				ACCCCCCCCCCCCCCCCCCCCCCC /* CopilotMonitor */,
+				ACCCCCCCCCCCCCCCCCCCCCCC /* UsageBar */,
 				CLI7777777777777777777777 /* CLI */,
-				TFFFFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitorTests */,
+				TFFFFFFFFFFFFFFFFFFFFFFFF /* UsageBarTests */,
 				ADDDDDDDDDDDDDDDDDDDDDDD /* Products */,
 				SP3333333333333333333333 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		ACCCCCCCCCCCCCCCCCCCCCCC /* CopilotMonitor */ = {
+		ACCCCCCCCCCCCCCCCCCCCCCC /* UsageBar */ = {
 			isa = PBXGroup;
 			children = (
 				AEEEEEEEEEEEEEEEEEEEEEEE /* App */,
@@ -354,12 +354,12 @@
 				E33333333333333333333333 /* Models */,
 				A66666666666666666666666 /* Assets.xcassets */,
 				LZ1111111111111111111111 /* Localizable.strings */,
-				A88888888888888888888888 /* CopilotMonitor.entitlements */,
+				A88888888888888888888888 /* UsageBar.entitlements */,
 				A99999999999999999999999 /* Info.plist */,
 				4D0546BDF4C7CD74746285DF /* Providers */,
-				1D81BD5EF6E11EA1F43B6746 /* CopilotMonitor */,
+				1D81BD5EF6E11EA1F43B6746 /* UsageBar */,
 			);
-			path = CopilotMonitor;
+			path = UsageBar;
 			sourceTree = "<group>";
 		};
 		ADDDDDDDDDDDDDDDDDDDDDDD /* Products */ = {
@@ -367,7 +367,7 @@
 			children = (
 				A77777777777777777777777 /* UsageBar.app */,
 				CLI5555555555555555555555 /* usagebar-cli */,
-				TDDDDDDDDDDDDDDDDDDDDDD /* CopilotMonitorTests.xctest */,
+				TDDDDDDDDDDDDDDDDDDDDDD /* UsageBarTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -493,7 +493,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		TFFFFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitorTests */ = {
+		TFFFFFFFFFFFFFFFFFFFFFFFF /* UsageBarTests */ = {
 			isa = PBXGroup;
 			children = (
 				T22222222222222222222222 /* ProviderUsageTests.swift */,
@@ -517,7 +517,7 @@
 				CLIFMTTESTFR1111111111111 /* CLIFormatterTests.swift */,
 				OCAUTHTESTFR1111111111111 /* OpenCodeAuthDecodingTests.swift */,
 			);
-			path = CopilotMonitorTests;
+			path = UsageBarTests;
 			sourceTree = "<group>";
 		};
 		TOOOOOOOOOOOOOOOOOOOOOOO /* Fixtures */ = {
@@ -537,9 +537,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitor */ = {
+		AFFFFFFFFFFFFFFFFFFFFF /* UsageBar */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B11111111111111111111111 /* Build configuration list for PBXNativeTarget "CopilotMonitor" */;
+			buildConfigurationList = B11111111111111111111111 /* Build configuration list for PBXNativeTarget "UsageBar" */;
 			buildPhases = (
 				B22222222222222222222222 /* Sources */,
 				AAAAAAAAAAAAAAAAAAAAAAAA /* Frameworks */,
@@ -551,12 +551,12 @@
 			dependencies = (
 				CLIDEP1111111111111111111 /* PBXTargetDependency */,
 			);
-			name = CopilotMonitor;
+			name = UsageBar;
 			packageProductDependencies = (
 				MBA2222222222222222222222 /* MenuBarExtraAccess */,
 				SP2222222222222222222222 /* Sparkle */,
 			);
-			productName = CopilotMonitor;
+			productName = UsageBar;
 			productReference = A77777777777777777777777 /* UsageBar.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -579,9 +579,9 @@
 			productReference = CLI5555555555555555555555 /* usagebar-cli */;
 			productType = "com.apple.product-type.tool";
 		};
-		TGGGGGGGGGGGGGGGGGGGGGGG /* CopilotMonitorTests */ = {
+		TGGGGGGGGGGGGGGGGGGGGGGG /* UsageBarTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = THHHHHHHHHHHHHHHHHHHHHHH /* Build configuration list for PBXNativeTarget "CopilotMonitorTests" */;
+			buildConfigurationList = THHHHHHHHHHHHHHHHHHHHHHH /* Build configuration list for PBXNativeTarget "UsageBarTests" */;
 			buildPhases = (
 				TIIIIIIIIIIIIIIIIIIIIII /* Sources */,
 				TEEEEEEEEEEEEEEEEEEEEEE /* Frameworks */,
@@ -592,9 +592,9 @@
 			dependencies = (
 				TKKKKKKKKKKKKKKKKKKKKKKK /* PBXTargetDependency */,
 			);
-			name = CopilotMonitorTests;
-			productName = CopilotMonitorTests;
-			productReference = TDDDDDDDDDDDDDDDDDDDDDD /* CopilotMonitorTests.xctest */;
+			name = UsageBarTests;
+			productName = UsageBarTests;
+			productReference = TDDDDDDDDDDDDDDDDDDDDDD /* UsageBarTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -624,7 +624,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B55555555555555555555555 /* Build configuration list for PBXProject "CopilotMonitor" */;
+			buildConfigurationList = B55555555555555555555555 /* Build configuration list for PBXProject "UsageBar" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -643,9 +643,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitor */,
+				AFFFFFFFFFFFFFFFFFFFFF /* UsageBar */,
 				CLI8888888888888888888888 /* usagebar-cli */,
-				TGGGGGGGGGGGGGGGGGGGGGGG /* CopilotMonitorTests */,
+				TGGGGGGGGGGGGGGGGGGGGGGG /* UsageBarTests */,
 			);
 		};
 /* End PBXProject section */
@@ -816,7 +816,7 @@
 		};
 		TKKKKKKKKKKKKKKKKKKKKKKK /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = AFFFFFFFFFFFFFFFFFFFFF /* CopilotMonitor */;
+			target = AFFFFFFFFFFFFFFFFFFFFF /* UsageBar */;
 			targetProxy = TNNNNNNNNNNNNNNNNNNNNNNN /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -947,7 +947,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CopilotMonitor/CopilotMonitor.entitlements;
+				CODE_SIGN_ENTITLEMENTS = UsageBar/UsageBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
@@ -957,7 +957,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CopilotMonitor/Info.plist;
+				INFOPLIST_FILE = UsageBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -975,7 +975,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CopilotMonitor/CopilotMonitor.entitlements;
+				CODE_SIGN_ENTITLEMENTS = UsageBar/UsageBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
@@ -985,7 +985,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CopilotMonitor/Info.plist;
+				INFOPLIST_FILE = UsageBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -1068,7 +1068,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B11111111111111111111111 /* Build configuration list for PBXNativeTarget "CopilotMonitor" */ = {
+		B11111111111111111111111 /* Build configuration list for PBXNativeTarget "UsageBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B88888888888888888888888 /* Debug */,
@@ -1077,7 +1077,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B55555555555555555555555 /* Build configuration list for PBXProject "CopilotMonitor" */ = {
+		B55555555555555555555555 /* Build configuration list for PBXProject "UsageBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B66666666666666666666666 /* Debug */,
@@ -1095,7 +1095,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		THHHHHHHHHHHHHHHHHHHHHHH /* Build configuration list for PBXNativeTarget "CopilotMonitorTests" */ = {
+		THHHHHHHHHHHHHHHHHHHHHHH /* Build configuration list for PBXNativeTarget "UsageBarTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				TLLLLLLLLLLLLLLLLLLLLLL /* Debug */,

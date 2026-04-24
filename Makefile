@@ -33,7 +33,7 @@ lint: lint-swift lint-actions
 
 lint-swift:
 	@echo "Running SwiftLint..."
-	@swiftlint lint CopilotMonitor/CopilotMonitor
+	@swiftlint lint UsageBar/UsageBar
 
 lint-actions:
 	@echo "Running action-validator..."

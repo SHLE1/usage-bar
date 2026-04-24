@@ -37,8 +37,8 @@ jobs:
               echo "No Swift files changed"
             fi
           else
-            echo "Linting all files in CopilotMonitor/CopilotMonitor"
-            swiftlint lint --reporter github-actions-logging CopilotMonitor/CopilotMonitor
+            echo "Linting all files in UsageBar/UsageBar"
+            swiftlint lint --reporter github-actions-logging UsageBar/UsageBar
           fi
         env:
           GH_TOKEN: ${{ github.token }}

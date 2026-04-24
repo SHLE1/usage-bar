@@ -9,11 +9,11 @@ jobs:
     runs-on: macos-26
     env:
       XCODE_VERSION: '26.4'
-      PROJECT_FILE: CopilotMonitor.xcodeproj
-      SCHEME: CopilotMonitor
+      PROJECT_FILE: UsageBar.xcodeproj
+      SCHEME: UsageBar
     defaults:
       run:
-        working-directory: CopilotMonitor
+        working-directory: UsageBar
 
     steps:
       - name: Checkout

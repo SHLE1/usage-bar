@@ -305,12 +305,12 @@ make setup    # 配置 Git 钩子（SwiftLint + action-validator）
 
 ```bash
 # 构建
-xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj \
-  -scheme CopilotMonitor -configuration Debug build
+xcodebuild -project UsageBar/UsageBar.xcodeproj \
+  -scheme UsageBar -configuration Debug build
 
 # 运行（自动检测构建路径）
-open "$(xcodebuild -project CopilotMonitor/CopilotMonitor.xcodeproj \
-  -scheme CopilotMonitor -configuration Debug -showBuildSettings 2>/dev/null \
+open "$(xcodebuild -project UsageBar/UsageBar.xcodeproj \
+  -scheme UsageBar -configuration Debug -showBuildSettings 2>/dev/null \
   | sed -n 's/^[[:space:]]*BUILT_PRODUCTS_DIR = //p' | head -n 1)/UsageBar.app"
 ```
 
