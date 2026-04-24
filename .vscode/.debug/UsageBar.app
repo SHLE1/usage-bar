@@ -1,1 +1,0 @@
-/Users/hypered/Library/Developer/Xcode/DerivedData/UsageBar-etbfzyausqaoarghxonttrjlhpzm/Build/Products/Debug/UsageBar.app
