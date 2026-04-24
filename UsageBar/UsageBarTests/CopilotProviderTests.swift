@@ -242,13 +242,10 @@ final class CopilotProviderTests: XCTestCase {
     }
 
     private func loadFixture(named: String) -> Data {
-        let bundle = Bundle(for: type(of: self))
-        guard let url = bundle.url(forResource: named, withExtension: nil) else {
-            fatalError("Fixture \(named) not found")
+        do {
+            return try TestFixtures.data(named: named)
+        } catch {
+            fatalError(error.localizedDescription)
         }
-        guard let data = try? Data(contentsOf: url) else {
-            fatalError("Could not load fixture \(named)")
-        }
-        return data
     }
 }

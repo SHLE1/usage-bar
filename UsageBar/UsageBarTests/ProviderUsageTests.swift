@@ -353,18 +353,11 @@ final class ProviderUsageTests: XCTestCase {
     /// - Parameter named: The name of the fixture file (without .json extension)
     /// - Returns: Decoded JSON object
     private func loadFixture(named: String) throws -> Any {
-        let data = try loadFixtureData(named: named)
-        return try JSONSerialization.jsonObject(with: data, options: [])
+        try TestFixtures.jsonObject(named: named)
     }
 
     private func loadFixtureData(named: String) throws -> Data {
-        let testBundle = Bundle(for: type(of: self))
-        
-        guard let url = testBundle.url(forResource: named, withExtension: "json") else {
-            throw NSError(domain: "FixtureError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fixture file not found: \(named)"])
-        }
-        
-        return try Data(contentsOf: url)
+        try TestFixtures.data(named: named)
     }
 
     /// Parse formatter output JSON text into dictionary for assertions.

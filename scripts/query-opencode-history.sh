@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Query OpenCode (Zen) daily usage history
+# Query OpenCode daily usage history
 # Calculates daily costs by computing cumulative differences
 # Algorithm: Day(N) cost = stats(N) - stats(N-1)
 #
@@ -10,48 +10,15 @@
 
 set -e
 
-# Find opencode binary using multiple strategies (matches Swift app approach)
-find_opencode_bin() {
-    # Strategy 1: Try "which opencode" in current PATH
-    if command -v opencode &> /dev/null; then
-        local resolved_path
-        resolved_path=$(command -v opencode)
-        echo "Found opencode via PATH: $resolved_path" >&2
-        echo "$resolved_path"
-        return 0
-    fi
+source "$(cd "$(dirname "$0")" && pwd)/lib/bin-discovery.sh"
 
-    # Strategy 2: Try via login shell to get user's full PATH
-    local shell="${SHELL:-/bin/zsh}"
-    local login_path
-    login_path=$("$shell" -lc 'which opencode 2>/dev/null' 2>/dev/null)
-    if [[ -n "$login_path" && -x "$login_path" ]]; then
-        echo "Found opencode via login shell PATH: $login_path" >&2
-        echo "$login_path"
-        return 0
-    fi
-
-    # Strategy 3: Fallback to common installation paths
-    local fallback_paths=(
-        "/opt/homebrew/bin/opencode"      # Apple Silicon Homebrew
-        "/usr/local/bin/opencode"          # Intel Homebrew
-        "$HOME/.opencode/bin/opencode"     # OpenCode default
-        "$HOME/.local/bin/opencode"        # pip/pipx
-        "/usr/bin/opencode"                # System-wide
-    )
-
-    for candidate_path in "${fallback_paths[@]}"; do
-        if [[ -x "$candidate_path" ]]; then
-            echo "Found opencode via fallback path: $candidate_path" >&2
-            echo "$candidate_path"
-            return 0
-        fi
-    done
-
-    return 1
-}
-
-OPENCODE_BIN="$(find_opencode_bin || true)"
+OPENCODE_BIN="$(find_executable_binary \
+    "opencode" \
+    "/opt/homebrew/bin/opencode" \
+    "/usr/local/bin/opencode" \
+    "$HOME/.opencode/bin/opencode" \
+    "$HOME/.local/bin/opencode" \
+    "/usr/bin/opencode" || true)"
 if [[ -z "$OPENCODE_BIN" ]]; then
     echo "Error: OpenCode CLI not found. Please ensure 'opencode' is in your PATH." >&2
     echo "Searched: PATH, login shell PATH, and common installation locations." >&2

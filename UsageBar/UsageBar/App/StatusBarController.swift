@@ -1280,7 +1280,7 @@ final class StatusBarController: NSObject {
         debugLog("confirmResetOrphanedSubscriptions: \(orphanedCount) key(s) pending, total=$\(formattedTotal), keys=[\(sanitizedKeys)]")
 
         let entryLabel = orphanedCount == 1 ? "entry" : "entries"
-        let detailText = "This will delete \(orphanedCount) stored subscription \(entryLabel) that no longer match any detected account or provider. This can happen after refactors, account removal, or auth changes. Total to clear: $\(formattedTotal)."
+        let detailText = "This will delete \(orphanedCount) stored subscription \(entryLabel) that no longer match any detected account or provider. This can happen after account removal or auth changes. Total to clear: $\(formattedTotal)."
 
         NSApp.activate(ignoringOtherApps: true)
 
@@ -1513,11 +1513,11 @@ final class StatusBarController: NSObject {
         let title = "Bug Report: Provider fetch errors"
         let body = """
         **Describe the issue:**
-        [Please describe what you were doing when the error occurred]
+        Describe what you were doing when the error occurred.
         
         **Error Log:**
         ```
-        [Paste the copied error log here, or remove this section if it contains sensitive information]
+        Paste the copied error log here, or remove this section if it contains sensitive information.
         ```
         
         **Environment:**

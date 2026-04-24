@@ -63,14 +63,6 @@ final class GeminiCLIProviderTests: XCTestCase {
     }
     
     private func loadFixture(named: String) throws -> Any {
-        let testBundle = Bundle(for: type(of: self))
-        
-        guard let url = testBundle.url(forResource: named, withExtension: "json") else {
-            throw NSError(domain: "FixtureError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fixture file not found: \(named)"])
-        }
-        
-        let data = try Data(contentsOf: url)
-        let json = try JSONSerialization.jsonObject(with: data, options: [])
-        return json
+        try TestFixtures.jsonObject(named: named)
     }
 }

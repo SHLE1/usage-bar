@@ -14,7 +14,7 @@ final class ClaudeProviderTests: XCTestCase {
     }
     
     func testClaudeUsageResponseDecoding() throws {
-        let fixtureData = loadFixture(named: "claude_response.json")
+        let fixtureData = try TestFixtures.data(named: "claude_response.json")
         let decoder = JSONDecoder()
         let response = try decoder.decode(ClaudeUsageResponse.self, from: fixtureData)
         
@@ -105,16 +105,5 @@ final class ClaudeProviderTests: XCTestCase {
         )
 
         XCTAssertEqual(userAgent, "claude-code/3.0.0")
-    }
-    
-    private func loadFixture(named: String) -> Data {
-        let bundle = Bundle(for: type(of: self))
-        guard let url = bundle.url(forResource: named, withExtension: nil) else {
-            fatalError("Fixture \(named) not found")
-        }
-        guard let data = try? Data(contentsOf: url) else {
-            fatalError("Could not load fixture \(named)")
-        }
-        return data
     }
 }

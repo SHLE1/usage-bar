@@ -77,7 +77,6 @@ class CopilotHistoryService {
             throw CopilotHistoryError.invalidResponse
         }
 
-        // Try multiple regex patterns for robustness (different HTML encodings)
         let patterns = [
             #""customerId":\s*(\d+)"#,      // JSON in script
             #""customerId&quot;:(\d+)"#,    // HTML-encoded JSON
@@ -86,8 +85,15 @@ class CopilotHistoryService {
         ]
 
         for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
-               let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+            let regex: NSRegularExpression
+            do {
+                regex = try NSRegularExpression(pattern: pattern, options: [])
+            } catch {
+                logger.warning("Invalid customer ID regex pattern: \(pattern, privacy: .public) - \(error.localizedDescription, privacy: .public)")
+                continue
+            }
+
+            if let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
                let range = Range(match.range(at: 1), in: html) {
                 let customerId = String(html[range])
                 cachedCustomerId = customerId

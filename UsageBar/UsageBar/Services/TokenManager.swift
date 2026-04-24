@@ -2823,16 +2823,22 @@ final class TokenManager: @unchecked Sendable {
         ]
 
         let projectsDir = openCodeRoot.appendingPathComponent("projects", isDirectory: true)
-        if let projectDirectories = try? fileManager.contentsOfDirectory(
-            at: projectsDir,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) {
-            let projectFiles = projectDirectories
-                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-                .map { $0.appendingPathComponent("openai-codex-accounts.json") }
-            paths.append(contentsOf: projectFiles)
+        let projectDirectories: [URL]
+        do {
+            projectDirectories = try fileManager.contentsOfDirectory(
+                at: projectsDir,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+        } catch {
+            logger.warning("Failed to enumerate Codex project directories at \(projectsDir.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            projectDirectories = []
         }
+
+        let projectFiles = projectDirectories
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .map { $0.appendingPathComponent("openai-codex-accounts.json") }
+        paths.append(contentsOf: projectFiles)
 
         var deduped: [URL] = []
         var visited = Set<String>()
@@ -3000,7 +3006,11 @@ final class TokenManager: @unchecked Sendable {
 
         let escapedKeys = keys.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
         let pattern = "\"(?:\(escapedKeys))\"\\s*:\\s*\"([^\"]+)\""
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+        let regex: NSRegularExpression
+        do {
+            regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+        } catch {
+            logger.warning("Invalid quoted-value regex pattern: \(pattern, privacy: .public) - \(error.localizedDescription, privacy: .public)")
             return nil
         }
         let range = NSRange(payload.startIndex..<payload.endIndex, in: payload)
@@ -3020,7 +3030,11 @@ final class TokenManager: @unchecked Sendable {
 
         let escapedKeys = keys.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
         let pattern = "\"(?:\(escapedKeys))\"\\s*:\\s*([0-9]+)"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+        let regex: NSRegularExpression
+        do {
+            regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+        } catch {
+            logger.warning("Invalid numeric-value regex pattern: \(pattern, privacy: .public) - \(error.localizedDescription, privacy: .public)")
             return nil
         }
         let range = NSRange(payload.startIndex..<payload.endIndex, in: payload)
