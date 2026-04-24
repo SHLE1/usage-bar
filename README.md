@@ -76,7 +76,7 @@ Check for Updates... (⌘U)
 Settings... (⌘,)
 Share Usage Snapshot...
 ─────────────────────────────
-UsageBar v0.1.7
+UsageBar v0.1.8
 Quit (⌘Q)
 ```
 
