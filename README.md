@@ -345,5 +345,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  Made with tiredness for AI power users
+  Built for AI power users who keep one eye on usage
 </p>
