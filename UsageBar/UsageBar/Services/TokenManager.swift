@@ -799,15 +799,17 @@ struct ClaudeAuthAccount {
 enum CopilotAuthSource: CustomStringConvertible {
     case opencodeAuth
     case copilotCliKeychain
+    case githubCliKeychain
     case vscodeHosts
     case vscodeApps
 
     var priority: Int {
         switch self {
-        case .opencodeAuth:       return 3
-        case .copilotCliKeychain: return 2
-        case .vscodeHosts:        return 1
-        case .vscodeApps:         return 0
+        case .opencodeAuth:        return 4
+        case .copilotCliKeychain:  return 3
+        case .githubCliKeychain:   return 2
+        case .vscodeHosts:         return 1
+        case .vscodeApps:          return 0
         }
     }
 
@@ -817,6 +819,8 @@ enum CopilotAuthSource: CustomStringConvertible {
             return "opencodeAuth"
         case .copilotCliKeychain:
             return "copilotCliKeychain"
+        case .githubCliKeychain:
+            return "githubCliKeychain"
         case .vscodeHosts:
             return "vscodeHosts"
         case .vscodeApps:
@@ -1078,7 +1082,7 @@ final class TokenManager: @unchecked Sendable {
     /// Paths where oc-chatgpt-multi-auth account files were found
     private(set) var lastFoundOpenCodeMultiAuthPaths: [URL] = []
 
-    /// Cached GitHub Copilot token accounts (OpenCode + VS Code)
+    /// Cached GitHub Copilot token accounts (OpenCode + CLI + VS Code)
     private var cachedCopilotAccounts: [CopilotAuthAccount]?
     private var copilotAccountsCacheTimestamp: Date?
 
@@ -3647,6 +3651,42 @@ final class TokenManager: @unchecked Sendable {
         return accounts
     }
 
+    /// Read GitHub CLI credentials from macOS Keychain.
+    /// Service name: "gh:github.com", password: GitHub OAuth token or go-keyring-base64 token.
+    private func readGitHubCliKeychainAccount() -> CopilotAuthAccount? {
+        let service = "gh:github.com"
+
+        guard let passwordData = readKeychainPasswordData(service: service),
+              var token = String(data: passwordData, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !token.isEmpty else {
+            logger.debug("[GitHubCLIKeychain] No Keychain item found for service '\(service)'")
+            return nil
+        }
+
+        let base64Prefix = "go-keyring-base64:"
+        if token.hasPrefix(base64Prefix) {
+            let encoded = String(token.dropFirst(base64Prefix.count))
+            guard let decodedData = Data(base64Encoded: encoded),
+                  let decodedToken = String(data: decodedData, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !decodedToken.isEmpty else {
+                logger.warning("[GitHubCLIKeychain] Failed to decode go-keyring-base64 payload")
+                return nil
+            }
+            token = decodedToken
+        }
+
+        logger.info("[GitHubCLIKeychain] GitHub CLI token loaded for Copilot discovery")
+        return CopilotAuthAccount(
+            accessToken: token,
+            accountId: nil,
+            login: nil,
+            authSource: "GitHub CLI Keychain (gh:github.com)",
+            source: .githubCliKeychain
+        )
+    }
+
     /// Discovers Copilot accounts across multiple sources
     func getGitHubCopilotAccounts() -> [CopilotAuthAccount] {
         if let cached = queue.sync(execute: {
@@ -3679,6 +3719,11 @@ final class TokenManager: @unchecked Sendable {
 
         // Add Copilot CLI Keychain accounts
         accounts.append(contentsOf: readCopilotCliKeychainAccounts())
+
+        // Add GitHub CLI Keychain account
+        if let githubCliAccount = readGitHubCliKeychainAccount() {
+            accounts.append(githubCliAccount)
+        }
 
         for path in copilotTokenPaths() {
             guard let dict = readJSONDictionary(at: path) else { continue }
@@ -4064,6 +4109,8 @@ final class TokenManager: @unchecked Sendable {
         request.setValue("token \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("vscode/1.96.2", forHTTPHeaderField: "Editor-Version")
+        request.setValue("copilot-chat/0.26.7", forHTTPHeaderField: "Editor-Plugin-Version")
+        request.setValue("GitHubCopilotChat/0.26.7", forHTTPHeaderField: "User-Agent")
         request.setValue("2025-04-01", forHTTPHeaderField: "X-Github-Api-Version")
 
         do {
@@ -4721,6 +4768,9 @@ final class TokenManager: @unchecked Sendable {
         let copilotCliKeychainAccounts = readCopilotCliKeychainAccounts()
         let copilotCliStatus = copilotCliKeychainAccounts.isEmpty ? "NOT FOUND" : "FOUND (\(copilotCliKeychainAccounts.count) account(s))"
         lines.append("  Copilot CLI Keychain (copilot-cli): \(copilotCliStatus)")
+
+        let githubCliStatus = readGitHubCliKeychainAccount() == nil ? "NOT FOUND" : "FOUND"
+        lines.append("  GitHub CLI Keychain (gh:github.com): \(githubCliStatus)")
 
         let copilotBase = homeDir
             .appendingPathComponent("Library")

@@ -33,10 +33,25 @@ extension StatusBarController {
         var entries: [MultiProviderBarView.Entry] = []
         for identifier in orderedSelection {
             guard isProviderEnabled(identifier),
-                  let result = providerResults[identifier],
-                  case .quotaBased = result.usage,
                   let icon = iconForProvider(identifier)
             else { continue }
+
+            guard let result = providerResults[identifier],
+                  case .quotaBased = result.usage
+            else {
+                if let errorMessage = lastProviderErrors[identifier],
+                   ProviderDisplayPolicy.shouldShowStatusBarError(errorMessage: errorMessage) {
+                    entries.append(
+                        MultiProviderBarView.Entry(
+                            icon: icon,
+                            displayText: "Err",
+                            emphasisRemainingPercent: 0
+                        )
+                    )
+                    debugLog("updateMultiProviderBarView: showing error state for \(identifier.displayName)")
+                }
+                continue
+            }
 
             if identifier == .codex,
                let selectedAccount = resolvedCodexStatusBarAccount(from: result) {

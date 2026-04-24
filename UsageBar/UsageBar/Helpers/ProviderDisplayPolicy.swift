@@ -1,6 +1,10 @@
 import Foundation
 
 enum ProviderDisplayPolicy {
+    static func shouldShowStatusBarError(errorMessage: String) -> Bool {
+        !isAuthenticationError(errorMessage) && !isNoSubscriptionError(errorMessage)
+    }
+
     static func shouldShowRateLimitedErrorRow(
         identifier: ProviderIdentifier,
         errorMessage: String,
@@ -34,5 +38,23 @@ enum ProviderDisplayPolicy {
             || lowercased.contains("rate_limit_error")
             || lowercased.contains("http 429")
             || lowercased.contains("too many requests")
+    }
+
+    private static func isAuthenticationError(_ errorMessage: String) -> Bool {
+        let authPatterns = [
+            "Authentication failed",
+            "not found",
+            "not available",
+            "access token",
+            "API key",
+            "No Gemini accounts",
+            "credentials"
+        ]
+        let lowercased = errorMessage.lowercased()
+        return authPatterns.contains { lowercased.contains($0.lowercased()) }
+    }
+
+    private static func isNoSubscriptionError(_ errorMessage: String) -> Bool {
+        errorMessage.lowercased().contains("subscription")
     }
 }

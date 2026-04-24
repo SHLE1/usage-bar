@@ -25,7 +25,19 @@ actor CopilotCLIProvider: ProviderProtocol {
         var candidates: [CopilotAccountCandidate] = []
         var cookieCandidate: CopilotAccountCandidate?
 
-        // 2. Try browser cookies as an additional/fallback source
+        // 2. Prefer direct token-based API data
+        for info in tokenInfos {
+            if let tokenCandidate = buildCandidateFromToken(info) {
+                candidates.append(tokenCandidate)
+            }
+        }
+
+        if !candidates.isEmpty {
+            logger.info("CopilotCLIProvider: Returning direct API result; billing cookies remain fallback-only")
+            return finalizeResult(candidates: candidates, cookieCandidate: nil)
+        }
+
+        // 3. Try browser cookies as a fallback source
         let cookies: GitHubCookies?
         do {
             cookies = try BrowserCookieService.shared.getGitHubCookies()
@@ -88,13 +100,6 @@ actor CopilotCLIProvider: ProviderProtocol {
             }
         } else {
             logger.info("CopilotCLIProvider: No valid browser cookies available")
-        }
-
-        // 3. Build candidates from remaining (unmatched) token infos
-        for info in tokenInfos {
-            if let tokenCandidate = buildCandidateFromToken(info) {
-                candidates.append(tokenCandidate)
-            }
         }
 
         if candidates.isEmpty {

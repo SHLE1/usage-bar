@@ -43,9 +43,11 @@ extension StatusBarController {
 
         var shouldDisableListItem: Bool {
             switch self {
-            case .rateLimited, .error:
+            case .rateLimited:
                 return true
             case .noCredentials, .noSubscription:
+                return false
+            case .error:
                 return false
             }
         }
@@ -83,7 +85,7 @@ extension StatusBarController {
             debugLog("updateMultiProviderMenu: providers=[\(providerNames)]")
         }
 
-        guard !providerResults.isEmpty else {
+        guard !providerResults.isEmpty || !lastProviderErrors.isEmpty || !loadingProviders.isEmpty else {
             debugLog("updateMultiProviderMenu: no data, returning")
             updateStatusBarDisplayMenuState()
             updateStatusBarText()
@@ -693,7 +695,22 @@ extension StatusBarController {
     }
 
     private func insertCopilotQuotaMenuItems(at insertIndex: inout Int, hasQuota: inout Bool) {
-        if let copilotResult = providerResults[.copilot],
+        let copilotResult = providerResults[.copilot]
+        let copilotError = lastProviderErrors[.copilot]
+
+        if let copilotError,
+           shouldDisplayErrorStateEvenWithResult(copilotError, identifier: .copilot, result: copilotResult) {
+            hasQuota = true
+            let item = createErrorMenuItem(identifier: .copilot, errorMessage: copilotError)
+            if item.isEnabled {
+                item.submenu = createErrorSubmenu(identifier: .copilot, result: copilotResult, errorMessage: copilotError)
+            }
+            menu.insertItem(item, at: insertIndex)
+            insertIndex += 1
+            return
+        }
+
+        if let copilotResult,
            let accounts = copilotResult.accounts,
            !accounts.isEmpty,
            isProviderEnabled(.copilot) {
@@ -739,6 +756,32 @@ extension StatusBarController {
                 menu.insertItem(quotaItem, at: insertIndex)
                 insertIndex += 1
             }
+            return
+        }
+
+        if let copilotError {
+            guard shouldDisplayErrorMenuItem(copilotError) else {
+                debugLog("updateMultiProviderMenu: hiding Copilot quota row because credentials are unavailable")
+                return
+            }
+            hasQuota = true
+            let item = createErrorMenuItem(identifier: .copilot, errorMessage: copilotError)
+            if item.isEnabled {
+                item.submenu = createErrorSubmenu(identifier: .copilot, result: nil, errorMessage: copilotError)
+            }
+            menu.insertItem(item, at: insertIndex)
+            insertIndex += 1
+            return
+        }
+
+        if loadingProviders.contains(.copilot) {
+            hasQuota = true
+            let item = NSMenuItem(title: String(format: L("%@ (Loading...)"), ProviderIdentifier.copilot.displayName), action: nil, keyEquivalent: "")
+            item.image = iconForProvider(.copilot)
+            item.isEnabled = false
+            item.tag = 999
+            menu.insertItem(item, at: insertIndex)
+            insertIndex += 1
             return
         }
 

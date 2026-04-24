@@ -76,7 +76,7 @@ Check for Updates... (⌘U)
 Settings... (⌘,)
 Share Usage Snapshot...
 ─────────────────────────────
-UsageBar v0.1.8
+UsageBar v0.1.9
 Quit (⌘Q)
 ```
 
@@ -85,7 +85,7 @@ Quit (⌘Q)
 UsageBar 自动查找并认证你的 AI 服务商：
 
 - **OpenCode auth** — 主要来源（`auth.json`，支持 XDG 多路径回退）
-- **独立工具** — Codex CLI、Claude Code CLI、GitHub Copilot CLI
+- **独立工具** — Codex CLI、Claude Code CLI、GitHub CLI、GitHub Copilot CLI
 - **macOS 钥匙串** — Claude、GitHub Copilot OAuth 令牌
 - **编辑器配置** — VS Code / Cursor 的 Copilot 配置
 - **浏览器 Cookie** — Chrome、Brave、Arc、Edge（仅限 GitHub Copilot）
@@ -143,7 +143,7 @@ UsageBar 自动查找并认证你的 AI 服务商：
 
 ### 🖥️ 多服务商状态栏
 
-macOS 状态栏可以紧凑地展示多个配额制服务商的图标和剩余百分比。通过 **设置 > 状态栏** 配置显示哪些服务商。
+macOS 状态栏可以紧凑地展示多个配额制服务商的图标和剩余百分比。通过 **设置 > 状态栏** 配置显示哪些服务商。选中的服务商遇到临时获取错误时，图标会继续显示，并在菜单中显示错误详情。
 
 ### ⬇️ App 内更新
 
@@ -267,9 +267,10 @@ OpenRouter            Pay-as-you-go    -           $37.42 spent
 Copilot 账号按以下优先级从多个来源发现：
 
 1. **OpenCode auth** — `auth.json` 中的 `copilot` 条目
-2. **Copilot CLI 钥匙串** — macOS 钥匙串中 `github.com` 相关条目
-3. **VS Code / Cursor** — `~/.config/github-copilot/hosts.json` 和 `apps.json`
-4. **浏览器 Cookie** — Chrome、Brave、Arc、Edge 的会话 Cookie
+2. **Copilot CLI 钥匙串** — macOS 钥匙串中的 `copilot-cli` 条目
+3. **GitHub CLI 钥匙串** — macOS 钥匙串中的 `gh:github.com` 条目
+4. **VS Code / Cursor** — `~/.config/github-copilot/hosts.json` 和 `apps.json`
+5. **浏览器 Cookie** — Chrome、Brave、Arc、Edge 的会话 Cookie
 
 登录名相同的账号自动合并。运行 `usagebar provider copilot` 可验证已检测到的来源。
 

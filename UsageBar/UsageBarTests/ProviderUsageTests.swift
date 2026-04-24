@@ -293,6 +293,32 @@ final class ProviderUsageTests: XCTestCase {
         )
     }
 
+    func testProviderDisplayPolicyShowsTransientErrorsInStatusBar() {
+        XCTAssertTrue(
+            ProviderDisplayPolicy.shouldShowStatusBarError(
+                errorMessage: "Network error: Fetch timeout after 10.0s"
+            )
+        )
+        XCTAssertTrue(
+            ProviderDisplayPolicy.shouldShowStatusBarError(
+                errorMessage: "Rate limited. Retrying in 8m."
+            )
+        )
+    }
+
+    func testProviderDisplayPolicyHidesConfigurationErrorsFromStatusBar() {
+        XCTAssertFalse(
+            ProviderDisplayPolicy.shouldShowStatusBarError(
+                errorMessage: "OpenRouter API key not found"
+            )
+        )
+        XCTAssertFalse(
+            ProviderDisplayPolicy.shouldShowStatusBarError(
+                errorMessage: "No Subscription"
+            )
+        )
+    }
+
     func testProviderManagerUsesMinimumFetchIntervalForClaude() async {
         let provider = CountingStubProvider(
             identifier: .claude,

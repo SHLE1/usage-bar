@@ -76,7 +76,7 @@ Check for Updates... (⌘U)
 Settings... (⌘,)
 Share Usage Snapshot...
 ─────────────────────────────
-UsageBar v0.1.8
+UsageBar v0.1.9
 Quit (⌘Q)
 ```
 
@@ -85,7 +85,7 @@ Quit (⌘Q)
 UsageBar automatically finds and authenticates with your AI providers:
 
 - **OpenCode auth** — Primary source (`auth.json` with XDG multi-path fallback)
-- **Standalone tools** — Codex CLI, Claude Code CLI, GitHub Copilot CLI
+- **Standalone tools** — Codex CLI, Claude Code CLI, GitHub CLI, GitHub Copilot CLI
 - **macOS Keychain** — Claude, GitHub Copilot OAuth tokens
 - **Editor configs** — VS Code / Cursor Copilot settings
 - **Browser cookies** — Chrome, Brave, Arc, Edge (GitHub Copilot only)
@@ -143,7 +143,7 @@ Set your subscription tier per provider (preset or custom monthly cost). The `Qu
 
 ### 🖥️ Multi-Provider Status Bar
 
-The macOS status bar can display a compact row of quota-based provider icons with remaining percentages. Configure which providers appear via **Settings > Status Bar**.
+The macOS status bar can display a compact row of quota-based provider icons with remaining percentages. Configure which providers appear via **Settings > Status Bar**. When a selected provider has a temporary fetch error, its icon stays visible with an error marker and the menu shows the error details.
 
 ### ⬇️ In-App Updates
 
@@ -265,9 +265,10 @@ To keep multiple ChatGPT accounts in UsageBar, sign in with the official `codex`
 
 Copilot accounts are discovered from (in priority order):
 1. **OpenCode auth** — `copilot` entry in `auth.json`
-2. **Copilot CLI Keychain** — macOS Keychain entries for `github.com`
-3. **VS Code / Cursor** — `~/.config/github-copilot/hosts.json` and `apps.json`
-4. **Browser Cookies** — Chrome, Brave, Arc, Edge session cookies
+2. **Copilot CLI Keychain** — macOS Keychain entries for `copilot-cli`
+3. **GitHub CLI Keychain** — macOS Keychain entry for `gh:github.com`
+4. **VS Code / Cursor** — `~/.config/github-copilot/hosts.json` and `apps.json`
+5. **Browser Cookies** — Chrome, Brave, Arc, Edge session cookies
 
 Accounts with the same login are automatically merged. Run `usagebar provider copilot` to verify detected sources.
 

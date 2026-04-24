@@ -93,19 +93,21 @@ final class CopilotProviderTests: XCTestCase {
     // MARK: - CopilotAuthSource Tests
 
     func testCopilotAuthSourceAllCasesExist() {
-        // Verify all four expected auth source cases exist and have distinct descriptions
+        // Verify all expected auth source cases exist and have distinct descriptions
         let descriptions: Set<String> = [
             CopilotAuthSource.opencodeAuth.description,
             CopilotAuthSource.copilotCliKeychain.description,
+            CopilotAuthSource.githubCliKeychain.description,
             CopilotAuthSource.vscodeHosts.description,
             CopilotAuthSource.vscodeApps.description
         ]
-        XCTAssertEqual(descriptions.count, 4, "Each CopilotAuthSource case must have a unique description")
+        XCTAssertEqual(descriptions.count, 5, "Each CopilotAuthSource case must have a unique description")
     }
 
     func testCopilotAuthSourceDescriptions() {
         XCTAssertEqual(CopilotAuthSource.opencodeAuth.description, "opencodeAuth")
         XCTAssertEqual(CopilotAuthSource.copilotCliKeychain.description, "copilotCliKeychain")
+        XCTAssertEqual(CopilotAuthSource.githubCliKeychain.description, "githubCliKeychain")
         XCTAssertEqual(CopilotAuthSource.vscodeHosts.description, "vscodeHosts")
         XCTAssertEqual(CopilotAuthSource.vscodeApps.description, "vscodeApps")
     }
@@ -120,8 +122,13 @@ final class CopilotProviderTests: XCTestCase {
         )
         XCTAssertGreaterThan(
             CopilotAuthSource.copilotCliKeychain.priority,
+            CopilotAuthSource.githubCliKeychain.priority,
+            "copilotCliKeychain must outrank githubCliKeychain"
+        )
+        XCTAssertGreaterThan(
+            CopilotAuthSource.githubCliKeychain.priority,
             CopilotAuthSource.vscodeHosts.priority,
-            "copilotCliKeychain must outrank vscodeHosts"
+            "githubCliKeychain must outrank vscodeHosts"
         )
         XCTAssertGreaterThan(
             CopilotAuthSource.vscodeHosts.priority,
@@ -131,8 +138,9 @@ final class CopilotProviderTests: XCTestCase {
     }
 
     func testSourcePriorityAbsoluteValues() {
-        XCTAssertEqual(CopilotAuthSource.opencodeAuth.priority, 3)
-        XCTAssertEqual(CopilotAuthSource.copilotCliKeychain.priority, 2)
+        XCTAssertEqual(CopilotAuthSource.opencodeAuth.priority, 4)
+        XCTAssertEqual(CopilotAuthSource.copilotCliKeychain.priority, 3)
+        XCTAssertEqual(CopilotAuthSource.githubCliKeychain.priority, 2)
         XCTAssertEqual(CopilotAuthSource.vscodeHosts.priority, 1)
         XCTAssertEqual(CopilotAuthSource.vscodeApps.priority, 0)
     }

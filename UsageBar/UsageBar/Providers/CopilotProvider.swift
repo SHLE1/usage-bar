@@ -55,6 +55,8 @@ final class CopilotProvider: ProviderProtocol {
         let hasInternalAPIData = !candidates.isEmpty
         if hasInternalAPIData {
             logger.info("CopilotProvider: [Internal API] \(candidates.count) candidate(s) from Internal API")
+            logger.info("CopilotProvider: [Internal API] Returning direct API result; billing cookies remain fallback-only")
+            return finalizeResult(candidates: candidates, cookieCandidate: nil)
         } else {
             logger.warning("CopilotProvider: [Internal API] No usable data from Internal API, will try cookie fallback")
         }
