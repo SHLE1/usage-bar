@@ -29,6 +29,8 @@
 "Error" = "错误";
 "No providers" = "无 Provider";
 "Orphaned ($%.2f)" = "孤立订阅 ($%.2f)";
+"Outdated subscriptions ($%.2f)" = "过期订阅设置 ($%.2f)";
+"Outdated subscriptions" = "过期订阅设置";
 
 /* ==========================
    Provider 区块标题
@@ -265,6 +267,7 @@
 "Cancel" = "取消";
 "Close" = "关闭";
 "Reset" = "重置";
+"Clear" = "清除";
 "Open X" = "打开 X";
 "Open GitHub" = "打开 GitHub";
 "No Thanks" = "不了，谢谢";
@@ -287,6 +290,11 @@
 "This will delete %d stored subscription %@ that no longer match any detected account." = "这将删除 %d 条不再匹配任何已检测账号的订阅%@。";
 "entries" = "条记录";
 "entry" = "条记录";
+"Clear outdated subscription settings?" = "清除过期订阅设置？";
+"One saved subscription setting is no longer connected to a detected account or provider." = "有 1 条已保存的订阅设置不再匹配当前检测到的账号或 Provider。";
+"%d saved subscription settings are no longer connected to a detected account or provider." = "有 %d 条已保存的订阅设置不再匹配当前检测到的账号或 Provider。";
+"This usually happens after signing out, changing accounts, or removing a provider." = "这通常发生在退出登录、更换账号或移除 Provider 之后。";
+"Amount to clear: $%@." = "将清除金额：$%@。";
 "Provider Errors Detected" = "发现 Provider 错误";
 "Some providers failed to fetch data. You can copy the error log and report this issue on GitHub." = "部分 Provider 数据获取失败。您可以复制错误日志并在 GitHub 上报告此问题。";
 "Copied!" = "已复制！";

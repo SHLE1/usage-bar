@@ -29,6 +29,8 @@
 "Error" = "Error";
 "No providers" = "No providers";
 "Orphaned ($%.2f)" = "Orphaned ($%.2f)";
+"Outdated subscriptions ($%.2f)" = "Outdated subscriptions ($%.2f)";
+"Outdated subscriptions" = "Outdated subscriptions";
 
 /* ==========================
    Provider Section Headers
@@ -265,6 +267,7 @@
 "Cancel" = "Cancel";
 "Close" = "Close";
 "Reset" = "Reset";
+"Clear" = "Clear";
 "Open X" = "Open X";
 "Open GitHub" = "Open GitHub";
 "No Thanks" = "No Thanks";
@@ -287,6 +290,11 @@
 "This will delete %d stored subscription %@ that no longer match any detected account." = "This will delete %d stored subscription %@ that no longer match any detected account.";
 "entries" = "entries";
 "entry" = "entry";
+"Clear outdated subscription settings?" = "Clear outdated subscription settings?";
+"One saved subscription setting is no longer connected to a detected account or provider." = "One saved subscription setting is no longer connected to a detected account or provider.";
+"%d saved subscription settings are no longer connected to a detected account or provider." = "%d saved subscription settings are no longer connected to a detected account or provider.";
+"This usually happens after signing out, changing accounts, or removing a provider." = "This usually happens after signing out, changing accounts, or removing a provider.";
+"Amount to clear: $%@." = "Amount to clear: $%@.";
 "Provider Errors Detected" = "Provider Errors Detected";
 "Some providers failed to fetch data. You can copy the error log and report this issue on GitHub." = "Some providers failed to fetch data. You can copy the error log and report this issue on GitHub.";
 "Copied!" = "Copied!";

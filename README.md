@@ -130,7 +130,7 @@ Multi-source accounts are automatically deduplicated by email.
 
 ### 💰 Subscription Tracking
 
-Set your subscription tier per provider (preset or custom monthly cost). The `Quota Status` header shows the combined monthly total, and stale entries are automatically cleaned up.
+Set your subscription tier per provider (preset or custom monthly cost). The `Quota Status` header shows the combined monthly total, and outdated saved settings can be cleared with a localized confirmation.
 
 ### ⚙️ Settings
 
@@ -139,7 +139,7 @@ Set your subscription tier per provider (preset or custom monthly cost). The `Qu
 | **General** | Auto Refresh (1 min – 1 hr), Prediction Period (7 / 14 / 21 days), App Language (System / EN / 中文), Launch at Login, Critical Badge, Privacy Mode for screenshot-safe account masking, CLI Install, native-first primary action buttons |
 | **Status Bar** | A lighter native macOS preview group, draggable provider ordering, per-provider visibility toggles, edge-to-edge provider cards, disabled items move to the top of the disabled group to reduce layout jumps, a concise quota-only status bar note, preview/menu order follows the Status Bar provider list, Copilot Add-on toggle |
 | **Advanced Providers** | ChatGPT: save the current `codex` login into UsageBar (Keychain-backed), remove saved accounts, account selection, status bar window mode (5h / weekly / both) |
-| **Subscriptions** | Native macOS menu pickers for preset plans or custom monthly cost per quota-based provider, native-first Apply button styling, and provider icons for faster scanning |
+| **Subscriptions** | Native macOS menu pickers for preset plans or custom monthly cost per quota-based provider, localized outdated-setting cleanup, native-first Apply button styling, and provider icons for faster scanning |
 
 ### 🖥️ Multi-Provider Status Bar
 

@@ -1279,16 +1279,29 @@ final class StatusBarController: NSObject {
         let sanitizedKeys = keysToReset.map { sanitizedSubscriptionKey($0) }.joined(separator: ", ")
         debugLog("confirmResetOrphanedSubscriptions: \(orphanedCount) key(s) pending, total=$\(formattedTotal), keys=[\(sanitizedKeys)]")
 
-        let entryLabel = orphanedCount == 1 ? "entry" : "entries"
-        let detailText = "This will delete \(orphanedCount) stored subscription \(entryLabel) that no longer match any detected account or provider. This can happen after account removal or auth changes. Total to clear: $\(formattedTotal)."
+        let countText: String
+        if orphanedCount == 1 {
+            countText = L("One saved subscription setting is no longer connected to a detected account or provider.")
+        } else {
+            countText = String(
+                format: L("%d saved subscription settings are no longer connected to a detected account or provider."),
+                orphanedCount
+            )
+        }
+        let detailText = [
+            countText,
+            L("This usually happens after signing out, changing accounts, or removing a provider."),
+            String(format: L("Amount to clear: $%@."), formattedTotal)
+        ].joined(separator: "\n\n")
+        debugLog("confirmResetOrphanedSubscriptions: showing localized clear confirmation")
 
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = L("Reset orphaned subscriptions?")
+        alert.messageText = L("Clear outdated subscription settings?")
         alert.informativeText = detailText
         alert.alertStyle = .warning
-        alert.addButton(withTitle: L("Reset"))
+        alert.addButton(withTitle: L("Clear"))
         alert.addButton(withTitle: L("Cancel"))
 
         let response = alert.runModal()

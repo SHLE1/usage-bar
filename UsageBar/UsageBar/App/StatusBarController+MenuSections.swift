@@ -149,7 +149,7 @@ extension StatusBarController {
         orphanedSubscriptionKeys = orphaned.keys
         orphanedSubscriptionTotal = orphaned.total
         if orphaned.total > 0 {
-            let title = String(format: L("Orphaned ($%.2f)"), orphaned.total)
+            let title = String(format: L("Outdated subscriptions ($%.2f)"), orphaned.total)
             let orphanedItem = NSMenuItem(title: title, action: #selector(confirmResetOrphanedSubscriptions(_:)), keyEquivalent: "")
             orphanedItem.target = self
             orphanedItem.attributedTitle = italicMenuTitle(title)
@@ -225,7 +225,7 @@ extension StatusBarController {
     }
 
     private func orphanedIcon() -> NSImage? {
-        let image = NSImage(systemSymbolName: "tray.full", accessibilityDescription: L("Orphaned subscriptions"))
+        let image = NSImage(systemSymbolName: "tray.full", accessibilityDescription: L("Outdated subscriptions"))
         image?.size = NSSize(width: MenuDesignToken.Dimension.iconSize, height: MenuDesignToken.Dimension.iconSize)
         return image
     }

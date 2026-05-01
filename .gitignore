@@ -60,3 +60,4 @@ nohup.out
 .conductor/
 .sc/
 .mcp.json
+.alma-snapshots
